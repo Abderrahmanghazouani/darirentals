@@ -1,0 +1,101 @@
+"use client";
+
+import { use, useMemo } from "react";
+import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus } from "lucide-react";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import { EntityTable } from "@/components/crud/entity-table";
+import { EntityFormDialog } from "@/components/crud/entity-form-dialog";
+import { AutoForm } from "@/components/crud/auto-form";
+import { buildAutoColumns } from "@/components/crud/auto-columns";
+import { useEntityCrud } from "@/lib/use-entity-crud";
+import { getGenericClient, GenericDto } from "@/lib/generic-client";
+import { entityRegistry } from "@/lib/entity-registry";
+import { useRequireRole } from "@/lib/use-require-role";
+
+export default function AdminEntityPage({
+  params,
+}: {
+  params: Promise<{ entity: string }>;
+}) {
+  const ready = useRequireRole("admin");
+  const { entity } = use(params);
+  const descriptor = entityRegistry[entity];
+  if (!descriptor) notFound();
+
+  const client = useMemo(() => getGenericClient(entity, "admin"), [entity]);
+  const crud = useEntityCrud<GenericDto>(client);
+  const columns = useMemo(() => buildAutoColumns(descriptor), [descriptor]);
+
+  if (!ready) return null;
+
+  return (
+    <div className="p-6 space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{descriptor.label}</CardTitle>
+          <Button onClick={crud.openCreate}>
+            <Plus /> Nouveau
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {crud.error && <p className="text-destructive text-sm mb-4">{crud.error}</p>}
+
+          <EntityTable<GenericDto>
+            items={crud.items}
+            loading={crud.loading}
+            onEdit={crud.openEdit}
+            onDelete={crud.setDeleteTarget}
+            columns={columns}
+          />
+        </CardContent>
+      </Card>
+
+      <EntityFormDialog
+        open={crud.formOpen}
+        onOpenChange={(open) => (open ? undefined : crud.closeForm())}
+        title={crud.editingItem ? `Modifier : ${descriptor.label}` : `Nouveau : ${descriptor.label}`}
+      >
+        <AutoForm
+          descriptor={descriptor}
+          role="admin"
+          initial={crud.editingItem}
+          saving={crud.saving}
+          onSubmit={crud.submit}
+          onCancel={crud.closeForm}
+        />
+      </EntityFormDialog>
+
+      <AlertDialog
+        open={crud.deleteTarget != null}
+        onOpenChange={(open) => (open ? undefined : crud.setDeleteTarget(null))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet élément ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={crud.confirmDelete}>Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

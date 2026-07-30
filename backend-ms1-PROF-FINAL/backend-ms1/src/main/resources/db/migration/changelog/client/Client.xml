@@ -1,0 +1,71 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="client">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="full_name" type="VARCHAR(500)"/>
+        <column name="phone" type="VARCHAR(500)"/>
+        <column name="nationality" type="VARCHAR(500)"/>
+        <column name="email" type="VARCHAR(500)"/>
+        <column name="enabled" type="TINYINT"/>
+        <column name="credentials_non_expired" type="TINYINT"/>
+        <column name="account_non_expired" type="TINYINT"/>
+        <column name="username" type="VARCHAR(500)"/>
+        <column name="password_changed" type="TINYINT"/>
+        <column name="account_non_locked" type="TINYINT"/>
+        <column name="password" type="VARCHAR(500)"/>
+
+        <column name="enterprise_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="client"
+              baseColumnNames="enterprise_id"
+              referencedTableName="enterprise"
+              referencedColumnNames="id"
+              constraintName="fk_client_enterprise"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="client_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/client/Client.csv"
+            tableName="client">
+      <column name="id" type="NUMERIC"/>
+          <column name="full_name" type="STRING"/>
+          <column name="phone" type="STRING"/>
+          <column name="nationality" type="STRING"/>
+          <column name="email" type="STRING"/>
+          <column name="enabled" type="BOOLEAN"/>
+          <column name="credentials_non_expired" type="BOOLEAN"/>
+          <column name="account_non_expired" type="BOOLEAN"/>
+          <column name="username" type="STRING"/>
+          <column name="password_changed" type="BOOLEAN"/>
+          <column name="account_non_locked" type="BOOLEAN"/>
+          <column name="password" type="STRING"/>
+        <column name="enterprise" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>

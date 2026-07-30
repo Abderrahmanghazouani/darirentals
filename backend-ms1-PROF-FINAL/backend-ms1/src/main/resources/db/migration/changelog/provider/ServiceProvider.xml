@@ -1,0 +1,65 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="service_provider">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="name" type="VARCHAR(500)"/>
+        <column name="phone" type="VARCHAR(500)"/>
+        <column name="is_active" type="TINYINT"/>
+
+        <column name="service_type_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="enterprise_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="service_provider"
+              baseColumnNames="service_type_id"
+              referencedTableName="service_type"
+              referencedColumnNames="id"
+              constraintName="fk_service_provider_service_type"/>
+      <addForeignKeyConstraint
+              baseTableName="service_provider"
+              baseColumnNames="enterprise_id"
+              referencedTableName="enterprise"
+              referencedColumnNames="id"
+              constraintName="fk_service_provider_enterprise"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="service_provider_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/provider/ServiceProvider.csv"
+            tableName="service_provider">
+      <column name="id" type="NUMERIC"/>
+          <column name="name" type="STRING"/>
+          <column name="phone" type="STRING"/>
+          <column name="is_active" type="BOOLEAN"/>
+        <column name="service_type" type="BIGINT"/>
+        <column name="enterprise" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>

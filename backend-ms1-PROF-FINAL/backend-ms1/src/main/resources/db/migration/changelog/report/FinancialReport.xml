@@ -1,0 +1,89 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="financial_report">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="total_revenue" type="NUMERIC"/>
+        <column name="total_charges" type="NUMERIC"/>
+        <column name="net_profit" type="NUMERIC"/>
+        <column name="generated_at" type="TIMESTAMP"/>
+        <column name="file" type="VARCHAR(500)"/>
+
+        <column name="financial_report_type_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="financial_report_scope_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="enterprise_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="generated_by_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="financial_report"
+              baseColumnNames="financial_report_type_id"
+              referencedTableName="financial_report_type"
+              referencedColumnNames="id"
+              constraintName="fk_financial_report_financial_report_type"/>
+      <addForeignKeyConstraint
+              baseTableName="financial_report"
+              baseColumnNames="financial_report_scope_id"
+              referencedTableName="financial_report_scope"
+              referencedColumnNames="id"
+              constraintName="fk_financial_report_financial_report_scope"/>
+      <addForeignKeyConstraint
+              baseTableName="financial_report"
+              baseColumnNames="enterprise_id"
+              referencedTableName="enterprise"
+              referencedColumnNames="id"
+              constraintName="fk_financial_report_enterprise"/>
+      <addForeignKeyConstraint
+              baseTableName="financial_report"
+              baseColumnNames="generated_by_id"
+              referencedTableName="generated_by"
+              referencedColumnNames="id"
+              constraintName="fk_financial_report_generated_by"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="financial_report_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/report/FinancialReport.csv"
+            tableName="financial_report">
+      <column name="id" type="NUMERIC"/>
+          <column name="total_revenue" type="NUMERIC"/>
+          <column name="total_charges" type="NUMERIC"/>
+          <column name="net_profit" type="NUMERIC"/>
+          <column name="generated_at" type="TIMESTAMP"/>
+          <column name="file" type="STRING"/>
+        <column name="financial_report_type" type="BIGINT"/>
+        <column name="financial_report_scope" type="BIGINT"/>
+        <column name="enterprise" type="BIGINT"/>
+        <column name="generated_by" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>

@@ -1,0 +1,95 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="property">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="name" type="VARCHAR(500)"/>
+        <column name="street_number" type="VARCHAR(500)"/>
+        <column name="street_name" type="VARCHAR(500)"/>
+        <column name="postal_code" type="VARCHAR(500)"/>
+        <column name="capacity" type="BIGINT"/>
+        <column name="price_per_night" type="NUMERIC"/>
+        <column name="latitude" type="NUMERIC"/>
+        <column name="longitude" type="NUMERIC"/>
+
+        <column name="property_type_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="property_status_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="city_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="enterprise_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="property"
+              baseColumnNames="property_type_id"
+              referencedTableName="property_type"
+              referencedColumnNames="id"
+              constraintName="fk_property_property_type"/>
+      <addForeignKeyConstraint
+              baseTableName="property"
+              baseColumnNames="property_status_id"
+              referencedTableName="property_status"
+              referencedColumnNames="id"
+              constraintName="fk_property_property_status"/>
+      <addForeignKeyConstraint
+              baseTableName="property"
+              baseColumnNames="city_id"
+              referencedTableName="city"
+              referencedColumnNames="id"
+              constraintName="fk_property_city"/>
+      <addForeignKeyConstraint
+              baseTableName="property"
+              baseColumnNames="enterprise_id"
+              referencedTableName="enterprise"
+              referencedColumnNames="id"
+              constraintName="fk_property_enterprise"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="property_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/property/Property.csv"
+            tableName="property">
+      <column name="id" type="NUMERIC"/>
+          <column name="name" type="STRING"/>
+          <column name="street_number" type="STRING"/>
+          <column name="street_name" type="STRING"/>
+          <column name="postal_code" type="STRING"/>
+          <column name="capacity" type="NUMERIC"/>
+          <column name="price_per_night" type="NUMERIC"/>
+          <column name="latitude" type="NUMERIC"/>
+          <column name="longitude" type="NUMERIC"/>
+        <column name="property_type" type="BIGINT"/>
+        <column name="property_status" type="BIGINT"/>
+        <column name="city" type="BIGINT"/>
+        <column name="enterprise" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>

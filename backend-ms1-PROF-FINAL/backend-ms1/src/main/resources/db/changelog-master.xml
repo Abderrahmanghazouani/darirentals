@@ -1,0 +1,45 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+            <include file="classpath:db/migration/changelog/auth/CollaboratorRole.xml"/>
+        <include file="classpath:db/migration/changelog/reservation/Reservation.xml"/>
+        <include file="classpath:db/migration/changelog/payment/Payment.xml"/>
+        <include file="classpath:db/migration/changelog/task/TaskType.xml"/>
+        <include file="classpath:db/migration/changelog/report/FinancialReport.xml"/>
+        <include file="classpath:db/migration/changelog/enterprise/Enterprise.xml"/>
+        <include file="classpath:db/migration/changelog/task/TaskStatus.xml"/>
+        <include file="classpath:db/migration/changelog/charge/ChargeType.xml"/>
+        <include file="classpath:db/migration/changelog/enterprise/EnterpriseMembership.xml"/>
+        <include file="classpath:db/migration/changelog/payment/PaymentStatus.xml"/>
+        <include file="classpath:db/migration/changelog/reservation/ReservationStatus.xml"/>
+        <include file="classpath:db/migration/changelog/report/FinancialReportScope.xml"/>
+        <include file="classpath:db/migration/changelog/payment/PaymentType.xml"/>
+        <include file="classpath:db/migration/changelog/charge/Charge.xml"/>
+        <include file="classpath:db/migration/changelog/reservation/ReservationRequestStatus.xml"/>
+        <include file="classpath:db/migration/changelog/ai/AiQuota.xml"/>
+        <include file="classpath:db/migration/changelog/client/Client.xml"/>
+        <include file="classpath:db/migration/changelog/reservation/ReservationPlatform.xml"/>
+        <include file="classpath:db/migration/changelog/ai/AiUsageType.xml"/>
+        <include file="classpath:db/migration/changelog/document/Document.xml"/>
+        <include file="classpath:db/migration/changelog/auth/CollaboratorPermissionOverride.xml"/>
+        <include file="classpath:db/migration/changelog/provider/ServiceType.xml"/>
+        <include file="classpath:db/migration/changelog/provider/ServiceProvider.xml"/>
+        <include file="classpath:db/migration/changelog/reservation/ReservationRequest.xml"/>
+        <include file="classpath:db/migration/changelog/report/FinancialReportProperty.xml"/>
+        <include file="classpath:db/migration/changelog/ai/AiUsageLog.xml"/>
+        <include file="classpath:db/migration/changelog/property/PropertyType.xml"/>
+        <include file="classpath:db/migration/changelog/currency/ExchangeRate.xml"/>
+        <include file="classpath:db/migration/changelog/property/City.xml"/>
+        <include file="classpath:db/migration/changelog/task/TaskPriority.xml"/>
+        <include file="classpath:db/migration/changelog/auth/Collaborator.xml"/>
+        <include file="classpath:db/migration/changelog/property/PropertyStatus.xml"/>
+        <include file="classpath:db/migration/changelog/currency/Currency.xml"/>
+        <include file="classpath:db/migration/changelog/report/FinancialReportType.xml"/>
+        <include file="classpath:db/migration/changelog/property/Country.xml"/>
+        <include file="classpath:db/migration/changelog/task/Task.xml"/>
+        <include file="classpath:db/migration/changelog/document/DocumentType.xml"/>
+        <include file="classpath:db/migration/changelog/property/Property.xml"/>
+
+</databaseChangeLog>

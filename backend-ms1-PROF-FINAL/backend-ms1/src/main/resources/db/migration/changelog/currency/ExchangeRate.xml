@@ -1,0 +1,63 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="exchange_rate">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="rate" type="NUMERIC"/>
+        <column name="source" type="VARCHAR(500)"/>
+
+        <column name="base_currency_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="target_currency_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="exchange_rate"
+              baseColumnNames="base_currency_id"
+              referencedTableName="base_currency"
+              referencedColumnNames="id"
+              constraintName="fk_exchange_rate_base_currency"/>
+      <addForeignKeyConstraint
+              baseTableName="exchange_rate"
+              baseColumnNames="target_currency_id"
+              referencedTableName="target_currency"
+              referencedColumnNames="id"
+              constraintName="fk_exchange_rate_target_currency"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="exchange_rate_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/currency/ExchangeRate.csv"
+            tableName="exchange_rate">
+      <column name="id" type="NUMERIC"/>
+          <column name="rate" type="NUMERIC"/>
+          <column name="source" type="STRING"/>
+        <column name="base_currency" type="BIGINT"/>
+        <column name="target_currency" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>

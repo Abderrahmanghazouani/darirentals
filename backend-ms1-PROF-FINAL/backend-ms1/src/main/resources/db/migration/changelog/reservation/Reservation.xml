@@ -1,0 +1,85 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="reservation">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="reference" type="VARCHAR(500)"/>
+        <column name="amount" type="NUMERIC"/>
+        <column name="price_per_night" type="NUMERIC"/>
+
+        <column name="client_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="property_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="reservation_platform_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="reservation_status_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="reservation"
+              baseColumnNames="client_id"
+              referencedTableName="client"
+              referencedColumnNames="id"
+              constraintName="fk_reservation_client"/>
+      <addForeignKeyConstraint
+              baseTableName="reservation"
+              baseColumnNames="property_id"
+              referencedTableName="property"
+              referencedColumnNames="id"
+              constraintName="fk_reservation_property"/>
+      <addForeignKeyConstraint
+              baseTableName="reservation"
+              baseColumnNames="reservation_platform_id"
+              referencedTableName="reservation_platform"
+              referencedColumnNames="id"
+              constraintName="fk_reservation_reservation_platform"/>
+      <addForeignKeyConstraint
+              baseTableName="reservation"
+              baseColumnNames="reservation_status_id"
+              referencedTableName="reservation_status"
+              referencedColumnNames="id"
+              constraintName="fk_reservation_reservation_status"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="reservation_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/reservation/Reservation.csv"
+            tableName="reservation">
+      <column name="id" type="NUMERIC"/>
+          <column name="reference" type="STRING"/>
+          <column name="amount" type="NUMERIC"/>
+          <column name="price_per_night" type="NUMERIC"/>
+        <column name="client" type="BIGINT"/>
+        <column name="property" type="BIGINT"/>
+        <column name="reservation_platform" type="BIGINT"/>
+        <column name="reservation_status" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>

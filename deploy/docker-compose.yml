@@ -1,0 +1,162 @@
+version: '3'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.4
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+  
+  kafka:
+    image: confluentinc/cp-kafka:7.4.4
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+	  
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:mysql://db:3306/sonarqube?useUnicode=true&characterEncoding=utf8&useSSL=false
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    depends_on:
+      - sonarqube_db
+
+  sonarqube_db:
+    image: mariadb:latest
+    container_name: sonarqube_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: sonarqube
+      MYSQL_USER: sonar
+      MYSQL_PASSWORD: sonar
+    ports:
+      - "3306:3306"
+    volumes:
+      - sonarqube_db_data:/var/lib/mysql
+
+
+  prometheus:
+    image: prom/prometheus
+    hostname: prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./grafana/grafana-data:/var/lib/grafana
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+    depends_on:
+      - darirentalsms1-back
+
+
+  grafana:
+    image: grafana/grafana
+    hostname: grafana
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin # new pass is zyn@1987
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "4000:3000"  # Using port 4000 instead of 3000 to avoid conflicts
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
+
+
+
+
+
+  front-end:
+    build: ../frontend
+    container_name: frontend
+    ports:
+      - '${FRONT_END_PORT}:80'
+    expose:
+      - '${FRONT_END_PORT}'
+    networks:
+      - app-network
+    restart: always
+
+  darirentalsms1-db:
+    image: ${DARIRENTALSMS1_DB_IMAGE_NAME}
+    container_name: ${DARIRENTALSMS1_DB_CONTAINER_NAME}
+    volumes:
+      - darirentalsms1-data:/var/lib/mysql #postgre /var/lib/postgresql/data
+    ports:
+      - "${DARIRENTALSMS1_DB_PORT}:3306" #postgre 5432
+    environment:
+      - MYSQL_DATABASE=${DARIRENTALSMS1_DB_NAME} #POSTGRES_DB=${ZYN1724669534506MS1_DB_NAME}
+      - MYSQL_USER=${DARIRENTALSMS1_DB_USER} #POSTGRES_USER=${ZYN1724669534506MS1_DB_USER}
+      - MYSQL_PASSWORD=${DARIRENTALSMS1_DB_PASSWORD} #POSTGRES_PASSWORD=${ZYN1724669534506MS1_DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DARIRENTALSMS1_DB_PASSWORD_ROOT}
+    networks:
+      - app-network
+  phpmyadmin-darirentalsms1:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: ${DARIRENTALSMS1_DB_CONTAINER_NAME}
+      MYSQL_ROOT_PASSWORD: ''
+    ports:
+      - "808:80"
+    depends_on:
+      - darirentalsms1-db
+    networks:
+      - app-network
+  darirentalsms1-back:
+    build:
+      context: ${DARIRENTALSMS1_PROJECT_PATH}
+      dockerfile: DockerfileWithPackage
+    container_name: ${DARIRENTALSMS1_CONTAINER_NAME}
+    image: ${DARIRENTALSMS1_IMAGE_NAME}
+    ports:
+      - "${DARIRENTALSMS1_BACK_PORT}:${DARIRENTALSMS1_BACK_PORT}"
+    environment:
+      - DARIRENTALSMS1_DB_URL=${DARIRENTALSMS1_DB_URL}
+      - DARIRENTALSMS1_DB_USER=${DARIRENTALSMS1_DB_USER}
+      - DARIRENTALSMS1_DB_PASSWORD=${DARIRENTALSMS1_DB_PASSWORD}
+    depends_on:
+      - darirentalsms1-db
+    networks:
+      - app-network
+    restart: always
+  minio:
+    image: ${MINIO_IMAGE_NAME}
+    container_name: ${MINIO_CONTAINER_NAME}
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./data/minio_data:/data
+    ports:
+      - "${MINIO_HOME_PORT}:9000"
+      - "${MINIO_URL_PORT}:9001" # tap localhost:9001 to access to minio
+    networks:
+      - app-network
+volumes:
+  sonarqube_db_data:
+  darirentalsms1-data:
+networks:
+  app-network:
+    external: true # change external: true to driver: bridge
+

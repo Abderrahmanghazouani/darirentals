@@ -1,0 +1,113 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="task">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="title" type="VARCHAR(500)"/>
+        <column name="description" type="VARCHAR(500)"/>
+
+        <column name="property_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="reservation_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="service_provider_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="assigned_to_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="task_type_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="task_priority_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="task_status_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="task"
+              baseColumnNames="property_id"
+              referencedTableName="property"
+              referencedColumnNames="id"
+              constraintName="fk_task_property"/>
+      <addForeignKeyConstraint
+              baseTableName="task"
+              baseColumnNames="reservation_id"
+              referencedTableName="reservation"
+              referencedColumnNames="id"
+              constraintName="fk_task_reservation"/>
+      <addForeignKeyConstraint
+              baseTableName="task"
+              baseColumnNames="service_provider_id"
+              referencedTableName="service_provider"
+              referencedColumnNames="id"
+              constraintName="fk_task_service_provider"/>
+      <addForeignKeyConstraint
+              baseTableName="task"
+              baseColumnNames="assigned_to_id"
+              referencedTableName="assigned_to"
+              referencedColumnNames="id"
+              constraintName="fk_task_assigned_to"/>
+      <addForeignKeyConstraint
+              baseTableName="task"
+              baseColumnNames="task_type_id"
+              referencedTableName="task_type"
+              referencedColumnNames="id"
+              constraintName="fk_task_task_type"/>
+      <addForeignKeyConstraint
+              baseTableName="task"
+              baseColumnNames="task_priority_id"
+              referencedTableName="task_priority"
+              referencedColumnNames="id"
+              constraintName="fk_task_task_priority"/>
+      <addForeignKeyConstraint
+              baseTableName="task"
+              baseColumnNames="task_status_id"
+              referencedTableName="task_status"
+              referencedColumnNames="id"
+              constraintName="fk_task_task_status"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="task_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/task/Task.csv"
+            tableName="task">
+      <column name="id" type="NUMERIC"/>
+          <column name="title" type="STRING"/>
+          <column name="description" type="STRING"/>
+        <column name="property" type="BIGINT"/>
+        <column name="reservation" type="BIGINT"/>
+        <column name="service_provider" type="BIGINT"/>
+        <column name="assigned_to" type="BIGINT"/>
+        <column name="task_type" type="BIGINT"/>
+        <column name="task_priority" type="BIGINT"/>
+        <column name="task_status" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>

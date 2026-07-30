@@ -1,0 +1,3233 @@
+openapi: 3.0.3
+info:
+  title: Title
+  description: Title
+  version: 1.0.0
+servers:
+  - url: 'https'
+paths:
+  /collaboratorRoles:
+    get:
+      summary: List all collaboratorRoles
+      operationId: listCollaboratorRoles
+      tags:
+        - collaboratorRoles
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of collaboratorRoles
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/CollaboratorRoles'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a collaboratorRole
+      operationId: createCollaboratorRoles
+      tags:
+        - collaboratorRoles
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /collaboratorRoles/{collaboratorRoleId}:
+    get:
+      summary: Info for a specific collaboratorRole
+      operationId: showCollaboratorRoleById
+      tags:
+        - collaboratorRoles
+      parameters:
+        - name: collaboratorRoleId
+          in: path
+          required: true
+          description: The id of the collaboratorRole to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/CollaboratorRoles'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservations:
+    get:
+      summary: List all reservations
+      operationId: listReservations
+      tags:
+        - reservations
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of reservations
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Reservations'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a reservation
+      operationId: createReservations
+      tags:
+        - reservations
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservations/{reservationId}:
+    get:
+      summary: Info for a specific reservation
+      operationId: showReservationById
+      tags:
+        - reservations
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: The id of the reservation to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Reservations'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /payments:
+    get:
+      summary: List all payments
+      operationId: listPayments
+      tags:
+        - payments
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of payments
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Payments'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a payment
+      operationId: createPayments
+      tags:
+        - payments
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /payments/{paymentId}:
+    get:
+      summary: Info for a specific payment
+      operationId: showPaymentById
+      tags:
+        - payments
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          description: The id of the payment to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Payments'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /taskTypes:
+    get:
+      summary: List all taskTypes
+      operationId: listTaskTypes
+      tags:
+        - taskTypes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of taskTypes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/TaskTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a taskType
+      operationId: createTaskTypes
+      tags:
+        - taskTypes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /taskTypes/{taskTypeId}:
+    get:
+      summary: Info for a specific taskType
+      operationId: showTaskTypeById
+      tags:
+        - taskTypes
+      parameters:
+        - name: taskTypeId
+          in: path
+          required: true
+          description: The id of the taskType to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/TaskTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /financialReports:
+    get:
+      summary: List all financialReports
+      operationId: listFinancialReports
+      tags:
+        - financialReports
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of financialReports
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/FinancialReports'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a financialReport
+      operationId: createFinancialReports
+      tags:
+        - financialReports
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /financialReports/{financialReportId}:
+    get:
+      summary: Info for a specific financialReport
+      operationId: showFinancialReportById
+      tags:
+        - financialReports
+      parameters:
+        - name: financialReportId
+          in: path
+          required: true
+          description: The id of the financialReport to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/FinancialReports'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /enterprises:
+    get:
+      summary: List all enterprises
+      operationId: listEnterprises
+      tags:
+        - enterprises
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of enterprises
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Enterprises'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a enterprise
+      operationId: createEnterprises
+      tags:
+        - enterprises
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /enterprises/{enterpriseId}:
+    get:
+      summary: Info for a specific enterprise
+      operationId: showEnterpriseById
+      tags:
+        - enterprises
+      parameters:
+        - name: enterpriseId
+          in: path
+          required: true
+          description: The id of the enterprise to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Enterprises'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /taskStatuss:
+    get:
+      summary: List all taskStatuss
+      operationId: listTaskStatuss
+      tags:
+        - taskStatuss
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of taskStatuss
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/TaskStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a taskStatus
+      operationId: createTaskStatuss
+      tags:
+        - taskStatuss
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /taskStatuss/{taskStatusId}:
+    get:
+      summary: Info for a specific taskStatus
+      operationId: showTaskStatusById
+      tags:
+        - taskStatuss
+      parameters:
+        - name: taskStatusId
+          in: path
+          required: true
+          description: The id of the taskStatus to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/TaskStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /chargeTypes:
+    get:
+      summary: List all chargeTypes
+      operationId: listChargeTypes
+      tags:
+        - chargeTypes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of chargeTypes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/ChargeTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a chargeType
+      operationId: createChargeTypes
+      tags:
+        - chargeTypes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /chargeTypes/{chargeTypeId}:
+    get:
+      summary: Info for a specific chargeType
+      operationId: showChargeTypeById
+      tags:
+        - chargeTypes
+      parameters:
+        - name: chargeTypeId
+          in: path
+          required: true
+          description: The id of the chargeType to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/ChargeTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /enterpriseMemberships:
+    get:
+      summary: List all enterpriseMemberships
+      operationId: listEnterpriseMemberships
+      tags:
+        - enterpriseMemberships
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of enterpriseMemberships
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/EnterpriseMemberships'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a enterpriseMembership
+      operationId: createEnterpriseMemberships
+      tags:
+        - enterpriseMemberships
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /enterpriseMemberships/{enterpriseMembershipId}:
+    get:
+      summary: Info for a specific enterpriseMembership
+      operationId: showEnterpriseMembershipById
+      tags:
+        - enterpriseMemberships
+      parameters:
+        - name: enterpriseMembershipId
+          in: path
+          required: true
+          description: The id of the enterpriseMembership to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/EnterpriseMemberships'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /paymentStatuss:
+    get:
+      summary: List all paymentStatuss
+      operationId: listPaymentStatuss
+      tags:
+        - paymentStatuss
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of paymentStatuss
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/PaymentStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a paymentStatus
+      operationId: createPaymentStatuss
+      tags:
+        - paymentStatuss
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /paymentStatuss/{paymentStatusId}:
+    get:
+      summary: Info for a specific paymentStatus
+      operationId: showPaymentStatusById
+      tags:
+        - paymentStatuss
+      parameters:
+        - name: paymentStatusId
+          in: path
+          required: true
+          description: The id of the paymentStatus to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/PaymentStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservationStatuss:
+    get:
+      summary: List all reservationStatuss
+      operationId: listReservationStatuss
+      tags:
+        - reservationStatuss
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of reservationStatuss
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/ReservationStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a reservationStatus
+      operationId: createReservationStatuss
+      tags:
+        - reservationStatuss
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservationStatuss/{reservationStatusId}:
+    get:
+      summary: Info for a specific reservationStatus
+      operationId: showReservationStatusById
+      tags:
+        - reservationStatuss
+      parameters:
+        - name: reservationStatusId
+          in: path
+          required: true
+          description: The id of the reservationStatus to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/ReservationStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /financialReportScopes:
+    get:
+      summary: List all financialReportScopes
+      operationId: listFinancialReportScopes
+      tags:
+        - financialReportScopes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of financialReportScopes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/FinancialReportScopes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a financialReportScope
+      operationId: createFinancialReportScopes
+      tags:
+        - financialReportScopes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /financialReportScopes/{financialReportScopeId}:
+    get:
+      summary: Info for a specific financialReportScope
+      operationId: showFinancialReportScopeById
+      tags:
+        - financialReportScopes
+      parameters:
+        - name: financialReportScopeId
+          in: path
+          required: true
+          description: The id of the financialReportScope to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/FinancialReportScopes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /paymentTypes:
+    get:
+      summary: List all paymentTypes
+      operationId: listPaymentTypes
+      tags:
+        - paymentTypes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of paymentTypes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/PaymentTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a paymentType
+      operationId: createPaymentTypes
+      tags:
+        - paymentTypes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /paymentTypes/{paymentTypeId}:
+    get:
+      summary: Info for a specific paymentType
+      operationId: showPaymentTypeById
+      tags:
+        - paymentTypes
+      parameters:
+        - name: paymentTypeId
+          in: path
+          required: true
+          description: The id of the paymentType to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/PaymentTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /charges:
+    get:
+      summary: List all charges
+      operationId: listCharges
+      tags:
+        - charges
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of charges
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Charges'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a charge
+      operationId: createCharges
+      tags:
+        - charges
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /charges/{chargeId}:
+    get:
+      summary: Info for a specific charge
+      operationId: showChargeById
+      tags:
+        - charges
+      parameters:
+        - name: chargeId
+          in: path
+          required: true
+          description: The id of the charge to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Charges'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservationRequestStatuss:
+    get:
+      summary: List all reservationRequestStatuss
+      operationId: listReservationRequestStatuss
+      tags:
+        - reservationRequestStatuss
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of reservationRequestStatuss
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/ReservationRequestStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a reservationRequestStatus
+      operationId: createReservationRequestStatuss
+      tags:
+        - reservationRequestStatuss
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservationRequestStatuss/{reservationRequestStatusId}:
+    get:
+      summary: Info for a specific reservationRequestStatus
+      operationId: showReservationRequestStatusById
+      tags:
+        - reservationRequestStatuss
+      parameters:
+        - name: reservationRequestStatusId
+          in: path
+          required: true
+          description: The id of the reservationRequestStatus to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/ReservationRequestStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /aiQuotas:
+    get:
+      summary: List all aiQuotas
+      operationId: listAiQuotas
+      tags:
+        - aiQuotas
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of aiQuotas
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/AiQuotas'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a aiQuota
+      operationId: createAiQuotas
+      tags:
+        - aiQuotas
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /aiQuotas/{aiQuotaId}:
+    get:
+      summary: Info for a specific aiQuota
+      operationId: showAiQuotaById
+      tags:
+        - aiQuotas
+      parameters:
+        - name: aiQuotaId
+          in: path
+          required: true
+          description: The id of the aiQuota to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/AiQuotas'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /clients:
+    get:
+      summary: List all clients
+      operationId: listClients
+      tags:
+        - clients
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of clients
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Clients'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a client
+      operationId: createClients
+      tags:
+        - clients
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /clients/{clientId}:
+    get:
+      summary: Info for a specific client
+      operationId: showClientById
+      tags:
+        - clients
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          description: The id of the client to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Clients'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservationPlatforms:
+    get:
+      summary: List all reservationPlatforms
+      operationId: listReservationPlatforms
+      tags:
+        - reservationPlatforms
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of reservationPlatforms
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/ReservationPlatforms'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a reservationPlatform
+      operationId: createReservationPlatforms
+      tags:
+        - reservationPlatforms
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservationPlatforms/{reservationPlatformId}:
+    get:
+      summary: Info for a specific reservationPlatform
+      operationId: showReservationPlatformById
+      tags:
+        - reservationPlatforms
+      parameters:
+        - name: reservationPlatformId
+          in: path
+          required: true
+          description: The id of the reservationPlatform to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/ReservationPlatforms'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /aiUsageTypes:
+    get:
+      summary: List all aiUsageTypes
+      operationId: listAiUsageTypes
+      tags:
+        - aiUsageTypes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of aiUsageTypes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/AiUsageTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a aiUsageType
+      operationId: createAiUsageTypes
+      tags:
+        - aiUsageTypes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /aiUsageTypes/{aiUsageTypeId}:
+    get:
+      summary: Info for a specific aiUsageType
+      operationId: showAiUsageTypeById
+      tags:
+        - aiUsageTypes
+      parameters:
+        - name: aiUsageTypeId
+          in: path
+          required: true
+          description: The id of the aiUsageType to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/AiUsageTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /documents:
+    get:
+      summary: List all documents
+      operationId: listDocuments
+      tags:
+        - documents
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of documents
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Documents'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a document
+      operationId: createDocuments
+      tags:
+        - documents
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /documents/{documentId}:
+    get:
+      summary: Info for a specific document
+      operationId: showDocumentById
+      tags:
+        - documents
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          description: The id of the document to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Documents'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /collaboratorPermissionOverrides:
+    get:
+      summary: List all collaboratorPermissionOverrides
+      operationId: listCollaboratorPermissionOverrides
+      tags:
+        - collaboratorPermissionOverrides
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of collaboratorPermissionOverrides
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/CollaboratorPermissionOverrides'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a collaboratorPermissionOverride
+      operationId: createCollaboratorPermissionOverrides
+      tags:
+        - collaboratorPermissionOverrides
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /collaboratorPermissionOverrides/{collaboratorPermissionOverrideId}:
+    get:
+      summary: Info for a specific collaboratorPermissionOverride
+      operationId: showCollaboratorPermissionOverrideById
+      tags:
+        - collaboratorPermissionOverrides
+      parameters:
+        - name: collaboratorPermissionOverrideId
+          in: path
+          required: true
+          description: The id of the collaboratorPermissionOverride to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/CollaboratorPermissionOverrides'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /serviceTypes:
+    get:
+      summary: List all serviceTypes
+      operationId: listServiceTypes
+      tags:
+        - serviceTypes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of serviceTypes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/ServiceTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a serviceType
+      operationId: createServiceTypes
+      tags:
+        - serviceTypes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /serviceTypes/{serviceTypeId}:
+    get:
+      summary: Info for a specific serviceType
+      operationId: showServiceTypeById
+      tags:
+        - serviceTypes
+      parameters:
+        - name: serviceTypeId
+          in: path
+          required: true
+          description: The id of the serviceType to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/ServiceTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /serviceProviders:
+    get:
+      summary: List all serviceProviders
+      operationId: listServiceProviders
+      tags:
+        - serviceProviders
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of serviceProviders
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/ServiceProviders'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a serviceProvider
+      operationId: createServiceProviders
+      tags:
+        - serviceProviders
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /serviceProviders/{serviceProviderId}:
+    get:
+      summary: Info for a specific serviceProvider
+      operationId: showServiceProviderById
+      tags:
+        - serviceProviders
+      parameters:
+        - name: serviceProviderId
+          in: path
+          required: true
+          description: The id of the serviceProvider to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/ServiceProviders'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservationRequests:
+    get:
+      summary: List all reservationRequests
+      operationId: listReservationRequests
+      tags:
+        - reservationRequests
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of reservationRequests
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/ReservationRequests'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a reservationRequest
+      operationId: createReservationRequests
+      tags:
+        - reservationRequests
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /reservationRequests/{reservationRequestId}:
+    get:
+      summary: Info for a specific reservationRequest
+      operationId: showReservationRequestById
+      tags:
+        - reservationRequests
+      parameters:
+        - name: reservationRequestId
+          in: path
+          required: true
+          description: The id of the reservationRequest to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/ReservationRequests'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /financialReportPropertys:
+    get:
+      summary: List all financialReportPropertys
+      operationId: listFinancialReportPropertys
+      tags:
+        - financialReportPropertys
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of financialReportPropertys
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/FinancialReportPropertys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a financialReportProperty
+      operationId: createFinancialReportPropertys
+      tags:
+        - financialReportPropertys
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /financialReportPropertys/{financialReportPropertyId}:
+    get:
+      summary: Info for a specific financialReportProperty
+      operationId: showFinancialReportPropertyById
+      tags:
+        - financialReportPropertys
+      parameters:
+        - name: financialReportPropertyId
+          in: path
+          required: true
+          description: The id of the financialReportProperty to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/FinancialReportPropertys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /aiUsageLogs:
+    get:
+      summary: List all aiUsageLogs
+      operationId: listAiUsageLogs
+      tags:
+        - aiUsageLogs
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of aiUsageLogs
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/AiUsageLogs'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a aiUsageLog
+      operationId: createAiUsageLogs
+      tags:
+        - aiUsageLogs
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /aiUsageLogs/{aiUsageLogId}:
+    get:
+      summary: Info for a specific aiUsageLog
+      operationId: showAiUsageLogById
+      tags:
+        - aiUsageLogs
+      parameters:
+        - name: aiUsageLogId
+          in: path
+          required: true
+          description: The id of the aiUsageLog to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/AiUsageLogs'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /propertyTypes:
+    get:
+      summary: List all propertyTypes
+      operationId: listPropertyTypes
+      tags:
+        - propertyTypes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of propertyTypes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/PropertyTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a propertyType
+      operationId: createPropertyTypes
+      tags:
+        - propertyTypes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /propertyTypes/{propertyTypeId}:
+    get:
+      summary: Info for a specific propertyType
+      operationId: showPropertyTypeById
+      tags:
+        - propertyTypes
+      parameters:
+        - name: propertyTypeId
+          in: path
+          required: true
+          description: The id of the propertyType to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/PropertyTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /exchangeRates:
+    get:
+      summary: List all exchangeRates
+      operationId: listExchangeRates
+      tags:
+        - exchangeRates
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of exchangeRates
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/ExchangeRates'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a exchangeRate
+      operationId: createExchangeRates
+      tags:
+        - exchangeRates
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /exchangeRates/{exchangeRateId}:
+    get:
+      summary: Info for a specific exchangeRate
+      operationId: showExchangeRateById
+      tags:
+        - exchangeRates
+      parameters:
+        - name: exchangeRateId
+          in: path
+          required: true
+          description: The id of the exchangeRate to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/ExchangeRates'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /citys:
+    get:
+      summary: List all citys
+      operationId: listCitys
+      tags:
+        - citys
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of citys
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Citys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a city
+      operationId: createCitys
+      tags:
+        - citys
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /citys/{cityId}:
+    get:
+      summary: Info for a specific city
+      operationId: showCityById
+      tags:
+        - citys
+      parameters:
+        - name: cityId
+          in: path
+          required: true
+          description: The id of the city to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Citys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /taskPrioritys:
+    get:
+      summary: List all taskPrioritys
+      operationId: listTaskPrioritys
+      tags:
+        - taskPrioritys
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of taskPrioritys
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/TaskPrioritys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a taskPriority
+      operationId: createTaskPrioritys
+      tags:
+        - taskPrioritys
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /taskPrioritys/{taskPriorityId}:
+    get:
+      summary: Info for a specific taskPriority
+      operationId: showTaskPriorityById
+      tags:
+        - taskPrioritys
+      parameters:
+        - name: taskPriorityId
+          in: path
+          required: true
+          description: The id of the taskPriority to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/TaskPrioritys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /collaborators:
+    get:
+      summary: List all collaborators
+      operationId: listCollaborators
+      tags:
+        - collaborators
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of collaborators
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Collaborators'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a collaborator
+      operationId: createCollaborators
+      tags:
+        - collaborators
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /collaborators/{collaboratorId}:
+    get:
+      summary: Info for a specific collaborator
+      operationId: showCollaboratorById
+      tags:
+        - collaborators
+      parameters:
+        - name: collaboratorId
+          in: path
+          required: true
+          description: The id of the collaborator to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Collaborators'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /propertyStatuss:
+    get:
+      summary: List all propertyStatuss
+      operationId: listPropertyStatuss
+      tags:
+        - propertyStatuss
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of propertyStatuss
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/PropertyStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a propertyStatus
+      operationId: createPropertyStatuss
+      tags:
+        - propertyStatuss
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /propertyStatuss/{propertyStatusId}:
+    get:
+      summary: Info for a specific propertyStatus
+      operationId: showPropertyStatusById
+      tags:
+        - propertyStatuss
+      parameters:
+        - name: propertyStatusId
+          in: path
+          required: true
+          description: The id of the propertyStatus to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/PropertyStatuss'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /currencys:
+    get:
+      summary: List all currencys
+      operationId: listCurrencys
+      tags:
+        - currencys
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of currencys
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Currencys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a currency
+      operationId: createCurrencys
+      tags:
+        - currencys
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /currencys/{currencyId}:
+    get:
+      summary: Info for a specific currency
+      operationId: showCurrencyById
+      tags:
+        - currencys
+      parameters:
+        - name: currencyId
+          in: path
+          required: true
+          description: The id of the currency to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Currencys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /financialReportTypes:
+    get:
+      summary: List all financialReportTypes
+      operationId: listFinancialReportTypes
+      tags:
+        - financialReportTypes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of financialReportTypes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/FinancialReportTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a financialReportType
+      operationId: createFinancialReportTypes
+      tags:
+        - financialReportTypes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /financialReportTypes/{financialReportTypeId}:
+    get:
+      summary: Info for a specific financialReportType
+      operationId: showFinancialReportTypeById
+      tags:
+        - financialReportTypes
+      parameters:
+        - name: financialReportTypeId
+          in: path
+          required: true
+          description: The id of the financialReportType to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/FinancialReportTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /countrys:
+    get:
+      summary: List all countrys
+      operationId: listCountrys
+      tags:
+        - countrys
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of countrys
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Countrys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a country
+      operationId: createCountrys
+      tags:
+        - countrys
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /countrys/{countryId}:
+    get:
+      summary: Info for a specific country
+      operationId: showCountryById
+      tags:
+        - countrys
+      parameters:
+        - name: countryId
+          in: path
+          required: true
+          description: The id of the country to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Countrys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /tasks:
+    get:
+      summary: List all tasks
+      operationId: listTasks
+      tags:
+        - tasks
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of tasks
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Tasks'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a task
+      operationId: createTasks
+      tags:
+        - tasks
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /tasks/{taskId}:
+    get:
+      summary: Info for a specific task
+      operationId: showTaskById
+      tags:
+        - tasks
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: The id of the task to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Tasks'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /documentTypes:
+    get:
+      summary: List all documentTypes
+      operationId: listDocumentTypes
+      tags:
+        - documentTypes
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of documentTypes
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/DocumentTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a documentType
+      operationId: createDocumentTypes
+      tags:
+        - documentTypes
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /documentTypes/{documentTypeId}:
+    get:
+      summary: Info for a specific documentType
+      operationId: showDocumentTypeById
+      tags:
+        - documentTypes
+      parameters:
+        - name: documentTypeId
+          in: path
+          required: true
+          description: The id of the documentType to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/DocumentTypes'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /propertys:
+    get:
+      summary: List all propertys
+      operationId: listPropertys
+      tags:
+        - propertys
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: A paged array of propertys
+          headers:
+            x-next:
+              type: string
+              description: A link to the next page of responses
+          schema:
+            $ref: '#/definitions/Propertys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a property
+      operationId: createPropertys
+      tags:
+        - propertys
+      responses:
+        "201":
+          description: Null response
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /propertys/{propertyId}:
+    get:
+      summary: Info for a specific property
+      operationId: showPropertyById
+      tags:
+        - propertys
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          description: The id of the property to retrieve
+          type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          schema:
+            $ref: '#/definitions/Propertys'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  
+
+
+definitions:
+  CollaboratorRole:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+      - canManageFinancials
+      - canManageUsers
+      - canDeleteProperty
+      - canManageServiceProviders
+      - canManageAiUsage
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+      canManageFinancials:
+        type: boolean
+      canManageUsers:
+        type: boolean
+      canDeleteProperty:
+        type: boolean
+      canManageServiceProviders:
+        type: boolean
+      canManageAiUsage:
+        type: boolean
+  CollaboratorRoles:
+    type: array
+    items:
+      $ref: '#/definitions/CollaboratorRole'
+  Reservation:
+    type: "object"
+    required:
+      - id
+      - reference
+      - amount
+      - pricePerNight
+    properties:
+      id:
+        type: int
+      reference:
+        type: string
+      amount:
+        type: number
+      pricePerNight:
+        type: number
+  Reservations:
+    type: array
+    items:
+      $ref: '#/definitions/Reservation'
+  Payment:
+    type: "object"
+    required:
+      - id
+      - amount
+      - notes
+    properties:
+      id:
+        type: int
+      amount:
+        type: number
+      notes:
+        type: string
+  Payments:
+    type: array
+    items:
+      $ref: '#/definitions/Payment'
+  TaskType:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  TaskTypes:
+    type: array
+    items:
+      $ref: '#/definitions/TaskType'
+  FinancialReport:
+    type: "object"
+    required:
+      - id
+      - totalRevenue
+      - totalCharges
+      - netProfit
+      - generatedAt
+      - file
+    properties:
+      id:
+        type: int
+      totalRevenue:
+        type: number
+      totalCharges:
+        type: number
+      netProfit:
+        type: number
+      generatedAt:
+        type: date
+      file:
+        type: string
+  FinancialReports:
+    type: array
+    items:
+      $ref: '#/definitions/FinancialReport'
+  Enterprise:
+    type: "object"
+    required:
+      - id
+      - name
+      - phone
+      - address
+    properties:
+      id:
+        type: int
+      name:
+        type: string
+      phone:
+        type: string
+      address:
+        type: string
+  Enterprises:
+    type: array
+    items:
+      $ref: '#/definitions/Enterprise'
+  TaskStatus:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  TaskStatuss:
+    type: array
+    items:
+      $ref: '#/definitions/TaskStatus'
+  ChargeType:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  ChargeTypes:
+    type: array
+    items:
+      $ref: '#/definitions/ChargeType'
+  EnterpriseMembership:
+    type: "object"
+    required:
+      - id
+    properties:
+      id:
+        type: int
+  EnterpriseMemberships:
+    type: array
+    items:
+      $ref: '#/definitions/EnterpriseMembership'
+  PaymentStatus:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  PaymentStatuss:
+    type: array
+    items:
+      $ref: '#/definitions/PaymentStatus'
+  ReservationStatus:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  ReservationStatuss:
+    type: array
+    items:
+      $ref: '#/definitions/ReservationStatus'
+  FinancialReportScope:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  FinancialReportScopes:
+    type: array
+    items:
+      $ref: '#/definitions/FinancialReportScope'
+  PaymentType:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  PaymentTypes:
+    type: array
+    items:
+      $ref: '#/definitions/PaymentType'
+  Charge:
+    type: "object"
+    required:
+      - id
+      - label
+      - amount
+    properties:
+      id:
+        type: int
+      label:
+        type: string
+      amount:
+        type: number
+  Charges:
+    type: array
+    items:
+      $ref: '#/definitions/Charge'
+  ReservationRequestStatus:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  ReservationRequestStatuss:
+    type: array
+    items:
+      $ref: '#/definitions/ReservationRequestStatus'
+  AiQuota:
+    type: "object"
+    required:
+      - id
+      - tokensAllocated
+    properties:
+      id:
+        type: int
+      tokensAllocated:
+        type: int
+  AiQuotas:
+    type: array
+    items:
+      $ref: '#/definitions/AiQuota'
+  Client:
+    type: "object"
+    required:
+      - id
+      - fullName
+      - phone
+      - nationality
+      - email
+      - enabled
+      - credentialsNonExpired
+      - accountNonExpired
+      - username
+      - passwordChanged
+      - accountNonLocked
+      - password
+    properties:
+      id:
+        type: int
+      fullName:
+        type: string
+      phone:
+        type: string
+      nationality:
+        type: string
+      email:
+        type: string
+      enabled:
+        type: boolean
+      credentialsNonExpired:
+        type: boolean
+      accountNonExpired:
+        type: boolean
+      username:
+        type: string
+      passwordChanged:
+        type: boolean
+      accountNonLocked:
+        type: boolean
+      password:
+        type: string
+  Clients:
+    type: array
+    items:
+      $ref: '#/definitions/Client'
+  ReservationPlatform:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  ReservationPlatforms:
+    type: array
+    items:
+      $ref: '#/definitions/ReservationPlatform'
+  AiUsageType:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  AiUsageTypes:
+    type: array
+    items:
+      $ref: '#/definitions/AiUsageType'
+  Document:
+    type: "object"
+    required:
+      - id
+      - fileName
+      - file
+      - extractedVendor
+      - extractedAmount
+    properties:
+      id:
+        type: int
+      fileName:
+        type: string
+      file:
+        type: string
+      extractedVendor:
+        type: string
+      extractedAmount:
+        type: number
+  Documents:
+    type: array
+    items:
+      $ref: '#/definitions/Document'
+  CollaboratorPermissionOverride:
+    type: "object"
+    required:
+      - id
+      - canManageFinancials
+      - canManageUsers
+      - canDeleteProperty
+      - canManageServiceProviders
+      - canManageAiUsage
+    properties:
+      id:
+        type: int
+      canManageFinancials:
+        type: boolean
+      canManageUsers:
+        type: boolean
+      canDeleteProperty:
+        type: boolean
+      canManageServiceProviders:
+        type: boolean
+      canManageAiUsage:
+        type: boolean
+  CollaboratorPermissionOverrides:
+    type: array
+    items:
+      $ref: '#/definitions/CollaboratorPermissionOverride'
+  ServiceType:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  ServiceTypes:
+    type: array
+    items:
+      $ref: '#/definitions/ServiceType'
+  ServiceProvider:
+    type: "object"
+    required:
+      - id
+      - name
+      - phone
+      - isActive
+    properties:
+      id:
+        type: int
+      name:
+        type: string
+      phone:
+        type: string
+      isActive:
+        type: boolean
+  ServiceProviders:
+    type: array
+    items:
+      $ref: '#/definitions/ServiceProvider'
+  ReservationRequest:
+    type: "object"
+    required:
+      - id
+      - clientNote
+      - staffNote
+    properties:
+      id:
+        type: int
+      clientNote:
+        type: string
+      staffNote:
+        type: string
+  ReservationRequests:
+    type: array
+    items:
+      $ref: '#/definitions/ReservationRequest'
+  FinancialReportProperty:
+    type: "object"
+    required:
+      - id
+    properties:
+      id:
+        type: int
+  FinancialReportPropertys:
+    type: array
+    items:
+      $ref: '#/definitions/FinancialReportProperty'
+  AiUsageLog:
+    type: "object"
+    required:
+      - id
+      - tokensUsed
+      - date
+    properties:
+      id:
+        type: int
+      tokensUsed:
+        type: int
+      date:
+        type: date
+  AiUsageLogs:
+    type: array
+    items:
+      $ref: '#/definitions/AiUsageLog'
+  PropertyType:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  PropertyTypes:
+    type: array
+    items:
+      $ref: '#/definitions/PropertyType'
+  ExchangeRate:
+    type: "object"
+    required:
+      - id
+      - rate
+      - source
+    properties:
+      id:
+        type: int
+      rate:
+        type: number
+      source:
+        type: string
+  ExchangeRates:
+    type: array
+    items:
+      $ref: '#/definitions/ExchangeRate'
+  City:
+    type: "object"
+    required:
+      - id
+      - name
+    properties:
+      id:
+        type: int
+      name:
+        type: string
+  Citys:
+    type: array
+    items:
+      $ref: '#/definitions/City'
+  TaskPriority:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  TaskPrioritys:
+    type: array
+    items:
+      $ref: '#/definitions/TaskPriority'
+  Collaborator:
+    type: "object"
+    required:
+      - id
+      - name
+      - phone
+      - isActive
+      - email
+      - enabled
+      - credentialsNonExpired
+      - accountNonExpired
+      - username
+      - passwordChanged
+      - accountNonLocked
+      - password
+    properties:
+      id:
+        type: int
+      name:
+        type: string
+      phone:
+        type: string
+      isActive:
+        type: boolean
+      email:
+        type: string
+      enabled:
+        type: boolean
+      credentialsNonExpired:
+        type: boolean
+      accountNonExpired:
+        type: boolean
+      username:
+        type: string
+      passwordChanged:
+        type: boolean
+      accountNonLocked:
+        type: boolean
+      password:
+        type: string
+  Collaborators:
+    type: array
+    items:
+      $ref: '#/definitions/Collaborator'
+  PropertyStatus:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  PropertyStatuss:
+    type: array
+    items:
+      $ref: '#/definitions/PropertyStatus'
+  Currency:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+      - symbol
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+      symbol:
+        type: string
+  Currencys:
+    type: array
+    items:
+      $ref: '#/definitions/Currency'
+  FinancialReportType:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  FinancialReportTypes:
+    type: array
+    items:
+      $ref: '#/definitions/FinancialReportType'
+  Country:
+    type: "object"
+    required:
+      - id
+      - name
+      - code
+    properties:
+      id:
+        type: int
+      name:
+        type: string
+      code:
+        type: string
+  Countrys:
+    type: array
+    items:
+      $ref: '#/definitions/Country'
+  Task:
+    type: "object"
+    required:
+      - id
+      - title
+      - description
+    properties:
+      id:
+        type: int
+      title:
+        type: string
+      description:
+        type: string
+  Tasks:
+    type: array
+    items:
+      $ref: '#/definitions/Task'
+  DocumentType:
+    type: "object"
+    required:
+      - id
+      - description
+      - code
+      - label
+      - style
+      - isDefault
+      - sortOrder
+    properties:
+      id:
+        type: int
+      description:
+        type: string
+      code:
+        type: string
+      label:
+        type: string
+      style:
+        type: string
+      isDefault:
+        type: boolean
+      sortOrder:
+        type: int
+  DocumentTypes:
+    type: array
+    items:
+      $ref: '#/definitions/DocumentType'
+  Property:
+    type: "object"
+    required:
+      - id
+      - name
+      - streetNumber
+      - streetName
+      - postalCode
+      - capacity
+      - pricePerNight
+      - latitude
+      - longitude
+    properties:
+      id:
+        type: int
+      name:
+        type: string
+      streetNumber:
+        type: string
+      streetName:
+        type: string
+      postalCode:
+        type: string
+      capacity:
+        type: int
+      pricePerNight:
+        type: number
+      latitude:
+        type: number
+      longitude:
+        type: number
+  Propertys:
+    type: array
+    items:
+      $ref: '#/definitions/Property'
+
+  Error:
+    type: "object"
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string

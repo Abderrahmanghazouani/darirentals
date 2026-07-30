@@ -1,0 +1,83 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="ai_usage_log">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="tokens_used" type="BIGINT"/>
+        <column name="date" type="TIMESTAMP"/>
+
+        <column name="enterprise_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="ai_usage_type_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="collaborator_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+        <column name="document_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="ai_usage_log"
+              baseColumnNames="enterprise_id"
+              referencedTableName="enterprise"
+              referencedColumnNames="id"
+              constraintName="fk_ai_usage_log_enterprise"/>
+      <addForeignKeyConstraint
+              baseTableName="ai_usage_log"
+              baseColumnNames="ai_usage_type_id"
+              referencedTableName="ai_usage_type"
+              referencedColumnNames="id"
+              constraintName="fk_ai_usage_log_ai_usage_type"/>
+      <addForeignKeyConstraint
+              baseTableName="ai_usage_log"
+              baseColumnNames="collaborator_id"
+              referencedTableName="collaborator"
+              referencedColumnNames="id"
+              constraintName="fk_ai_usage_log_collaborator"/>
+      <addForeignKeyConstraint
+              baseTableName="ai_usage_log"
+              baseColumnNames="document_id"
+              referencedTableName="document"
+              referencedColumnNames="id"
+              constraintName="fk_ai_usage_log_document"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="ai_usage_log_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/ai/AiUsageLog.csv"
+            tableName="ai_usage_log">
+      <column name="id" type="NUMERIC"/>
+          <column name="tokens_used" type="NUMERIC"/>
+          <column name="date" type="TIMESTAMP"/>
+        <column name="enterprise" type="BIGINT"/>
+        <column name="ai_usage_type" type="BIGINT"/>
+        <column name="collaborator" type="BIGINT"/>
+        <column name="document" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>

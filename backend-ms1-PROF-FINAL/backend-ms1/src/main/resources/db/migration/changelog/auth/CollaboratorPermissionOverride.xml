@@ -1,0 +1,59 @@
+<!-- db/changelog-1.1-container.xml -->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+  <!-- Create Container Table -->
+    <changeSet id="1" author="your-name">
+    <createTable tableName="collaborator_permission_override">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+        <column name="can_manage_financials" type="TINYINT"/>
+        <column name="can_manage_users" type="TINYINT"/>
+        <column name="can_delete_property" type="TINYINT"/>
+        <column name="can_manage_service_providers" type="TINYINT"/>
+        <column name="can_manage_ai_usage" type="TINYINT"/>
+
+        <column name="enterprise_membership_id" type="BIGINT">
+          <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+  </changeSet>
+
+    <!-- Add foreign key constraint -->
+  <changeSet id="2" author="your-name">
+      <addForeignKeyConstraint
+              baseTableName="collaborator_permission_override"
+              baseColumnNames="enterprise_membership_id"
+              referencedTableName="enterprise_membership"
+              referencedColumnNames="id"
+              constraintName="fk_collaborator_permission_override_enterprise_membership"/>
+
+  </changeSet>
+
+    <!-- Create Sequence for ContainerType -->
+  <changeSet id="3" author="your-name">
+    <createSequence sequenceName="collaborator_permission_override_seq" startValue="1" incrementBy="1"/>
+  </changeSet>
+
+  <!-- Load Data from CSV -->
+  <changeSet id="4" author="your-name">
+    <loadData
+            file="classpath:/db/migration/data/auth/CollaboratorPermissionOverride.csv"
+            tableName="collaborator_permission_override">
+      <column name="id" type="NUMERIC"/>
+          <column name="can_manage_financials" type="BOOLEAN"/>
+          <column name="can_manage_users" type="BOOLEAN"/>
+          <column name="can_delete_property" type="BOOLEAN"/>
+          <column name="can_manage_service_providers" type="BOOLEAN"/>
+          <column name="can_manage_ai_usage" type="BOOLEAN"/>
+        <column name="enterprise_membership" type="BIGINT"/>
+    </loadData>
+  </changeSet>
+
+
+</databaseChangeLog>
