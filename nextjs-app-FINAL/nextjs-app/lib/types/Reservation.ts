@@ -12,6 +12,8 @@ export interface ReservationDto {
   reference: string;
   amount?: number | null;
   pricePerNight?: number | null;
+  checkInDate?: string | null;
+  checkOutDate?: string | null;
   client?: ClientDto | null;
   property?: PropertyDto | null;
   reservationPlatform?: ReservationPlatformDto | null;
@@ -27,6 +29,8 @@ export function newReservationDto(): ReservationDto {
     reference: '',
     amount: null,
     pricePerNight: null,
+    checkInDate: null,
+    checkOutDate: null,
     client: null,
     property: null,
     reservationPlatform: null,

@@ -1,6 +1,7 @@
 package ma.zyn.app.service.facade.admin.reservation;
 
 import java.util.List;
+import java.time.LocalDate;
 import ma.zyn.app.bean.core.reservation.Reservation;
 import ma.zyn.app.dao.criteria.core.reservation.ReservationCriteria;
 import ma.zyn.app.zynerator.service.IService;
@@ -31,7 +32,7 @@ public interface ReservationAdminService {
 
 
 
-	Reservation create(Reservation t);
+    Reservation create(Reservation t);
 
     Reservation update(Reservation t);
 
@@ -60,5 +61,12 @@ public interface ReservationAdminService {
     boolean deleteById(Long id);
 
     List<List<Reservation>> getToBeSavedAndToBeDeleted(List<Reservation> oldList, List<Reservation> newList);
+
+    /**
+     * Vérifie qu'aucune réservation existante (hors celles au statut "annulé") ne chevauche
+     * la période [checkInDate, checkOutDate) sur la propriété donnée.
+     * excludeReservationId permet d'ignorer la réservation elle-même lors d'une modification.
+     */
+    boolean isAvailable(Long propertyId, LocalDate checkInDate, LocalDate checkOutDate, Long excludeReservationId);
 
 }

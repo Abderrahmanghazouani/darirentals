@@ -24,6 +24,7 @@ import ma.zyn.app.zynerator.bean.BaseEntity;
 import jakarta.persistence.*;
 import java.util.Objects;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "reservation")
@@ -40,6 +41,10 @@ public class Reservation  extends BaseEntity     {
     private BigDecimal amount = BigDecimal.ZERO;
 
     private BigDecimal pricePerNight = BigDecimal.ZERO;
+
+    private LocalDate checkInDate;
+
+    private LocalDate checkOutDate;
 
     private Client client ;
     private Property property ;
@@ -72,11 +77,11 @@ public class Reservation  extends BaseEntity     {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy =  GenerationType.SEQUENCE,generator="reservation_seq")
-      @Override
+    @Override
     public Long getId(){
         return this.id;
     }
-        @Override
+    @Override
     public void setId(Long id){
         this.id = id;
     }
@@ -97,6 +102,18 @@ public class Reservation  extends BaseEntity     {
     }
     public void setPricePerNight(BigDecimal pricePerNight){
         this.pricePerNight = pricePerNight;
+    }
+    public LocalDate getCheckInDate(){
+        return this.checkInDate;
+    }
+    public void setCheckInDate(LocalDate checkInDate){
+        this.checkInDate = checkInDate;
+    }
+    public LocalDate getCheckOutDate(){
+        return this.checkOutDate;
+    }
+    public void setCheckOutDate(LocalDate checkOutDate){
+        this.checkOutDate = checkOutDate;
     }
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client")

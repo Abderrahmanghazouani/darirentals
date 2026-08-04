@@ -7,6 +7,7 @@ import ma.zyn.app.dao.criteria.core.client.ClientCriteria;
 import ma.zyn.app.zynerator.criteria.BaseCriteria;
 
 import java.util.List;
+import java.time.LocalDate;
 
 public class ReservationCriteria extends  BaseCriteria  {
 
@@ -18,6 +19,12 @@ public class ReservationCriteria extends  BaseCriteria  {
     private String pricePerNight;
     private String pricePerNightMin;
     private String pricePerNightMax;
+    private LocalDate checkInDate;
+    private LocalDate checkInDateFrom;
+    private LocalDate checkInDateTo;
+    private LocalDate checkOutDate;
+    private LocalDate checkOutDateFrom;
+    private LocalDate checkOutDateTo;
 
     private ClientCriteria client ;
     private List<ClientCriteria> clients ;
@@ -47,7 +54,7 @@ public class ReservationCriteria extends  BaseCriteria  {
     }
     public void setAmount(String amount){
         this.amount = amount;
-    }   
+    }
     public String getAmountMin(){
         return this.amountMin;
     }
@@ -60,13 +67,13 @@ public class ReservationCriteria extends  BaseCriteria  {
     public void setAmountMax(String amountMax){
         this.amountMax = amountMax;
     }
-      
+
     public String getPricePerNight(){
         return this.pricePerNight;
     }
     public void setPricePerNight(String pricePerNight){
         this.pricePerNight = pricePerNight;
-    }   
+    }
     public String getPricePerNightMin(){
         return this.pricePerNightMin;
     }
@@ -79,7 +86,43 @@ public class ReservationCriteria extends  BaseCriteria  {
     public void setPricePerNightMax(String pricePerNightMax){
         this.pricePerNightMax = pricePerNightMax;
     }
-      
+
+    public LocalDate getCheckInDate(){
+        return this.checkInDate;
+    }
+    public void setCheckInDate(LocalDate checkInDate){
+        this.checkInDate = checkInDate;
+    }
+    public LocalDate getCheckInDateFrom(){
+        return this.checkInDateFrom;
+    }
+    public void setCheckInDateFrom(LocalDate checkInDateFrom){
+        this.checkInDateFrom = checkInDateFrom;
+    }
+    public LocalDate getCheckInDateTo(){
+        return this.checkInDateTo;
+    }
+    public void setCheckInDateTo(LocalDate checkInDateTo){
+        this.checkInDateTo = checkInDateTo;
+    }
+    public LocalDate getCheckOutDate(){
+        return this.checkOutDate;
+    }
+    public void setCheckOutDate(LocalDate checkOutDate){
+        this.checkOutDate = checkOutDate;
+    }
+    public LocalDate getCheckOutDateFrom(){
+        return this.checkOutDateFrom;
+    }
+    public void setCheckOutDateFrom(LocalDate checkOutDateFrom){
+        this.checkOutDateFrom = checkOutDateFrom;
+    }
+    public LocalDate getCheckOutDateTo(){
+        return this.checkOutDateTo;
+    }
+    public void setCheckOutDateTo(LocalDate checkOutDateTo){
+        this.checkOutDateTo = checkOutDateTo;
+    }
 
     public ClientCriteria getClient(){
         return this.client;

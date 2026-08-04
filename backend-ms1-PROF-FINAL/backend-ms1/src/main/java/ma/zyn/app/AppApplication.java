@@ -85,6 +85,10 @@ public class AppApplication {
     ObjectMapper objectMapper(){
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        // Sans ça, Jackson sérialise LocalDate/LocalDateTime en tableau [année,mois,jour,...]
+        // au lieu d'une chaîne ISO ("2026-08-10"), ce que le frontend (et tout client JSON standard)
+        // n'attend pas.
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         objectMapper.registerModule(new JavaTimeModule());
         return objectMapper;
     }

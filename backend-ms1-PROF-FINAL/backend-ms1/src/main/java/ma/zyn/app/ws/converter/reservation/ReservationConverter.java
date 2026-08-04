@@ -99,7 +99,7 @@ public class ReservationConverter {
         if (dto == null) {
             return null;
         } else {
-        Reservation item = new Reservation();
+            Reservation item = new Reservation();
             if(StringUtil.isNotEmpty(dto.getId()))
                 item.setId(dto.getId());
             if(StringUtil.isNotEmpty(dto.getReference()))
@@ -108,6 +108,10 @@ public class ReservationConverter {
                 item.setAmount(dto.getAmount());
             if(StringUtil.isNotEmpty(dto.getPricePerNight()))
                 item.setPricePerNight(dto.getPricePerNight());
+            if(dto.getCheckInDate() != null)
+                item.setCheckInDate(dto.getCheckInDate());
+            if(dto.getCheckOutDate() != null)
+                item.setCheckOutDate(dto.getCheckOutDate());
             if(dto.getClient() != null && dto.getClient().getId() != null){
                 item.setClient(new Client());
                 item.getClient().setId(dto.getClient().getId());
@@ -135,7 +139,7 @@ public class ReservationConverter {
                 item.setReservationRequests(reservationRequestConverter.toItem(dto.getReservationRequests()));
 
 
-        return item;
+            return item;
         }
     }
 
@@ -153,6 +157,10 @@ public class ReservationConverter {
                 dto.setAmount(item.getAmount());
             if(StringUtil.isNotEmpty(item.getPricePerNight()))
                 dto.setPricePerNight(item.getPricePerNight());
+            if(item.getCheckInDate() != null)
+                dto.setCheckInDate(item.getCheckInDate());
+            if(item.getCheckOutDate() != null)
+                dto.setCheckOutDate(item.getCheckOutDate());
             if(this.client && item.getClient()!=null) {
                 dto.setClient(clientConverter.toDto(item.getClient())) ;
 
@@ -169,30 +177,30 @@ public class ReservationConverter {
                 dto.setReservationStatus(reservationStatusConverter.toDto(item.getReservationStatus())) ;
 
             }
-        if(this.documents && ListUtil.isNotEmpty(item.getDocuments())){
-            documentConverter.init(true);
-            documentConverter.setReservation(false);
-            dto.setDocuments(documentConverter.toDto(item.getDocuments()));
-            documentConverter.setReservation(true);
+            if(this.documents && ListUtil.isNotEmpty(item.getDocuments())){
+                documentConverter.init(true);
+                documentConverter.setReservation(false);
+                dto.setDocuments(documentConverter.toDto(item.getDocuments()));
+                documentConverter.setReservation(true);
 
-        }
-        if(this.tasks && ListUtil.isNotEmpty(item.getTasks())){
-            taskConverter.init(true);
-            taskConverter.setReservation(false);
-            dto.setTasks(taskConverter.toDto(item.getTasks()));
-            taskConverter.setReservation(true);
+            }
+            if(this.tasks && ListUtil.isNotEmpty(item.getTasks())){
+                taskConverter.init(true);
+                taskConverter.setReservation(false);
+                dto.setTasks(taskConverter.toDto(item.getTasks()));
+                taskConverter.setReservation(true);
 
-        }
-        if(this.reservationRequests && ListUtil.isNotEmpty(item.getReservationRequests())){
-            reservationRequestConverter.init(true);
-            reservationRequestConverter.setReservation(false);
-            dto.setReservationRequests(reservationRequestConverter.toDto(item.getReservationRequests()));
-            reservationRequestConverter.setReservation(true);
+            }
+            if(this.reservationRequests && ListUtil.isNotEmpty(item.getReservationRequests())){
+                reservationRequestConverter.init(true);
+                reservationRequestConverter.setReservation(false);
+                dto.setReservationRequests(reservationRequestConverter.toDto(item.getReservationRequests()));
+                reservationRequestConverter.setReservation(true);
 
-        }
+            }
 
 
-        return dto;
+            return dto;
         }
     }
 
@@ -211,7 +219,7 @@ public class ReservationConverter {
         this.reservationPlatform = value;
         this.reservationStatus = value;
     }
-	
+
     public List<Reservation> toItem(List<ReservationDto> dtos) {
         List<Reservation> items = new ArrayList<>();
         if (dtos != null && !dtos.isEmpty()) {
@@ -235,7 +243,7 @@ public class ReservationConverter {
 
 
     public void copy(ReservationDto dto, Reservation t) {
-		BeanUtils.copyProperties(dto, t, AbstractConverterHelper.getNullPropertyNames(dto));
+        BeanUtils.copyProperties(dto, t, AbstractConverterHelper.getNullPropertyNames(dto));
         if(t.getClient() == null  && dto.getClient() != null){
             t.setClient(new Client());
         }else if (t.getClient() != null  && dto.getClient() != null){
@@ -261,13 +269,13 @@ public class ReservationConverter {
             t.setReservationStatus(new ReservationStatus());
         }
         if (dto.getClient() != null)
-        clientConverter.copy(dto.getClient(), t.getClient());
+            clientConverter.copy(dto.getClient(), t.getClient());
         if (dto.getProperty() != null)
-        propertyConverter.copy(dto.getProperty(), t.getProperty());
+            propertyConverter.copy(dto.getProperty(), t.getProperty());
         if (dto.getReservationPlatform() != null)
-        reservationPlatformConverter.copy(dto.getReservationPlatform(), t.getReservationPlatform());
+            reservationPlatformConverter.copy(dto.getReservationPlatform(), t.getReservationPlatform());
         if (dto.getReservationStatus() != null)
-        reservationStatusConverter.copy(dto.getReservationStatus(), t.getReservationStatus());
+            reservationStatusConverter.copy(dto.getReservationStatus(), t.getReservationStatus());
         if (dto.getDocuments() != null)
             t.setDocuments(documentConverter.copy(dto.getDocuments()));
         if (dto.getTasks() != null)
