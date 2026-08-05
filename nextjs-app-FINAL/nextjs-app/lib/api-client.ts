@@ -26,7 +26,7 @@ function resourceUrl(role: Role, resource: string) {
   return `${API_BASE}${role}/${resource}/`;
 }
 
-function authHeaders(): Record<string, string> {
+export function authHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem("token"); // déjà au format "Bearer xxx"
   return token ? { Authorization: token } : {};
@@ -38,7 +38,18 @@ async function handle<T>(res: Response): Promise<T> {
   }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`API error ${res.status}: ${text || res.statusText}`);
+    // Le backend renvoie parfois { "message": "..." } (ex: conflits métier) : on l'extrait
+    // pour afficher un message propre plutôt que le JSON brut.
+    let parsedMessage: string | null = null;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.message === "string") {
+        parsedMessage = parsed.message;
+      }
+    } catch {
+      // pas du JSON avec un champ "message" : on retombe sur le texte brut ci-dessous
+    }
+    throw new Error(parsedMessage ?? `API error ${res.status}: ${text || res.statusText}`);
   }
   // DELETE endpoints sometimes return no body
   const text = await res.text();

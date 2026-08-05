@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 
 import ma.zyn.app.ws.dto.task.TaskDto;
@@ -26,6 +27,8 @@ public class ReservationDto  extends AuditBaseDto {
     private String reference  ;
     private BigDecimal amount  ;
     private BigDecimal pricePerNight  ;
+    private LocalDate checkInDate  ;
+    private LocalDate checkOutDate  ;
 
     private ClientDto client ;
     private PropertyDto property ;
@@ -62,6 +65,20 @@ public class ReservationDto  extends AuditBaseDto {
     }
     public void setPricePerNight(BigDecimal pricePerNight){
         this.pricePerNight = pricePerNight;
+    }
+
+    public LocalDate getCheckInDate(){
+        return this.checkInDate;
+    }
+    public void setCheckInDate(LocalDate checkInDate){
+        this.checkInDate = checkInDate;
+    }
+
+    public LocalDate getCheckOutDate(){
+        return this.checkOutDate;
+    }
+    public void setCheckOutDate(LocalDate checkOutDate){
+        this.checkOutDate = checkOutDate;
     }
 
 

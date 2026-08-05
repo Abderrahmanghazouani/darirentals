@@ -529,6 +529,8 @@ export const entityRegistry: Record<string, EntityDescriptor> = {
       { name: "reference", kind: "text", nullable: false },
       { name: "amount", kind: "number", nullable: true },
       { name: "pricePerNight", kind: "number", nullable: true },
+      { name: "checkInDate", kind: "date", nullable: true },
+      { name: "checkOutDate", kind: "date", nullable: true },
     ],
     relations: [
       { name: "client", relatedEntity: "client" },

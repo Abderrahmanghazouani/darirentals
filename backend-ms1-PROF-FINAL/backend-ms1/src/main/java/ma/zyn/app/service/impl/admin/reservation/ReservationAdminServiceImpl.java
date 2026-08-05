@@ -3,6 +3,8 @@ package ma.zyn.app.service.impl.admin.reservation;
 
 
 import ma.zyn.app.zynerator.exception.EntityNotFoundException;
+import ma.zyn.app.zynerator.exception.ReservationOverlapException;
+import java.time.LocalDate;
 import ma.zyn.app.bean.core.reservation.Reservation;
 import ma.zyn.app.dao.criteria.core.reservation.ReservationCriteria;
 import ma.zyn.app.dao.facade.core.reservation.ReservationDao;
@@ -50,6 +52,7 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{Reservation.class.getSimpleName(), t.getId().toString()});
         } else {
+            checkNoOverlap(t, t.getId());
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
@@ -159,7 +162,7 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
         return dao.countByReservationStatusCode(code);
     }
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
-	public boolean deleteById(Long id) {
+    public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
             deleteAssociatedLists(id);
@@ -179,17 +182,17 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public List<Reservation> delete(List<Reservation> list) {
-		List<Reservation> result = new ArrayList();
+        List<Reservation> result = new ArrayList();
         if (list != null) {
             for (Reservation t : list) {
                 if(dao.findById(t.getId()).isEmpty()){
-					result.add(t);
-				}else{
+                    result.add(t);
+                }else{
                     dao.deleteById(t.getId());
                 }
             }
         }
-		return result;
+        return result;
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
@@ -197,6 +200,7 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
         Reservation loaded = findByReferenceEntity(t);
         Reservation saved;
         if (loaded == null) {
+            checkNoOverlap(t, null);
             saved = dao.save(t);
             if (t.getDocuments() != null) {
                 t.getDocuments().forEach(element-> {
@@ -232,7 +236,7 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
         return result;
     }
 
-	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public List<Reservation> update(List<Reservation> ts, boolean createIfNotExist) {
         List<Reservation> result = new ArrayList<>();
         if (ts != null) {
@@ -261,19 +265,19 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
     }
 
     public void updateWithAssociatedLists(Reservation reservation){
-    if(reservation !=null && reservation.getId() != null){
-        List<List<Document>> resultDocuments= documentService.getToBeSavedAndToBeDeleted(documentService.findByReservationId(reservation.getId()),reservation.getDocuments());
+        if(reservation !=null && reservation.getId() != null){
+            List<List<Document>> resultDocuments= documentService.getToBeSavedAndToBeDeleted(documentService.findByReservationId(reservation.getId()),reservation.getDocuments());
             documentService.delete(resultDocuments.get(1));
-        emptyIfNull(resultDocuments.get(0)).forEach(e -> e.setReservation(reservation));
-        documentService.update(resultDocuments.get(0),true);
-        List<List<Task>> resultTasks= taskService.getToBeSavedAndToBeDeleted(taskService.findByReservationId(reservation.getId()),reservation.getTasks());
+            emptyIfNull(resultDocuments.get(0)).forEach(e -> e.setReservation(reservation));
+            documentService.update(resultDocuments.get(0),true);
+            List<List<Task>> resultTasks= taskService.getToBeSavedAndToBeDeleted(taskService.findByReservationId(reservation.getId()),reservation.getTasks());
             taskService.delete(resultTasks.get(1));
-        emptyIfNull(resultTasks.get(0)).forEach(e -> e.setReservation(reservation));
-        taskService.update(resultTasks.get(0),true);
-        List<List<ReservationRequest>> resultReservationRequests= reservationRequestService.getToBeSavedAndToBeDeleted(reservationRequestService.findByReservationId(reservation.getId()),reservation.getReservationRequests());
+            emptyIfNull(resultTasks.get(0)).forEach(e -> e.setReservation(reservation));
+            taskService.update(resultTasks.get(0),true);
+            List<List<ReservationRequest>> resultReservationRequests= reservationRequestService.getToBeSavedAndToBeDeleted(reservationRequestService.findByReservationId(reservation.getId()),reservation.getReservationRequests());
             reservationRequestService.delete(resultReservationRequests.get(1));
-        emptyIfNull(resultReservationRequests.get(0)).forEach(e -> e.setReservation(reservation));
-        reservationRequestService.update(resultReservationRequests.get(0),true);
+            emptyIfNull(resultReservationRequests.get(0)).forEach(e -> e.setReservation(reservation));
+            reservationRequestService.update(resultReservationRequests.get(0),true);
         }
     }
 
@@ -303,6 +307,52 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
     }
 
     @Override
+    public boolean isAvailable(Long propertyId, LocalDate checkInDate, LocalDate checkOutDate, Long excludeReservationId) {
+        if (propertyId == null || checkInDate == null || checkOutDate == null) {
+            return true;
+        }
+        return dao.findByPropertyId(propertyId).stream()
+                .filter(r -> excludeReservationId == null || !excludeReservationId.equals(r.getId()))
+                .filter(r -> !looksCancelled(r))
+                .filter(r -> r.getCheckInDate() != null && r.getCheckOutDate() != null)
+                .noneMatch(r -> datesOverlap(checkInDate, checkOutDate, r.getCheckInDate(), r.getCheckOutDate()));
+    }
+
+    private void checkNoOverlap(Reservation t, Long excludeReservationId) {
+        if (t.getProperty() == null || t.getProperty().getId() == null
+                || t.getCheckInDate() == null || t.getCheckOutDate() == null) {
+            return;
+        }
+        if (!t.getCheckInDate().isBefore(t.getCheckOutDate())) {
+            throw new ReservationOverlapException("La date de check-out doit être postérieure à la date de check-in.");
+        }
+        boolean available = isAvailable(t.getProperty().getId(), t.getCheckInDate(), t.getCheckOutDate(), excludeReservationId);
+        if (!available) {
+            throw new ReservationOverlapException("Cette propriété est déjà réservée sur une partie de cette période.");
+        }
+    }
+
+    // Deux séjours [aStart,aEnd) et [bStart,bEnd) se chevauchent si chacun commence avant que l'autre
+    // ne finisse. Le jour de check-out n'est pas compté comme occupé (un check-in le jour du check-out
+    // d'une autre réservation est autorisé).
+    private boolean datesOverlap(LocalDate aStart, LocalDate aEnd, LocalDate bStart, LocalDate bEnd) {
+        return aStart.isBefore(bEnd) && bStart.isBefore(aEnd);
+    }
+
+    // Le générateur ne fige pas les codes de statut (créés librement via le CRUD ReservationStatus),
+    // donc on ignore par heuristique les réservations dont le statut ressemble à "annulé" plutôt que
+    // de dépendre d'un code fixe.
+    private boolean looksCancelled(Reservation r) {
+        if (r.getReservationStatus() == null) {
+            return false;
+        }
+        String probe = ((r.getReservationStatus().getCode() != null ? r.getReservationStatus().getCode() : "")
+                + " " + (r.getReservationStatus().getLabel() != null ? r.getReservationStatus().getLabel() : ""))
+                .toLowerCase();
+        return probe.contains("cancel") || probe.contains("annul");
+    }
+
+    @Override
     public List<List<Reservation>> getToBeSavedAndToBeDeleted(List<Reservation> oldList, List<Reservation> newList) {
         List<List<Reservation>> result = new ArrayList<>();
         List<Reservation> resultDelete = new ArrayList<>();
@@ -312,7 +362,7 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
         } else if (isEmpty(newList) && isNotEmpty(oldList)) {
             resultDelete.addAll(oldList);
         } else if (isNotEmpty(newList) && isNotEmpty(oldList)) {
-			extractToBeSaveOrDelete(oldList, newList, resultUpdateOrSave, resultDelete);
+            extractToBeSaveOrDelete(oldList, newList, resultUpdateOrSave, resultDelete);
         }
         result.add(resultUpdateOrSave);
         result.add(resultDelete);
@@ -320,23 +370,23 @@ public class ReservationAdminServiceImpl implements ReservationAdminService {
     }
 
     private void extractToBeSaveOrDelete(List<Reservation> oldList, List<Reservation> newList, List<Reservation> resultUpdateOrSave, List<Reservation> resultDelete) {
-		for (int i = 0; i < oldList.size(); i++) {
-                Reservation myOld = oldList.get(i);
-                Reservation t = newList.stream().filter(e -> myOld.equals(e)).findFirst().orElse(null);
-                if (t != null) {
-                    resultUpdateOrSave.add(t); // update
-                } else {
-                    resultDelete.add(myOld);
-                }
+        for (int i = 0; i < oldList.size(); i++) {
+            Reservation myOld = oldList.get(i);
+            Reservation t = newList.stream().filter(e -> myOld.equals(e)).findFirst().orElse(null);
+            if (t != null) {
+                resultUpdateOrSave.add(t); // update
+            } else {
+                resultDelete.add(myOld);
             }
-            for (int i = 0; i < newList.size(); i++) {
-                Reservation myNew = newList.get(i);
-                Reservation t = oldList.stream().filter(e -> myNew.equals(e)).findFirst().orElse(null);
-                if (t == null) {
-                    resultUpdateOrSave.add(myNew); // create
-                }
+        }
+        for (int i = 0; i < newList.size(); i++) {
+            Reservation myNew = newList.get(i);
+            Reservation t = oldList.stream().filter(e -> myNew.equals(e)).findFirst().orElse(null);
+            if (t == null) {
+                resultUpdateOrSave.add(myNew); // create
             }
-	}
+        }
+    }
 
 
 

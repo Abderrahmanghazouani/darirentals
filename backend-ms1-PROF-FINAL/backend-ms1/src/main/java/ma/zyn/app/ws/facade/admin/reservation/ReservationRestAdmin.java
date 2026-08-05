@@ -15,10 +15,14 @@ import ma.zyn.app.bean.core.reservation.Reservation;
 import ma.zyn.app.dao.criteria.core.reservation.ReservationCriteria;
 import ma.zyn.app.service.facade.admin.reservation.ReservationAdminService;
 import ma.zyn.app.ws.converter.reservation.ReservationConverter;
+import ma.zyn.app.ws.dto.reservation.AvailabilityRequestDto;
 import ma.zyn.app.ws.dto.reservation.ReservationDto;
 import ma.zyn.app.zynerator.controller.AbstractController;
 import ma.zyn.app.zynerator.dto.AuditEntityDto;
+import ma.zyn.app.zynerator.exception.ReservationOverlapException;
 import ma.zyn.app.zynerator.util.PaginatedList;
+import java.util.Map;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
 
 import org.springframework.core.io.InputStreamResource;
@@ -48,7 +52,7 @@ public class ReservationRestAdmin {
         List<Reservation> list = service.findAll();
         HttpStatus status = HttpStatus.NO_CONTENT;
         converter.initList(false);
-            converter.initObject(true);
+        converter.initObject(true);
         List<ReservationDto> dtos  = converter.toDto(list);
         if (dtos != null && !dtos.isEmpty())
             status = HttpStatus.OK;
@@ -86,7 +90,7 @@ public class ReservationRestAdmin {
     @Operation(summary = "Finds a reservation by reference")
     @GetMapping("reference/{reference}")
     public ResponseEntity<ReservationDto> findByReference(@PathVariable String reference) {
-	    Reservation t = service.findByReferenceEntity(new Reservation(reference));
+        Reservation t = service.findByReferenceEntity(new Reservation(reference));
         if (t != null) {
             converter.init(true);
             ReservationDto dto = converter.toDto(t);
@@ -207,8 +211,25 @@ public class ReservationRestAdmin {
         int count = service.getDataSize(criteria);
         return new ResponseEntity<Integer>(count, HttpStatus.OK);
     }
-	
-	public List<ReservationDto> findDtos(List<Reservation> list){
+
+    @Operation(summary = "Checks whether a property is free for the given date range")
+    @PostMapping("check-availability")
+    public ResponseEntity<Map<String, Boolean>> checkAvailability(@RequestBody AvailabilityRequestDto request) {
+        boolean available = service.isAvailable(
+                request.getPropertyId(),
+                request.getCheckInDate(),
+                request.getCheckOutDate(),
+                request.getExcludeReservationId()
+        );
+        return new ResponseEntity<>(Map.of("available", available), HttpStatus.OK);
+    }
+
+    @ExceptionHandler(ReservationOverlapException.class)
+    public ResponseEntity<Map<String, String>> handleOverlap(ReservationOverlapException e) {
+        return new ResponseEntity<>(Map.of("message", e.getMessage()), HttpStatus.CONFLICT);
+    }
+
+    public List<ReservationDto> findDtos(List<Reservation> list){
         converter.initList(false);
         converter.initObject(true);
         List<ReservationDto> dtos = converter.toDto(list);
@@ -224,7 +245,7 @@ public class ReservationRestAdmin {
 
 
 
-   public ReservationRestAdmin(ReservationAdminService service, ReservationConverter converter){
+    public ReservationRestAdmin(ReservationAdminService service, ReservationConverter converter){
         this.service = service;
         this.converter = converter;
     }
