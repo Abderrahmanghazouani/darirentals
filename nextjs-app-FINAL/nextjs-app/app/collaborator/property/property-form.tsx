@@ -23,6 +23,7 @@ import { PropertyStatusDto } from "@/lib/types/PropertyStatus";
 import { EnterpriseDto } from "@/lib/types/Enterprise";
 import { getEntityClients } from "@/lib/api";
 import { Role } from "@/lib/api-client";
+import { LocationMap } from "@/components/location-map-dynamic";
 
 const propertySchema = z.object({
   name: z.string().min(1, "Requis"),
@@ -80,6 +81,16 @@ export function PropertyForm({ initial, saving, role, onSubmit, onCancel }: Prop
       longitude: base.longitude ?? undefined,
     },
   });
+
+  const watchedLat = form.watch("latitude");
+  const watchedLng = form.watch("longitude");
+  const mapLat = watchedLat != null && !Number.isNaN(watchedLat) ? Number(watchedLat) : null;
+  const mapLng = watchedLng != null && !Number.isNaN(watchedLng) ? Number(watchedLng) : null;
+
+  function handleMapPick(lat: number, lng: number) {
+    form.setValue("latitude", Number(lat.toFixed(6)), { shouldValidate: true });
+    form.setValue("longitude", Number(lng.toFixed(6)), { shouldValidate: true });
+  }
 
   function handleSubmit(values: PropertyFormValues) {
     onSubmit({
@@ -220,6 +231,11 @@ export function PropertyForm({ initial, saving, role, onSubmit, onCancel }: Prop
           <Label htmlFor="longitude">Longitude</Label>
           <Input id="longitude" type="number" step="0.000001" {...form.register("longitude")} />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Position sur la carte (clique pour placer / déplacer le point)</Label>
+        <LocationMap latitude={mapLat} longitude={mapLng} onPick={handleMapPick} height={240} />
       </div>
 
       <DialogFooter>
