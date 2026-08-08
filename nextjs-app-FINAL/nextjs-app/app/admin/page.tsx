@@ -5,7 +5,16 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, CalendarCheck, Users, Wallet, LogOut, Grid3x3 } from "lucide-react";
+import {
+  Building2,
+  CalendarCheck,
+  CalendarDays,
+  Grid3x3,
+  LogOut,
+  Receipt,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { useRequireRole } from "@/lib/use-require-role";
 import { getEntityClients } from "@/lib/api";
 import { entityRegistry, entityKeys } from "@/lib/entity-registry";
@@ -21,6 +30,13 @@ const ROLE = "admin" as const;
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
+
+const tools = [
+  { href: "/admin/property", label: "Propriétés", icon: Building2 },
+  { href: "/admin/reservations", label: "Réservations (calendrier)", icon: CalendarDays },
+  { href: "/admin/charges", label: "Charges", icon: Receipt },
+  { href: "/admin/payments", label: "Paiements aux prestataires", icon: Wallet },
+];
 
 export default function AdminHome() {
   const ready = useRequireRole(ROLE);
@@ -146,6 +162,26 @@ export default function AdminHome() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Outils</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {tools.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-2 rounded-md border-2 border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium hover:bg-primary/10 transition-colors"
+              >
+                <Icon className="size-4" />
+                {label}
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
