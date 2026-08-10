@@ -2,6 +2,7 @@ package  ma.zyn.app.ws.dto.task;
 
 import ma.zyn.app.zynerator.dto.AuditBaseDto;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.time.LocalDate;
 
 
 
@@ -16,6 +17,7 @@ public class TaskDto  extends AuditBaseDto {
 
     private String title  ;
     private String description  ;
+    private LocalDate dueDate  ;
 
     private PropertyDto property ;
     private ReservationDto reservation ;
@@ -45,6 +47,13 @@ public class TaskDto  extends AuditBaseDto {
     }
     public void setDescription(String description){
         this.description = description;
+    }
+
+    public LocalDate getDueDate(){
+        return this.dueDate;
+    }
+    public void setDueDate(LocalDate dueDate){
+        this.dueDate = dueDate;
     }
 
 
@@ -97,10 +106,5 @@ public class TaskDto  extends AuditBaseDto {
     public void setTaskStatus(TaskStatusDto taskStatus){
         this.taskStatus = taskStatus;
     }
-
-
-
-
-
 
 }

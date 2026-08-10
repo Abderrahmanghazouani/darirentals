@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import ma.zyn.app.zynerator.bean.BaseEntity;
 import jakarta.persistence.*;
 import java.util.Objects;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "task")
@@ -29,6 +30,8 @@ public class Task  extends BaseEntity     {
     private String title;
 
     private String description;
+
+    private LocalDate dueDate;
 
     private Property property ;
     private Reservation reservation ;
@@ -61,11 +64,11 @@ public class Task  extends BaseEntity     {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy =  GenerationType.SEQUENCE,generator="task_seq")
-      @Override
+    @Override
     public Long getId(){
         return this.id;
     }
-        @Override
+    @Override
     public void setId(Long id){
         this.id = id;
     }
@@ -75,12 +78,18 @@ public class Task  extends BaseEntity     {
     public void setTitle(String title){
         this.title = title;
     }
-      @Column(columnDefinition="TEXT")
+    @Column(columnDefinition="TEXT")
     public String getDescription(){
         return this.description;
     }
     public void setDescription(String description){
         this.description = description;
+    }
+    public LocalDate getDueDate(){
+        return this.dueDate;
+    }
+    public void setDueDate(LocalDate dueDate){
+        this.dueDate = dueDate;
     }
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "property")
@@ -153,4 +162,3 @@ public class Task  extends BaseEntity     {
     }
 
 }
-

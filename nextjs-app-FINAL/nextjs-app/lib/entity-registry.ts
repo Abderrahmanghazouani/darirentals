@@ -208,6 +208,7 @@ export const entityRegistry: Record<string, EntityDescriptor> = {
     scalars: [
       { name: "title", kind: "text", nullable: false },
       { name: "description", kind: "text", nullable: false },
+      { name: "dueDate", kind: "date", nullable: true },
     ],
     relations: [
       { name: "property", relatedEntity: "property" },

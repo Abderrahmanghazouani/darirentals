@@ -11,6 +11,8 @@ export interface TaskDto {
   id: number | null;
   title: string;
   description: string;
+  dueDate?: string | null;          // ← à ajouter
+
   property?: PropertyDto | null;
   reservation?: ReservationDto | null;
   serviceProvider?: ServiceProviderDto | null;
@@ -25,6 +27,7 @@ export function newTaskDto(): TaskDto {
     id: null,
     title: '',
     description: '',
+    dueDate: null,                  
     property: null,
     reservation: null,
     serviceProvider: null,

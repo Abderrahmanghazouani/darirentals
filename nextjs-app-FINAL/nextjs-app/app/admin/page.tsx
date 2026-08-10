@@ -14,6 +14,7 @@ import {
   Receipt,
   Users,
   Wallet,
+  ListTodo,
 } from "lucide-react";
 import { useRequireRole } from "@/lib/use-require-role";
 import { getEntityClients } from "@/lib/api";
@@ -36,6 +37,7 @@ const tools = [
   { href: "/admin/reservations", label: "Réservations (calendrier)", icon: CalendarDays },
   { href: "/admin/charges", label: "Charges", icon: Receipt },
   { href: "/admin/payments", label: "Paiements aux prestataires", icon: Wallet },
+  { href: "/admin/tasks", label: "Tâches", icon: ListTodo },   // ← à ajouter
 ];
 
 export default function AdminHome() {

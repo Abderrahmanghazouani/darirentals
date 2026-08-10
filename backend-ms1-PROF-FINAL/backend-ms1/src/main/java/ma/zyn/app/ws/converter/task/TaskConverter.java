@@ -68,13 +68,15 @@ public class TaskConverter {
         if (dto == null) {
             return null;
         } else {
-        Task item = new Task();
+            Task item = new Task();
             if(StringUtil.isNotEmpty(dto.getId()))
                 item.setId(dto.getId());
             if(StringUtil.isNotEmpty(dto.getTitle()))
                 item.setTitle(dto.getTitle());
             if(StringUtil.isNotEmpty(dto.getDescription()))
                 item.setDescription(dto.getDescription());
+            if(dto.getDueDate() != null)
+                item.setDueDate(dto.getDueDate());
             if(dto.getProperty() != null && dto.getProperty().getId() != null){
                 item.setProperty(new Property());
                 item.getProperty().setId(dto.getProperty().getId());
@@ -111,7 +113,7 @@ public class TaskConverter {
 
 
 
-        return item;
+            return item;
         }
     }
 
@@ -127,6 +129,8 @@ public class TaskConverter {
                 dto.setTitle(item.getTitle());
             if(StringUtil.isNotEmpty(item.getDescription()))
                 dto.setDescription(item.getDescription());
+            if(item.getDueDate() != null)
+                dto.setDueDate(item.getDueDate());
             if(this.property && item.getProperty()!=null) {
                 dto.setProperty(propertyConverter.toDto(item.getProperty())) ;
 
@@ -157,7 +161,7 @@ public class TaskConverter {
             }
 
 
-        return dto;
+            return dto;
         }
     }
 
@@ -174,7 +178,7 @@ public class TaskConverter {
         this.taskPriority = value;
         this.taskStatus = value;
     }
-	
+
     public List<Task> toItem(List<TaskDto> dtos) {
         List<Task> items = new ArrayList<>();
         if (dtos != null && !dtos.isEmpty()) {
@@ -198,7 +202,7 @@ public class TaskConverter {
 
 
     public void copy(TaskDto dto, Task t) {
-		BeanUtils.copyProperties(dto, t, AbstractConverterHelper.getNullPropertyNames(dto));
+        BeanUtils.copyProperties(dto, t, AbstractConverterHelper.getNullPropertyNames(dto));
         if(t.getProperty() == null  && dto.getProperty() != null){
             t.setProperty(new Property());
         }else if (t.getProperty() != null  && dto.getProperty() != null){
@@ -242,19 +246,19 @@ public class TaskConverter {
             t.setTaskStatus(new TaskStatus());
         }
         if (dto.getProperty() != null)
-        propertyConverter.copy(dto.getProperty(), t.getProperty());
+            propertyConverter.copy(dto.getProperty(), t.getProperty());
         if (dto.getReservation() != null)
-        reservationConverter.copy(dto.getReservation(), t.getReservation());
+            reservationConverter.copy(dto.getReservation(), t.getReservation());
         if (dto.getServiceProvider() != null)
-        serviceProviderConverter.copy(dto.getServiceProvider(), t.getServiceProvider());
+            serviceProviderConverter.copy(dto.getServiceProvider(), t.getServiceProvider());
         if (dto.getAssignedTo() != null)
-        collaboratorConverter.copy(dto.getAssignedTo(), t.getAssignedTo());
+            collaboratorConverter.copy(dto.getAssignedTo(), t.getAssignedTo());
         if (dto.getTaskType() != null)
-        taskTypeConverter.copy(dto.getTaskType(), t.getTaskType());
+            taskTypeConverter.copy(dto.getTaskType(), t.getTaskType());
         if (dto.getTaskPriority() != null)
-        taskPriorityConverter.copy(dto.getTaskPriority(), t.getTaskPriority());
+            taskPriorityConverter.copy(dto.getTaskPriority(), t.getTaskPriority());
         if (dto.getTaskStatus() != null)
-        taskStatusConverter.copy(dto.getTaskStatus(), t.getTaskStatus());
+            taskStatusConverter.copy(dto.getTaskStatus(), t.getTaskStatus());
     }
 
     public List<Task> copy(List<TaskDto> dtos) {
