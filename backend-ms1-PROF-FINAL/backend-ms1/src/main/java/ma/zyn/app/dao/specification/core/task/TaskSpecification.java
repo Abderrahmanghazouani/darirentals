@@ -4,6 +4,8 @@ import ma.zyn.app.dao.criteria.core.task.TaskCriteria;
 import ma.zyn.app.bean.core.task.Task;
 import ma.zyn.app.zynerator.specification.AbstractSpecification;
 
+import java.time.LocalDate;
+
 
 public class TaskSpecification extends  AbstractSpecification<TaskCriteria, Task>  {
 
@@ -11,6 +13,7 @@ public class TaskSpecification extends  AbstractSpecification<TaskCriteria, Task
     public void constructPredicates() {
         addPredicateId("id", criteria);
         addPredicate("title", criteria.getTitle(),criteria.getTitleLike());
+        addPredicateLocalDate("dueDate", criteria.getDueDate(), criteria.getDueDateFrom(), criteria.getDueDateTo());
         addPredicateFk("property","id", criteria.getProperty()==null?null:criteria.getProperty().getId());
         addPredicateFk("property","id", criteria.getPropertys());
         addPredicateFk("reservation","id", criteria.getReservation()==null?null:criteria.getReservation().getId());
@@ -38,6 +41,20 @@ public class TaskSpecification extends  AbstractSpecification<TaskCriteria, Task
 
     public TaskSpecification(TaskCriteria criteria, boolean distinct) {
         super(criteria, distinct);
+    }
+
+    // Le framework (SpecificationHelper) ne fournit d'overload addPredicate que pour LocalDateTime,
+    // pas pour LocalDate : implémenté ici localement (même pattern que ReservationSpecification).
+    private void addPredicateLocalDate(String name, LocalDate value, LocalDate valueFrom, LocalDate valueTo) {
+        if (value != null) {
+            predicates.add(builder.equal(root.<LocalDate>get(name), value));
+        }
+        if (valueFrom != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get(name), valueFrom));
+        }
+        if (valueTo != null) {
+            predicates.add(builder.lessThanOrEqualTo(root.get(name), valueTo));
+        }
     }
 
 }

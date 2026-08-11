@@ -9,6 +9,7 @@ import ma.zyn.app.dao.criteria.core.property.PropertyCriteria;
 import ma.zyn.app.zynerator.criteria.BaseCriteria;
 
 import java.util.List;
+import java.time.LocalDate;
 
 public class TaskCriteria extends  BaseCriteria  {
 
@@ -16,6 +17,9 @@ public class TaskCriteria extends  BaseCriteria  {
     private String titleLike;
     private String description;
     private String descriptionLike;
+    private LocalDate dueDate;
+    private LocalDate dueDateFrom;
+    private LocalDate dueDateTo;
 
     private PropertyCriteria property ;
     private List<PropertyCriteria> propertys ;
@@ -57,6 +61,25 @@ public class TaskCriteria extends  BaseCriteria  {
     }
     public void setDescriptionLike(String descriptionLike){
         this.descriptionLike = descriptionLike;
+    }
+
+    public LocalDate getDueDate(){
+        return this.dueDate;
+    }
+    public void setDueDate(LocalDate dueDate){
+        this.dueDate = dueDate;
+    }
+    public LocalDate getDueDateFrom(){
+        return this.dueDateFrom;
+    }
+    public void setDueDateFrom(LocalDate dueDateFrom){
+        this.dueDateFrom = dueDateFrom;
+    }
+    public LocalDate getDueDateTo(){
+        return this.dueDateTo;
+    }
+    public void setDueDateTo(LocalDate dueDateTo){
+        this.dueDateTo = dueDateTo;
     }
 
 
