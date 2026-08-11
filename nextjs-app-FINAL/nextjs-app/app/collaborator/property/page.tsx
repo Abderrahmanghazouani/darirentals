@@ -34,6 +34,8 @@ import { CityDto } from "@/lib/types/City";
 import { PropertyTypeDto } from "@/lib/types/PropertyType";
 import { PropertyStatusDto } from "@/lib/types/PropertyStatus";
 import { PropertyForm } from "./property-form";
+import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
+import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
 const ROLE = "collaborator" as const;
 
@@ -55,6 +57,7 @@ function PositionLink(props: { lat: number; lng: number }) {
 
 export default function PropertyPage() {
   const ready = useRequireRole(ROLE);
+    const enterpriseId = useSelectedEnterpriseId();
 
   const client = useMemo(() => getEntityClients(ROLE).property, []);
   const crud = useEntityCrud<PropertyDto>(client);
@@ -74,14 +77,14 @@ export default function PropertyPage() {
     clients.propertyStatus.findAll().then((data) => setStatuses(data ?? [])).catch(() => setStatuses([]));
   }, []);
 
-  const filteredItems = useMemo(() => {
-    return crud.items.filter((p) => {
+const filteredItems = useMemo(() => {
+    return filterByEnterprise(crud.items, enterpriseId).filter((p) => {
       if (filterCity !== "all" && String(p.city?.id) !== filterCity) return false;
       if (filterType !== "all" && String(p.propertyType?.id) !== filterType) return false;
       if (filterStatus !== "all" && String(p.propertyStatus?.id) !== filterStatus) return false;
       return true;
     });
-  }, [crud.items, filterCity, filterType, filterStatus]);
+  }, [crud.items, filterCity, filterType, filterStatus, enterpriseId]);
 
   const columns: EntityColumn<PropertyDto>[] = [
     { header: "Nom", render: (p) => p.name },

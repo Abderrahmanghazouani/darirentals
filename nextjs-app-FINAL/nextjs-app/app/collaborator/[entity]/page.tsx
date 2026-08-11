@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
+import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
+import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
 import {
   AlertDialog,
@@ -32,6 +34,7 @@ export default function CollaboratorEntityPage({
   params: Promise<{ entity: string }>;
 }) {
   const ready = useRequireRole("collaborator");
+  const enterpriseId = useSelectedEnterpriseId();
   const { entity } = use(params);
   const descriptor = entityRegistry[entity];
   if (!descriptor) notFound();
@@ -39,6 +42,10 @@ export default function CollaboratorEntityPage({
   const client = useMemo(() => getGenericClient(entity, "collaborator"), [entity]);
   const crud = useEntityCrud<GenericDto>(client);
   const columns = useMemo(() => buildAutoColumns(descriptor), [descriptor]);
+  const scopedItems = useMemo(
+    () => filterByEnterprise(crud.items, enterpriseId),
+    [crud.items, enterpriseId]
+  );
 
   if (!ready) return null;
 
@@ -55,7 +62,7 @@ export default function CollaboratorEntityPage({
           {crud.error && <p className="text-destructive text-sm mb-4">{crud.error}</p>}
 
           <EntityTable<GenericDto>
-            items={crud.items}
+            items={scopedItems}
             loading={crud.loading}
             onEdit={crud.openEdit}
             onDelete={crud.setDeleteTarget}

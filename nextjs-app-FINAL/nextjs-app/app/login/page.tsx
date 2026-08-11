@@ -20,8 +20,12 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await login(username, password);
-      router.push(`/${result.role}`);
+   const result = await login(username, password);
+      if (result.role === "collaborator") {
+        router.push("/select-enterprise");
+      } else {
+        router.push(`/${result.role}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Échec de la connexion");
     } finally {
