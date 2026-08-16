@@ -26,6 +26,11 @@ import { ReservationRequestDto } from "@/lib/types/ReservationRequest";
 
 const ROLE = "admin" as const;
 
+const STATUS_IDS: Record<"Confirmee" | "Rejetee", number> = {
+  Confirmee: 1,
+  Rejetee: 2,
+};
+
 export default function ReservationRequestsPage() {
   const ready = useRequireRole(ROLE);
 
@@ -59,7 +64,7 @@ export default function ReservationRequestsPage() {
     try {
       await client.update({
         ...item,
-        reservationRequestStatus: { ...item.reservationRequestStatus, code } as ReservationRequestDto["reservationRequestStatus"],
+        reservationRequestStatus: { id: STATUS_IDS[code] } as ReservationRequestDto["reservationRequestStatus"],
       });
       await crud.refresh();
     } finally {
