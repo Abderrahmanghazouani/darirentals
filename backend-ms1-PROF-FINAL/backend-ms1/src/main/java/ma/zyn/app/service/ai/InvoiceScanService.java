@@ -36,11 +36,11 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Analyse une facture (image) via l'API OpenAI (vision) pour pré-remplir un formulaire de charge.
+ * Analyse une facture (image) via l'API Gemini (vision) pour pré-remplir un formulaire de charge.
  * Ne crée JAMAIS de Charge ni de Document : ça reste à la charge du frontend, une fois que
  * l'utilisateur a vérifié/corrigé les valeurs proposées et validé lui-même.
  *
- * La clé API (openai.api.key) reste strictement côté serveur — jamais renvoyée au frontend.
+ * La clé API (gemini.api.key) reste strictement côté serveur — jamais renvoyée au frontend.
  */
 @Service
 public class InvoiceScanService {
@@ -49,11 +49,11 @@ public class InvoiceScanService {
             "image/png", "image/jpeg", "image/jpg", "image/webp"
     );
 
-    @Value("${openai.api.key:}")
-    private String openAiApiKey;
+    @Value("${gemini.api.key:}")
+    private String geminiApiKey;
 
-    @Value("${openai.model:gpt-4o-mini}")
-    private String openAiModel;
+    @Value("${gemini.model:gemini-2.0-flash}")
+    private String geminiModel;
 
     @Value("${invoice.upload.dir:uploads/invoices}")
     private String uploadDir;
@@ -84,7 +84,7 @@ public class InvoiceScanService {
                             + "Pour un PDF ou si le scan échoue, utilise le formulaire manuel."
             );
         }
-        if (openAiApiKey == null || openAiApiKey.isBlank()) {
+        if (geminiApiKey == null || geminiApiKey.isBlank()) {
             throw new IllegalStateException(
                     "Le scan par IA n'est pas encore configuré (clé API manquante côté serveur)."
             );
@@ -95,10 +95,10 @@ public class InvoiceScanService {
         // 1. Sauvegarde locale du fichier original (conservé comme preuve, indépendamment du résultat IA).
         String storedRelativePath = storeFile(file);
 
-        // 2. Appel OpenAI Vision.
+        // 2. Appel Gemini Vision.
         byte[] bytes = file.getBytes();
         String base64 = Base64.getEncoder().encodeToString(bytes);
-        JsonNode openAiResponse = callOpenAi(base64, contentType);
+        JsonNode geminiResponse = callGemini(base64, contentType);
 
         InvoiceScanResultDto result = new InvoiceScanResultDto();
         result.setDocumentToken(storedRelativePath);
@@ -106,12 +106,12 @@ public class InvoiceScanService {
 
         long tokensUsed = 0;
         try {
-            JsonNode usage = openAiResponse.path("usage");
-            if (usage.has("total_tokens")) {
-                tokensUsed = usage.get("total_tokens").asLong();
+            JsonNode usage = geminiResponse.path("usageMetadata");
+            if (usage.has("totalTokenCount")) {
+                tokensUsed = usage.get("totalTokenCount").asLong();
             }
 
-            String content = openAiResponse.path("choices").get(0).path("message").path("content").asText();
+            String content = geminiResponse.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
             JsonNode extracted = objectMapper.readTree(content);
 
             if (extracted.hasNonNull("amount")) {
@@ -140,7 +140,7 @@ public class InvoiceScanService {
 
         result.setTokensUsed(tokensUsed);
 
-        // 3. Journalisation de l'usage réel (le coût est engagé dès l'appel OpenAI, que l'utilisateur
+        // 3. Journalisation de l'usage réel (le coût est engagé dès l'appel Gemini, que l'utilisateur
         // valide ensuite la charge ou annule). document reste vide ici : il sera lié plus tard si besoin.
         logUsage(enterpriseId, collaboratorId, tokensUsed);
 
@@ -188,7 +188,7 @@ public class InvoiceScanService {
         return uploadDir + "/" + uniqueName;
     }
 
-    private JsonNode callOpenAi(String base64Image, String contentType) throws IOException {
+    private JsonNode callGemini(String base64Image, String contentType) throws IOException {
         String prompt = "Tu es un assistant qui extrait les informations de factures de charges immobilières "
                 + "(eau, électricité, ménage, maintenance...). Réponds UNIQUEMENT avec un objet JSON strict, "
                 + "sans aucun texte autour, avec exactement ces clés : "
@@ -198,29 +198,38 @@ public class InvoiceScanService {
                 + "\"chargeType\" (une courte catégorie en français parmi: Eau, Électricité, Ménage, Maintenance, "
                 + "Internet, Autre — ou null si incertain).";
 
-        String body = objectMapper.createObjectNode()
-                .put("model", openAiModel)
-                .<com.fasterxml.jackson.databind.node.ObjectNode>set("response_format",
-                        objectMapper.createObjectNode().put("type", "json_object"))
-                .set("messages", objectMapper.createArrayNode()
-                        .add(objectMapper.createObjectNode()
-                                .put("role", "system")
-                                .put("content", prompt))
-                        .add(objectMapper.createObjectNode()
-                                .put("role", "user")
-                                .set("content", objectMapper.createArrayNode()
-                                        .add(objectMapper.createObjectNode()
-                                                .put("type", "text")
-                                                .put("text", "Voici une facture à analyser."))
-                                        .add(objectMapper.createObjectNode()
-                                                .put("type", "image_url")
-                                                .set("image_url", objectMapper.createObjectNode()
-                                                        .put("url", "data:" + contentType + ";base64," + base64Image))))))
-                .toString();
+        com.fasterxml.jackson.databind.node.ObjectNode textPart = objectMapper.createObjectNode();
+        textPart.put("text", prompt);
+
+        com.fasterxml.jackson.databind.node.ObjectNode inlineData = objectMapper.createObjectNode();
+        inlineData.put("mime_type", contentType);
+        inlineData.put("data", base64Image);
+
+        com.fasterxml.jackson.databind.node.ObjectNode imagePart = objectMapper.createObjectNode();
+        imagePart.set("inline_data", inlineData);
+
+        com.fasterxml.jackson.databind.node.ArrayNode partsArray = objectMapper.createArrayNode();
+        partsArray.add(textPart);
+        partsArray.add(imagePart);
+
+        com.fasterxml.jackson.databind.node.ObjectNode contentNode = objectMapper.createObjectNode();
+        contentNode.set("parts", partsArray);
+
+        com.fasterxml.jackson.databind.node.ArrayNode contentsArray = objectMapper.createArrayNode();
+        contentsArray.add(contentNode);
+
+        com.fasterxml.jackson.databind.node.ObjectNode generationConfig = objectMapper.createObjectNode();
+        generationConfig.put("responseMimeType", "application/json");
+
+        com.fasterxml.jackson.databind.node.ObjectNode rootNode = objectMapper.createObjectNode();
+        rootNode.set("contents", contentsArray);
+        rootNode.set("generationConfig", generationConfig);
+
+        String body = rootNode.toString();
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.openai.com/v1/chat/completions"))
-                .header("Authorization", "Bearer " + openAiApiKey)
+                .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/" + geminiModel + ":generateContent"))
+                .header("x-goog-api-key", geminiApiKey)
                 .header("Content-Type", "application/json")
                 .timeout(Duration.ofSeconds(45))
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
@@ -229,7 +238,7 @@ public class InvoiceScanService {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
-                throw new IOException("Erreur OpenAI (" + response.statusCode() + ") : " + response.body());
+                throw new IOException("Erreur Gemini (" + response.statusCode() + ") : " + response.body());
             }
             return objectMapper.readTree(response.body());
         } catch (InterruptedException e) {
