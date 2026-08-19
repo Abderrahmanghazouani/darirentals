@@ -88,7 +88,8 @@ export default function ChargesPage() {
       header: "Type",
       render: (c) => (c.chargeType ? <Badge variant="outline">{c.chargeType.label}</Badge> : "—"),
     },
-    { header: "Montant", render: (c) => (c.amount != null ? `${c.amount} MAD` : "—") },
+   { header: "Montant", render: (c) => (c.amount != null ? `${c.amount} MAD` : "—") },
+    { header: "Date", render: (c) => c.chargeDate ?? "—" },
     { header: "Prestataire", render: (c) => c.payment?.serviceProvider?.name ?? "—" },
     {
       header: "Paiement",

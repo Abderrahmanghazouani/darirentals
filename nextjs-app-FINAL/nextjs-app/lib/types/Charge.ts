@@ -8,6 +8,7 @@ export interface ChargeDto {
   id: number | null;
   label: string;
   amount?: number | null;
+  chargeDate?: string | null;
   property?: PropertyDto | null;
   chargeType?: ChargeTypeDto | null;
   payment?: PaymentDto | null;
@@ -19,6 +20,7 @@ export function newChargeDto(): ChargeDto {
     id: null,
     label: '',
     amount: null,
+    chargeDate: null,
     property: null,
     chargeType: null,
     payment: null,
