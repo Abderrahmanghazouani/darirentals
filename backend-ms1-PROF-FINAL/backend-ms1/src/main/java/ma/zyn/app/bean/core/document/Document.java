@@ -14,6 +14,7 @@ import ma.zyn.app.zynerator.bean.BaseEntity;
 import jakarta.persistence.*;
 import java.util.Objects;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "document")
@@ -34,6 +35,8 @@ public class Document  extends BaseEntity     {
     private String extractedVendor;
 
     private BigDecimal extractedAmount = BigDecimal.ZERO;
+
+    private LocalDate extractedDate;
 
     private DocumentType documentType ;
     private Reservation reservation ;
@@ -93,6 +96,12 @@ public class Document  extends BaseEntity     {
     }
     public void setExtractedAmount(BigDecimal extractedAmount){
         this.extractedAmount = extractedAmount;
+    }
+    public LocalDate getExtractedDate(){
+        return this.extractedDate;
+    }
+    public void setExtractedDate(LocalDate extractedDate){
+        this.extractedDate = extractedDate;
     }
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_type")

@@ -9,7 +9,6 @@ export interface DocumentDto {
   file: string;
   extractedVendor: string;
   extractedAmount?: number | null;
-  extractedDate?: string | null;
   documentType?: DocumentTypeDto | null;
   reservation?: ReservationDto | null;
   charge?: ChargeDto | null;
@@ -22,7 +21,6 @@ export function newDocumentDto(): DocumentDto {
     file: '',
     extractedVendor: '',
     extractedAmount: null,
-    extractedDate: null,
     documentType: null,
     reservation: null,
     charge: null,
