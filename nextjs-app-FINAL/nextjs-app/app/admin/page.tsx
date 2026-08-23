@@ -25,6 +25,9 @@ import { useRouter } from "next/navigation";
 import { PropertyDto } from "@/lib/types/Property";
 import { ReservationDto } from "@/lib/types/Reservation";
 import { ClientDto } from "@/lib/types/Client";
+import { ChargeDto } from "@/lib/types/Charge";
+import { MonthlyChart } from "@/components/dashboard/monthly-chart";
+import { computeMonthlyFinancials } from "@/lib/compute-monthly-financials";
 
 const ROLE = "admin" as const;
 
@@ -37,7 +40,7 @@ const tools = [
   { href: "/admin/reservations", label: "Réservations (calendrier)", icon: CalendarDays },
   { href: "/admin/charges", label: "Charges", icon: Receipt },
   { href: "/admin/payments", label: "Paiements aux prestataires", icon: Wallet },
-  { href: "/admin/tasks", label: "Tâches", icon: ListTodo },   // ← à ajouter
+  { href: "/admin/tasks", label: "Tâches", icon: ListTodo },
 ];
 
 export default function AdminHome() {
@@ -47,6 +50,7 @@ export default function AdminHome() {
   const [properties, setProperties] = useState<PropertyDto[] | null>(null);
   const [reservations, setReservations] = useState<ReservationDto[] | null>(null);
   const [clients, setClients] = useState<ClientDto[] | null>(null);
+  const [charges, setCharges] = useState<ChargeDto[] | null>(null);
   const [showAllModules, setShowAllModules] = useState(false);
 
   useEffect(() => {
@@ -54,6 +58,7 @@ export default function AdminHome() {
     clients_.property.findAll().then((d) => setProperties(d ?? [])).catch(() => setProperties([]));
     clients_.reservation.findAll().then((d) => setReservations(d ?? [])).catch(() => setReservations([]));
     clients_.client.findAll().then((d) => setClients(d ?? [])).catch(() => setClients([]));
+    clients_.charge.findAll().then((d) => setCharges(d ?? [])).catch(() => setCharges([]));
   }, []);
 
   const stats = useMemo(() => {
@@ -80,6 +85,10 @@ export default function AdminHome() {
       totalClients: (clients ?? []).length,
     };
   }, [properties, reservations, clients]);
+
+  const monthlyData = useMemo(() => {
+    return computeMonthlyFinancials(reservations ?? [], charges ?? []);
+  }, [reservations, charges]);
 
   const loading = properties === null || reservations === null || clients === null;
 
@@ -164,6 +173,19 @@ export default function AdminHome() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Revenus / Charges / Bénéfice — 6 derniers mois</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
+          ) : (
+            <MonthlyChart data={monthlyData} />
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
