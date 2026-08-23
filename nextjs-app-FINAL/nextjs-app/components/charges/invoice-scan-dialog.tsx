@@ -145,6 +145,7 @@ export function InvoiceScanDialog({
             ? `Facture ${scanResult.extractedVendor}`
             : "Facture scannée",
           amount: scanResult.extractedAmount ?? null,
+          chargeDate: scanResult.extractedDate ?? null,
           property:
             defaultPropertyId != null
               ? (properties.find((p) => p.id === defaultPropertyId) ?? ({ id: defaultPropertyId } as PropertyDto))

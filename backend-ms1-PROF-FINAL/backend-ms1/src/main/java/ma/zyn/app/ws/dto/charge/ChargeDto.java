@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 
 import ma.zyn.app.ws.dto.payment.PaymentDto;
@@ -19,6 +20,7 @@ public class ChargeDto  extends AuditBaseDto {
 
     private String label  ;
     private BigDecimal amount  ;
+    private LocalDate chargeDate  ;
 
     private PropertyDto property ;
     private ChargeTypeDto chargeType ;
@@ -45,6 +47,13 @@ public class ChargeDto  extends AuditBaseDto {
     }
     public void setAmount(BigDecimal amount){
         this.amount = amount;
+    }
+
+    public LocalDate getChargeDate(){
+        return this.chargeDate;
+    }
+    public void setChargeDate(LocalDate chargeDate){
+        this.chargeDate = chargeDate;
     }
 
 

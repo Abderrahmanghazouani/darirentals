@@ -1,10 +1,11 @@
 "use client";
 
 import { createElement, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MapPin } from "lucide-react";
+import { Plus, MapPin, TrendingUp } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -108,6 +109,21 @@ export default function PropertyPage() {
       render: (p) =>
         p.latitude != null && p.longitude != null ? (
           <PositionLink lat={p.latitude} lng={p.longitude} />
+        ) : (
+          "—"
+        ),
+    },
+    {
+      header: "Rentabilité",
+      render: (p) =>
+        p.id != null ? (
+          <Link
+            href={`/admin/property/${p.id}/rentabilite`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            <TrendingUp className="size-3.5" /> Voir
+          </Link>
         ) : (
           "—"
         ),
