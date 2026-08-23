@@ -67,6 +67,8 @@ public class ChargeConverter {
                 item.setLabel(dto.getLabel());
             if(StringUtil.isNotEmpty(dto.getAmount()))
                 item.setAmount(dto.getAmount());
+            if(dto.getChargeDate() != null)
+                item.setChargeDate(dto.getChargeDate());
             if(dto.getProperty() != null && dto.getProperty().getId() != null){
                 item.setProperty(new Property());
                 item.getProperty().setId(dto.getProperty().getId());
@@ -103,6 +105,8 @@ public class ChargeConverter {
                 dto.setLabel(item.getLabel());
             if(StringUtil.isNotEmpty(item.getAmount()))
                 dto.setAmount(item.getAmount());
+            if(item.getChargeDate() != null)
+                dto.setChargeDate(item.getChargeDate());
             if(this.property && item.getProperty()!=null) {
                 dto.setProperty(propertyConverter.toDto(item.getProperty())) ;
 

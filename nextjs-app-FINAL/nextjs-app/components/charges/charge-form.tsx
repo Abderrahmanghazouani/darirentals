@@ -26,6 +26,7 @@ import { Role } from "@/lib/api-client";
 const chargeSchema = z.object({
   label: z.string().min(1, "Requis"),
   amount: z.coerce.number().nullable().optional(),
+  chargeDate: z.string().optional(),
 });
 
 type ChargeFormValues = z.infer<typeof chargeSchema>;
@@ -73,6 +74,7 @@ export function ChargeForm({
     defaultValues: {
       label: base.label,
       amount: base.amount ?? undefined,
+      chargeDate: base.chargeDate ?? new Date().toISOString().slice(0, 10),
     },
   });
 
@@ -80,6 +82,7 @@ export function ChargeForm({
     onSubmit({
       ...base,
       ...values,
+      chargeDate: values.chargeDate || null,
       property: properties.find((p) => p.id === propertyId) ?? null,
       chargeType: chargeTypes.find((t) => t.id === chargeTypeId) ?? null,
       payment: payments.find((p) => p.id === paymentId) ?? null,
@@ -142,9 +145,15 @@ export function ChargeForm({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="amount">Montant</Label>
-        <Input id="amount" type="number" step="0.01" {...form.register("amount")} />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="amount">Montant</Label>
+          <Input id="amount" type="number" step="0.01" {...form.register("amount")} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="chargeDate">Date de la charge</Label>
+          <Input id="chargeDate" type="date" {...form.register("chargeDate")} />
+        </div>
       </div>
 
       <div className="space-y-2">

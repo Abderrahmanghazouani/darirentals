@@ -18,6 +18,7 @@ import ma.zyn.app.zynerator.bean.BaseEntity;
 import jakarta.persistence.*;
 import java.util.Objects;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "charge")
@@ -32,6 +33,8 @@ public class Charge  extends BaseEntity     {
     private String label;
 
     private BigDecimal amount = BigDecimal.ZERO;
+
+    private LocalDate chargeDate;
 
     private Property property ;
     private ChargeType chargeType ;
@@ -80,6 +83,12 @@ public class Charge  extends BaseEntity     {
     }
     public void setAmount(BigDecimal amount){
         this.amount = amount;
+    }
+    public LocalDate getChargeDate(){
+        return this.chargeDate;
+    }
+    public void setChargeDate(LocalDate chargeDate){
+        this.chargeDate = chargeDate;
     }
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "property")
