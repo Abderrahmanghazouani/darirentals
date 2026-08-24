@@ -45,9 +45,6 @@ public class Collaborator  extends User    {
     @Column(length = 500)
     private String name;
 
-    @Column(length = 500)
-    private String phone;
-
     @Column(columnDefinition = "boolean default false")
     private Boolean isActive = false;
 
@@ -85,11 +82,11 @@ public class Collaborator  extends User    {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy =  GenerationType.SEQUENCE,generator="collaborator_seq")
-      @Override
+    @Override
     public Long getId(){
         return this.id;
     }
-        @Override
+    @Override
     public void setId(Long id){
         this.id = id;
     }
@@ -98,12 +95,6 @@ public class Collaborator  extends User    {
     }
     public void setName(String name){
         this.name = name;
-    }
-    public String getPhone(){
-        return this.phone;
-    }
-    public void setPhone(String phone){
-        this.phone = phone;
     }
     public Boolean  getIsActive(){
         return this.isActive;
@@ -166,4 +157,3 @@ public class Collaborator  extends User    {
     }
 
 }
-
