@@ -4,6 +4,7 @@ import ma.zyn.app.zynerator.dto.AuditBaseDto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 
 import ma.zyn.app.ws.dto.reservation.ReservationDto;
@@ -17,6 +18,7 @@ public class DocumentDto  extends AuditBaseDto {
     private String file  ;
     private String extractedVendor  ;
     private BigDecimal extractedAmount  ;
+    private LocalDate extractedDate  ;
 
     private DocumentTypeDto documentType ;
     private ReservationDto reservation ;
@@ -56,6 +58,13 @@ public class DocumentDto  extends AuditBaseDto {
     }
     public void setExtractedAmount(BigDecimal extractedAmount){
         this.extractedAmount = extractedAmount;
+    }
+
+    public LocalDate getExtractedDate(){
+        return this.extractedDate;
+    }
+    public void setExtractedDate(LocalDate extractedDate){
+        this.extractedDate = extractedDate;
     }
 
 

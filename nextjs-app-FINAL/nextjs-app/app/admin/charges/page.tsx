@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
+import { Plus, ScanLine } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -32,6 +32,7 @@ import { ChargeDto } from "@/lib/types/Charge";
 import { PropertyDto } from "@/lib/types/Property";
 import { ChargeTypeDto } from "@/lib/types/ChargeType";
 import { ChargeForm } from "@/components/charges/charge-form";
+import { InvoiceScanDialog } from "@/components/charges/invoice-scan-dialog";
 
 const ROLE = "admin" as const;
 
@@ -59,6 +60,7 @@ export default function ChargesPage() {
 
   const [filterProperty, setFilterProperty] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
+  const [scanOpen, setScanOpen] = useState(false);
 
   const filteredItems = useMemo(() => {
     return crud.items.filter((c) => {
@@ -131,9 +133,14 @@ export default function ChargesPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Charges</CardTitle>
-          <Button onClick={crud.openCreate}>
-            <Plus /> Nouvelle charge
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setScanOpen(true)}>
+              <ScanLine /> Scanner une facture
+            </Button>
+            <Button onClick={crud.openCreate}>
+              <Plus /> Nouvelle charge
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3">
@@ -177,6 +184,14 @@ export default function ChargesPage() {
           />
         </CardContent>
       </Card>
+
+      <InvoiceScanDialog
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        role={ROLE}
+        defaultPropertyId={filterProperty !== "all" ? Number(filterProperty) : null}
+        onCreated={crud.refresh}
+      />
 
       <EntityFormDialog
         open={crud.formOpen}

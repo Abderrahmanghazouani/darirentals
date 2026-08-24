@@ -57,6 +57,8 @@ public class DocumentConverter {
                 item.setExtractedVendor(dto.getExtractedVendor());
             if(StringUtil.isNotEmpty(dto.getExtractedAmount()))
                 item.setExtractedAmount(dto.getExtractedAmount());
+            if(dto.getExtractedDate() != null)
+                item.setExtractedDate(dto.getExtractedDate());
             if(this.documentType && dto.getDocumentType()!=null)
                 item.setDocumentType(documentTypeConverter.toItem(dto.getDocumentType())) ;
 
@@ -95,6 +97,8 @@ public class DocumentConverter {
                 dto.setExtractedVendor(item.getExtractedVendor());
             if(StringUtil.isNotEmpty(item.getExtractedAmount()))
                 dto.setExtractedAmount(item.getExtractedAmount());
+            if(item.getExtractedDate() != null)
+                dto.setExtractedDate(item.getExtractedDate());
             if(this.documentType && item.getDocumentType()!=null) {
                 dto.setDocumentType(documentTypeConverter.toDto(item.getDocumentType())) ;
 
