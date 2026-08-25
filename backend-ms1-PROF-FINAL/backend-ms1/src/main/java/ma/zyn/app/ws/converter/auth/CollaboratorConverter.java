@@ -183,6 +183,7 @@ public class CollaboratorConverter {
             }
         if(this.enterpriseMemberships && ListUtil.isNotEmpty(item.getEnterpriseMemberships())){
             enterpriseMembershipConverter.init(true);
+            enterpriseMembershipConverter.initObject(true);
             enterpriseMembershipConverter.setCollaborator(false);
             dto.setEnterpriseMemberships(enterpriseMembershipConverter.toDto(item.getEnterpriseMemberships()));
             enterpriseMembershipConverter.setCollaborator(true);
