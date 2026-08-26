@@ -227,9 +227,18 @@ public class PropertyConverter {
 
             }
         if(this.reservations && ListUtil.isNotEmpty(item.getReservations())){
+            // Casse un autre chemin du meme cycle (voir les blocs reservationRequests/
+            // alternativeRequests plus bas) : Property.reservations -> Reservation.client ->
+            // Client.reservations -> Reservation.reservationRequests -> requestedProperty ->
+            // Property -> ... Le client de chaque reservation reste affiche (this.client non
+            // touche), seule la re-expansion de reservationRequests sur CES reservations est
+            // desactivee (redondante a cette profondeur).
+            boolean savedReservationRequests = reservationConverter.isReservationRequests();
             reservationConverter.init(true);
             reservationConverter.setProperty(false);
+            reservationConverter.setReservationRequests(false);
             dto.setReservations(reservationConverter.toDto(item.getReservations()));
+            reservationConverter.setReservationRequests(savedReservationRequests);
             reservationConverter.setProperty(true);
 
         }
@@ -257,14 +266,26 @@ public class PropertyConverter {
         if(this.reservationRequests && ListUtil.isNotEmpty(item.getReservationRequests())){
             reservationRequestConverter.init(true);
             reservationRequestConverter.setRequestedProperty(false);
+            // Casse le cycle Property -> reservationRequests -> client -> Client.reservationRequests
+            // -> requestedProperty -> Property -> ... (StackOverflowError) : reservationRequestConverter.init(true)
+            // remet requestedProperty a true, mais rien ne protegeait le saut suivant via le client.
+            // Le client reste affiche (this.client n'est pas touche ici), seule SA PROPRE liste de
+            // demandes est desactivee - elle serait de toute facon redondante avec celle-ci.
+            boolean savedClientReservationRequests = clientConverter.isReservationRequests();
+            clientConverter.setReservationRequests(false);
             dto.setReservationRequests(reservationRequestConverter.toDto(item.getReservationRequests()));
+            clientConverter.setReservationRequests(savedClientReservationRequests);
             reservationRequestConverter.setRequestedProperty(true);
 
         }
         if(this.alternativeRequests && ListUtil.isNotEmpty(item.getAlternativeRequests())){
             reservationRequestConverter.init(true);
             reservationRequestConverter.setAlternativeProperty(false);
+            // Meme protection que ci-dessus, pour le meme cycle via alternativeProperty.
+            boolean savedClientReservationRequests = clientConverter.isReservationRequests();
+            clientConverter.setReservationRequests(false);
             dto.setAlternativeRequests(reservationRequestConverter.toDto(item.getAlternativeRequests()));
+            clientConverter.setReservationRequests(savedClientReservationRequests);
             reservationRequestConverter.setAlternativeProperty(true);
 
         }

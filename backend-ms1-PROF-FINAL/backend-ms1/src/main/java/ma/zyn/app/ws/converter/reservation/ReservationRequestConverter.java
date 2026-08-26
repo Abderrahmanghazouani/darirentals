@@ -120,15 +120,45 @@ public class ReservationRequestConverter {
             if(StringUtil.isNotEmpty(item.getStaffNote()))
                 dto.setStaffNote(item.getStaffNote());
             if(this.client && item.getClient()!=null) {
+                // Le client affiche sur une demande de reservation ne doit pas re-lister ses
+                // propres reservations/demandes : source du cycle ReservationRequest <-> Client
+                // <-> Property <-> Reservation (voir les memes garde-fous dans PropertyConverter,
+                // ClientConverter et ReservationConverter).
+                boolean savedClientReservations = clientConverter.isReservations();
+                boolean savedClientReservationRequests = clientConverter.isReservationRequests();
+                clientConverter.setReservations(false);
+                clientConverter.setReservationRequests(false);
                 dto.setClient(clientConverter.toDto(item.getClient())) ;
+                clientConverter.setReservations(savedClientReservations);
+                clientConverter.setReservationRequests(savedClientReservationRequests);
 
             }
             if(this.requestedProperty && item.getRequestedProperty()!=null) {
+                // Meme protection que pour "client" ci-dessus.
+                boolean savedPropertyReservations = propertyConverter.isReservations();
+                boolean savedPropertyReservationRequests = propertyConverter.isReservationRequests();
+                boolean savedPropertyAlternativeRequests = propertyConverter.isAlternativeRequests();
+                propertyConverter.setReservations(false);
+                propertyConverter.setReservationRequests(false);
+                propertyConverter.setAlternativeRequests(false);
                 dto.setRequestedProperty(propertyConverter.toDto(item.getRequestedProperty())) ;
+                propertyConverter.setReservations(savedPropertyReservations);
+                propertyConverter.setReservationRequests(savedPropertyReservationRequests);
+                propertyConverter.setAlternativeRequests(savedPropertyAlternativeRequests);
 
             }
             if(this.alternativeProperty && item.getAlternativeProperty()!=null) {
+                // Meme protection que pour "requestedProperty" ci-dessus.
+                boolean savedPropertyReservations = propertyConverter.isReservations();
+                boolean savedPropertyReservationRequests = propertyConverter.isReservationRequests();
+                boolean savedPropertyAlternativeRequests = propertyConverter.isAlternativeRequests();
+                propertyConverter.setReservations(false);
+                propertyConverter.setReservationRequests(false);
+                propertyConverter.setAlternativeRequests(false);
                 dto.setAlternativeProperty(propertyConverter.toDto(item.getAlternativeProperty())) ;
+                propertyConverter.setReservations(savedPropertyReservations);
+                propertyConverter.setReservationRequests(savedPropertyReservationRequests);
+                propertyConverter.setAlternativeRequests(savedPropertyAlternativeRequests);
 
             }
             if(this.reviewedBy && item.getReviewedBy()!=null) {
@@ -140,7 +170,18 @@ public class ReservationRequestConverter {
 
             }
             if(this.reservation && item.getReservation()!=null) {
+                // Meme protection : la reservation affichee ne doit pas re-lister ses propres
+                // client/property/reservationRequests (source du meme cycle).
+                boolean savedReservationClient = reservationConverter.isClient();
+                boolean savedReservationProperty = reservationConverter.isProperty();
+                boolean savedReservationReservationRequests = reservationConverter.isReservationRequests();
+                reservationConverter.setClient(false);
+                reservationConverter.setProperty(false);
+                reservationConverter.setReservationRequests(false);
                 dto.setReservation(reservationConverter.toDto(item.getReservation())) ;
+                reservationConverter.setClient(savedReservationClient);
+                reservationConverter.setProperty(savedReservationProperty);
+                reservationConverter.setReservationRequests(savedReservationReservationRequests);
 
             }
 

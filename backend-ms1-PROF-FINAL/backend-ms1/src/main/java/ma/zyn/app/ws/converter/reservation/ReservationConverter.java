@@ -162,11 +162,31 @@ public class ReservationConverter {
             if(item.getCheckOutDate() != null)
                 dto.setCheckOutDate(item.getCheckOutDate());
             if(this.client && item.getClient()!=null) {
+                // Le client affiche sur une reservation ne doit pas re-lister ses propres
+                // reservations/demandes : c'est la source du cycle Reservation <-> Client <->
+                // Property <-> ReservationRequest (voir les memes garde-fous dans
+                // PropertyConverter, ClientConverter et ReservationRequestConverter).
+                boolean savedClientReservations = clientConverter.isReservations();
+                boolean savedClientReservationRequests = clientConverter.isReservationRequests();
+                clientConverter.setReservations(false);
+                clientConverter.setReservationRequests(false);
                 dto.setClient(clientConverter.toDto(item.getClient())) ;
+                clientConverter.setReservations(savedClientReservations);
+                clientConverter.setReservationRequests(savedClientReservationRequests);
 
             }
             if(this.property && item.getProperty()!=null) {
+                // Meme protection que pour "client" ci-dessus.
+                boolean savedPropertyReservations = propertyConverter.isReservations();
+                boolean savedPropertyReservationRequests = propertyConverter.isReservationRequests();
+                boolean savedPropertyAlternativeRequests = propertyConverter.isAlternativeRequests();
+                propertyConverter.setReservations(false);
+                propertyConverter.setReservationRequests(false);
+                propertyConverter.setAlternativeRequests(false);
                 dto.setProperty(propertyConverter.toDto(item.getProperty())) ;
+                propertyConverter.setReservations(savedPropertyReservations);
+                propertyConverter.setReservationRequests(savedPropertyReservationRequests);
+                propertyConverter.setAlternativeRequests(savedPropertyAlternativeRequests);
 
             }
             if(this.reservationPlatform && item.getReservationPlatform()!=null) {
@@ -194,7 +214,19 @@ public class ReservationConverter {
             if(this.reservationRequests && ListUtil.isNotEmpty(item.getReservationRequests())){
                 reservationRequestConverter.init(true);
                 reservationRequestConverter.setReservation(false);
+                // Meme protection que dans PropertyConverter/ClientConverter (voir ces classes) :
+                // sans cela, client.reservationRequests ou property.reservationRequests/alternativeRequests
+                // rebouclent vers cette meme liste via Client/Property -> StackOverflowError.
+                boolean savedClientReservationRequests = clientConverter.isReservationRequests();
+                boolean savedPropertyReservationRequests = propertyConverter.isReservationRequests();
+                boolean savedPropertyAlternativeRequests = propertyConverter.isAlternativeRequests();
+                clientConverter.setReservationRequests(false);
+                propertyConverter.setReservationRequests(false);
+                propertyConverter.setAlternativeRequests(false);
                 dto.setReservationRequests(reservationRequestConverter.toDto(item.getReservationRequests()));
+                clientConverter.setReservationRequests(savedClientReservationRequests);
+                propertyConverter.setReservationRequests(savedPropertyReservationRequests);
+                propertyConverter.setAlternativeRequests(savedPropertyAlternativeRequests);
                 reservationRequestConverter.setReservation(true);
 
             }
