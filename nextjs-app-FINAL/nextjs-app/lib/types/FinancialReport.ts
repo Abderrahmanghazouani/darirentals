@@ -10,6 +10,8 @@ export interface FinancialReportDto {
   totalRevenue?: number | null;
   totalCharges?: number | null;
   netProfit?: number | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   generatedAt?: string | null;
   file: string;
   financialReportType?: FinancialReportTypeDto | null;
@@ -25,6 +27,8 @@ export function newFinancialReportDto(): FinancialReportDto {
     totalRevenue: null,
     totalCharges: null,
     netProfit: null,
+    periodStart: null,
+    periodEnd: null,
     generatedAt: null,
     file: '',
     financialReportType: null,

@@ -24,6 +24,8 @@ import ma.zyn.app.zynerator.util.RefelexivityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import ma.zyn.app.service.facade.admin.auth.CollaboratorAdminService ;
 import ma.zyn.app.bean.core.auth.Collaborator ;
@@ -40,16 +42,31 @@ import java.util.List;
 @Service
 public class FinancialReportAdminServiceImpl implements FinancialReportAdminService {
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Un FinancialReport est FIGE une fois genere (voir FinancialReportGenerationService et
+     * NOTES-rapports-financiers.md) : toute tentative de modification est silencieusement
+     * ignoree, l'entite existante est renvoyee inchangee. Seul un id inconnu produit une erreur.
+     *
+     * Le controleur generique (FinancialReportRestAdmin.update) appelle converter.copy(dto, t)
+     * AVANT d'invoquer cette methode : t est donc deja l'entite geree par le contexte de
+     * persistance (meme instance que dao.findById(id) grace au cache de 1er niveau Hibernate,
+     * open-session-in-view), deja mutee en memoire avec les valeurs falsifiees. Se contenter de
+     * "recharger et retourner loadedItem" ne suffit PAS : c'est la meme reference, toujours
+     * dirty, et Hibernate la flush automatiquement au prochain commit de transaction. Seul un
+     * entityManager.refresh() explicite ecrase l'etat memoire par l'etat reel en base, annulant
+     * la mutation avant tout flush.
+     */
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public FinancialReport update(FinancialReport t) {
         FinancialReport loadedItem = dao.findById(t.getId()).orElse(null);
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{FinancialReport.class.getSimpleName(), t.getId().toString()});
-        } else {
-            updateWithAssociatedLists(t);
-            dao.save(t);
-            return loadedItem;
         }
+        entityManager.refresh(loadedItem);
+        return loadedItem;
     }
 
     public FinancialReport findById(Long id) {
