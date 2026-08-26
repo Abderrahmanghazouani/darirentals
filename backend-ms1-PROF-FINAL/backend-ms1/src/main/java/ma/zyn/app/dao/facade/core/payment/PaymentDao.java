@@ -12,6 +12,7 @@ public interface PaymentDao extends AbstractRepository<Payment,Long>  {
     List<Payment> findByServiceProviderId(Long id);
     int deleteByServiceProviderId(Long id);
     long countByServiceProviderId(Long id);
+    List<Payment> findByServiceProviderIdIn(List<Long> ids);
     List<Payment> findByPaymentTypeCode(String code);
     List<Payment> findByPaymentTypeId(Long id);
     int deleteByPaymentTypeId(Long id);

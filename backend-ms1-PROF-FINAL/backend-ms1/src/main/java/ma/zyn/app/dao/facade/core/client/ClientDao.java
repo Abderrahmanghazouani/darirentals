@@ -16,6 +16,7 @@ public interface ClientDao extends AbstractRepository<Client,Long>  {
     List<Client> findByEnterpriseId(Long id);
     int deleteByEnterpriseId(Long id);
     long countByEnterpriseId(Long id);
+    List<Client> findByEnterpriseIdIn(List<Long> ids);
     Client findByUsername(String username);
 
     @Query("SELECT NEW Client(item.id,item.fullName) FROM Client item")

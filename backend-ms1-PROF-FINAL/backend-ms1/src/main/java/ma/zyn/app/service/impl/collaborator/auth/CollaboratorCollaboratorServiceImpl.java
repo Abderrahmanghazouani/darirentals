@@ -8,6 +8,7 @@ import ma.zyn.app.dao.criteria.core.auth.CollaboratorCriteria;
 import ma.zyn.app.dao.facade.core.auth.CollaboratorDao;
 import ma.zyn.app.dao.specification.core.auth.CollaboratorSpecification;
 import ma.zyn.app.service.facade.collaborator.auth.CollaboratorCollaboratorService;
+import ma.zyn.app.service.security.EffectivePermissionService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -55,9 +56,21 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{Collaborator.class.getSimpleName(), t.getId().toString()});
         } else {
+            assertCanManageUsersForMemberships(t);
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
+        }
+    }
+
+    /** Chantier 2 : creer/modifier un Collaborator (et ses EnterpriseMembership) requiert
+     * canManageUsers pour CHAQUE societe visee. Voir NOTES-permissions.md. */
+    private void assertCanManageUsersForMemberships(Collaborator t) {
+        if (t.getEnterpriseMemberships() != null) {
+            t.getEnterpriseMemberships().forEach(membership -> {
+                Long enterpriseId = membership.getEnterprise() != null ? membership.getEnterprise().getId() : null;
+                effectivePermissionService.assertCanManageUsers(enterpriseId);
+            });
         }
     }
 
@@ -134,6 +147,9 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
 	public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
+            enterpriseMembershipService.findByCollaboratorId(id).forEach(membership ->
+                effectivePermissionService.assertCanManageUsers(membership.getEnterprise() != null ? membership.getEnterprise().getId() : null)
+            );
             deleteAssociatedLists(id);
             dao.deleteById(id);
         }
@@ -287,6 +303,7 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
 
     @Override
     public Collaborator create(Collaborator t) {
+        assertCanManageUsersForMemberships(t);
         if (findByUsername(t.getUsername()) != null || t.getPassword() == null) return null;
         t.setPassword(userService.cryptPassword(t.getPassword()));
         t.setEnabled(true);
@@ -378,6 +395,8 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
     private ReservationRequestCollaboratorService reservationRequestService ;
     @Autowired
     private EnterpriseMembershipCollaboratorService enterpriseMembershipService ;
+    @Autowired
+    private EffectivePermissionService effectivePermissionService ;
 
     public CollaboratorCollaboratorServiceImpl(CollaboratorDao dao) {
         this.dao = dao;

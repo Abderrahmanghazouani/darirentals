@@ -3,11 +3,14 @@ package ma.zyn.app.service.impl.collaborator.payment;
 
 
 import ma.zyn.app.zynerator.exception.EntityNotFoundException;
+import ma.zyn.app.zynerator.exception.PermissionDeniedException;
 import ma.zyn.app.bean.core.payment.Payment;
 import ma.zyn.app.dao.criteria.core.payment.PaymentCriteria;
 import ma.zyn.app.dao.facade.core.payment.PaymentDao;
 import ma.zyn.app.dao.specification.core.payment.PaymentSpecification;
 import ma.zyn.app.service.facade.collaborator.payment.PaymentCollaboratorService;
+import ma.zyn.app.service.security.EnterpriseAccessService;
+import ma.zyn.app.service.security.EffectivePermissionService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -44,14 +47,60 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{Payment.class.getSimpleName(), t.getId().toString()});
         } else {
+            assertServiceProviderAssignable(t);
+            effectivePermissionService.assertCanManageFinancials(enterpriseIdOfServiceProvider(t.getServiceProvider().getId()));
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
         }
     }
 
+    /** Chantier 1 (isolation par societe, cote ecriture). Voir NOTES-permissions.md. */
+    private void assertServiceProviderAssignable(Payment t) {
+        Long serviceProviderId = t.getServiceProvider() != null ? t.getServiceProvider().getId() : null;
+        if (serviceProviderId == null || !accessibleServiceProviderIds().contains(serviceProviderId)) {
+            throw new PermissionDeniedException(
+                "Vous n'etes pas rattache a la societe de ce prestataire : impossible de creer ou modifier ce paiement.",
+                new String[]{"Payment"});
+        }
+    }
+
+    /** Chantier 2 : societe du ServiceProvider, pour verifier canManageFinancials. */
+    private Long enterpriseIdOfServiceProvider(Long serviceProviderId) {
+        ServiceProvider provider = serviceProviderService.findById(serviceProviderId);
+        return provider != null && provider.getEnterprise() != null ? provider.getEnterprise().getId() : null;
+    }
+
     public Payment findById(Long id) {
-        return dao.findById(id).orElse(null);
+        Payment found = dao.findById(id).orElse(null);
+        if (found != null && !isAccessible(found)) {
+            return null;
+        }
+        return found;
+    }
+
+    /** Chantier 1 (isolation par societe) : Payment n'a pas de lien direct vers
+     * Enterprise ni vers Property, on passe par son ServiceProvider. Voir NOTES-permissions.md. */
+    private boolean isAccessible(Payment payment) {
+        if (payment.getServiceProvider() == null || payment.getServiceProvider().getEnterprise() == null
+                || payment.getServiceProvider().getEnterprise().getId() == null) {
+            return false;
+        }
+        return enterpriseAccessService.getAccessibleEnterpriseIds().contains(payment.getServiceProvider().getEnterprise().getId());
+    }
+
+    private List<Payment> filterAccessible(List<Payment> items) {
+        List<Long> accessibleServiceProviderIds = accessibleServiceProviderIds();
+        return emptyIfNull(items).stream()
+                .filter(item -> item.getServiceProvider() != null && accessibleServiceProviderIds.contains(item.getServiceProvider().getId()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /** serviceProviderService (ServiceProviderCollaboratorServiceImpl) est deja filtre par societe (Chantier 1). */
+    private List<Long> accessibleServiceProviderIds() {
+        return serviceProviderService.findAll().stream()
+                .map(ServiceProvider::getId)
+                .collect(java.util.stream.Collectors.toList());
     }
 
 
@@ -69,7 +118,7 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
     }
 
     public List<Payment> findAll() {
-        return dao.findAll();
+        return dao.findByServiceProviderIdIn(accessibleServiceProviderIds());
     }
 
     public List<Payment> findByCriteria(PaymentCriteria criteria) {
@@ -80,7 +129,7 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
         } else {
             content = dao.findAll();
         }
-        return content;
+        return filterAccessible(content);
 
     }
 
@@ -95,16 +144,17 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
         order = (order != null && !order.isEmpty()) ? order : "desc";
         sortField = (sortField != null && !sortField.isEmpty()) ? sortField : "id";
         Pageable pageable = PageRequest.of(page, pageSize, Sort.Direction.fromString(order), sortField);
-        return dao.findAll(mySpecification, pageable).getContent();
+        return filterAccessible(dao.findAll(mySpecification, pageable).getContent());
     }
 
     public int getDataSize(PaymentCriteria criteria) {
-        PaymentSpecification mySpecification = constructSpecification(criteria);
-        mySpecification.setDistinct(true);
-        return ((Long) dao.count(mySpecification)).intValue();
+        return findByCriteria(criteria).size();
     }
 
     public List<Payment> findByServiceProviderId(Long id){
+        if (!accessibleServiceProviderIds().contains(id)) {
+            return new ArrayList<>();
+        }
         return dao.findByServiceProviderId(id);
     }
     public int deleteByServiceProviderId(Long id){
@@ -147,6 +197,15 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
 	public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
+            Payment target = dao.findById(id).orElse(null);
+            if (target != null) {
+                if (!isAccessible(target)) {
+                    throw new PermissionDeniedException(
+                        "Vous n'etes pas rattache a la societe de ce prestataire : impossible de supprimer ce paiement.",
+                        new String[]{"Payment"});
+                }
+                effectivePermissionService.assertCanManageFinancials(target.getServiceProvider().getEnterprise().getId());
+            }
             deleteAssociatedLists(id);
             dao.deleteById(id);
         }
@@ -177,6 +236,8 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public Payment create(Payment t) {
+        assertServiceProviderAssignable(t);
+        effectivePermissionService.assertCanManageFinancials(enterpriseIdOfServiceProvider(t.getServiceProvider().getId()));
         Payment loaded = findByReferenceEntity(t);
         Payment saved;
         if (loaded == null) {
@@ -195,6 +256,9 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
 
     public Payment findWithAssociatedLists(Long id){
         Payment result = dao.findById(id).orElse(null);
+        if (result != null && !isAccessible(result)) {
+            return null;
+        }
         if(result!=null && result.getId() != null) {
             result.setCharges(chargeService.findByPaymentId(id));
         }
@@ -259,7 +323,7 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
 
 
     public List<Payment> findAllOptimized() {
-        return dao.findAll();
+        return findAll();
     }
 
     @Override
@@ -312,6 +376,10 @@ public class PaymentCollaboratorServiceImpl implements PaymentCollaboratorServic
     private PaymentTypeCollaboratorService paymentTypeService ;
     @Autowired
     private ChargeCollaboratorService chargeService ;
+    @Autowired
+    private EnterpriseAccessService enterpriseAccessService ;
+    @Autowired
+    private EffectivePermissionService effectivePermissionService ;
 
     public PaymentCollaboratorServiceImpl(PaymentDao dao) {
         this.dao = dao;

@@ -3,11 +3,13 @@ package ma.zyn.app.service.impl.collaborator.client;
 
 
 import ma.zyn.app.zynerator.exception.EntityNotFoundException;
+import ma.zyn.app.zynerator.exception.PermissionDeniedException;
 import ma.zyn.app.bean.core.client.Client;
 import ma.zyn.app.dao.criteria.core.client.ClientCriteria;
 import ma.zyn.app.dao.facade.core.client.ClientDao;
 import ma.zyn.app.dao.specification.core.client.ClientSpecification;
 import ma.zyn.app.service.facade.collaborator.client.ClientCollaboratorService;
+import ma.zyn.app.service.security.EnterpriseAccessService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -51,14 +53,44 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{Client.class.getSimpleName(), t.getId().toString()});
         } else {
+            assertEnterpriseAssignable(t);
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
         }
     }
 
+    /** Chantier 1 (isolation par societe, cote ecriture). Voir NOTES-permissions.md. */
+    private void assertEnterpriseAssignable(Client t) {
+        Long enterpriseId = t.getEnterprise() != null ? t.getEnterprise().getId() : null;
+        if (!enterpriseAccessService.hasAccessToEnterprise(enterpriseId)) {
+            throw new PermissionDeniedException(
+                "Vous n'etes pas rattache a cette societe : impossible de creer ou modifier ce client pour elle.",
+                new String[]{"Client"});
+        }
+    }
+
     public Client findById(Long id) {
-        return dao.findById(id).orElse(null);
+        Client found = dao.findById(id).orElse(null);
+        if (found != null && !isAccessible(found)) {
+            return null;
+        }
+        return found;
+    }
+
+    /** Chantier 1 (isolation par societe). Voir NOTES-permissions.md. */
+    private boolean isAccessible(Client client) {
+        if (client.getEnterprise() == null || client.getEnterprise().getId() == null) {
+            return false;
+        }
+        return enterpriseAccessService.getAccessibleEnterpriseIds().contains(client.getEnterprise().getId());
+    }
+
+    private List<Client> filterAccessible(List<Client> items) {
+        List<Long> accessibleIds = enterpriseAccessService.getAccessibleEnterpriseIds();
+        return emptyIfNull(items).stream()
+                .filter(item -> item.getEnterprise() != null && accessibleIds.contains(item.getEnterprise().getId()))
+                .collect(java.util.stream.Collectors.toList());
     }
 
 
@@ -76,7 +108,7 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
     }
 
     public List<Client> findAll() {
-        return dao.findAll();
+        return dao.findByEnterpriseIdIn(enterpriseAccessService.getAccessibleEnterpriseIds());
     }
 
     public List<Client> findByCriteria(ClientCriteria criteria) {
@@ -87,7 +119,7 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
         } else {
             content = dao.findAll();
         }
-        return content;
+        return filterAccessible(content);
 
     }
 
@@ -102,16 +134,17 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
         order = (order != null && !order.isEmpty()) ? order : "desc";
         sortField = (sortField != null && !sortField.isEmpty()) ? sortField : "id";
         Pageable pageable = PageRequest.of(page, pageSize, Sort.Direction.fromString(order), sortField);
-        return dao.findAll(mySpecification, pageable).getContent();
+        return filterAccessible(dao.findAll(mySpecification, pageable).getContent());
     }
 
     public int getDataSize(ClientCriteria criteria) {
-        ClientSpecification mySpecification = constructSpecification(criteria);
-        mySpecification.setDistinct(true);
-        return ((Long) dao.count(mySpecification)).intValue();
+        return findByCriteria(criteria).size();
     }
 
     public List<Client> findByEnterpriseId(Long id){
+        if (!enterpriseAccessService.hasAccessToEnterprise(id)) {
+            return new ArrayList<>();
+        }
         return dao.findByEnterpriseId(id);
     }
     public int deleteByEnterpriseId(Long id){
@@ -124,6 +157,12 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
 	public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
+            Client target = dao.findById(id).orElse(null);
+            if (target != null && !isAccessible(target)) {
+                throw new PermissionDeniedException(
+                    "Vous n'etes pas rattache a cette societe : impossible de supprimer ce client.",
+                    new String[]{"Client"});
+            }
             deleteAssociatedLists(id);
             dao.deleteById(id);
         }
@@ -156,6 +195,9 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
 
     public Client findWithAssociatedLists(Long id){
         Client result = dao.findById(id).orElse(null);
+        if (result != null && !isAccessible(result)) {
+            return null;
+        }
         if(result!=null && result.getId() != null) {
             result.setReservations(reservationService.findByClientId(id));
             result.setReservationRequests(reservationRequestService.findByClientId(id));
@@ -223,7 +265,9 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
 
 
     public List<Client> findAllOptimized() {
-        return dao.findAllOptimized();
+        // La projection findAllOptimized() ne charge pas "enterprise" : on retombe sur
+        // la liste complete deja filtree par societe (Chantier 1).
+        return findAll();
     }
 
     @Override
@@ -265,6 +309,7 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
 
     @Override
     public Client create(Client t) {
+        assertEnterpriseAssignable(t);
         if (findByUsername(t.getUsername()) != null || t.getPassword() == null) return null;
         t.setPassword(userService.cryptPassword(t.getPassword()));
         t.setEnabled(true);
@@ -340,6 +385,8 @@ public class ClientCollaboratorServiceImpl implements ClientCollaboratorService 
     private ReservationRequestCollaboratorService reservationRequestService ;
     @Autowired
     private EnterpriseCollaboratorService enterpriseService ;
+    @Autowired
+    private EnterpriseAccessService enterpriseAccessService ;
 
     public ClientCollaboratorServiceImpl(ClientDao dao) {
         this.dao = dao;
