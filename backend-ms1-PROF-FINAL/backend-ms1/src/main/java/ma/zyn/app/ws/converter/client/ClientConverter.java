@@ -145,16 +145,33 @@ public class ClientConverter {
 
             }
         if(this.reservations && ListUtil.isNotEmpty(item.getReservations())){
+            // Meme protection que dans PropertyConverter.reservations (voir cette classe), pour
+            // le meme cycle dans l'autre sens : Client.reservations -> Reservation.property ->
+            // Property.reservations -> Reservation.client -> Client -> ...
+            boolean savedReservationRequests = reservationConverter.isReservationRequests();
             reservationConverter.init(true);
             reservationConverter.setClient(false);
+            reservationConverter.setReservationRequests(false);
             dto.setReservations(reservationConverter.toDto(item.getReservations()));
+            reservationConverter.setReservationRequests(savedReservationRequests);
             reservationConverter.setClient(true);
 
         }
         if(this.reservationRequests && ListUtil.isNotEmpty(item.getReservationRequests())){
             reservationRequestConverter.init(true);
             reservationRequestConverter.setClient(false);
+            // Meme cycle que dans PropertyConverter (voir cette classe), dans l'autre sens :
+            // Client -> reservationRequests -> requestedProperty/alternativeProperty ->
+            // Property.reservationRequests/alternativeRequests -> client -> Client -> ...
+            // La propriete demandee/alternative reste affichee, seules ses propres listes de
+            // demandes sont desactivees (redondantes avec celle-ci).
+            boolean savedPropertyReservationRequests = propertyConverter.isReservationRequests();
+            boolean savedPropertyAlternativeRequests = propertyConverter.isAlternativeRequests();
+            propertyConverter.setReservationRequests(false);
+            propertyConverter.setAlternativeRequests(false);
             dto.setReservationRequests(reservationRequestConverter.toDto(item.getReservationRequests()));
+            propertyConverter.setReservationRequests(savedPropertyReservationRequests);
+            propertyConverter.setAlternativeRequests(savedPropertyAlternativeRequests);
             reservationRequestConverter.setClient(true);
 
         }
