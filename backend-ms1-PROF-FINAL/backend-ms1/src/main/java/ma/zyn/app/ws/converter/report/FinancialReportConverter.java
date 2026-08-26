@@ -128,11 +128,29 @@ public class FinancialReportConverter {
 
             }
             if(this.enterprise && item.getEnterprise()!=null) {
+                // Meme garde-fou que dans AiUsageLogConverter/EnterpriseMembershipConverter :
+                // evite de rouvrir le cycle Enterprise.aiUsageLogs/enterpriseMemberships ->
+                // AiUsageLog/EnterpriseMembership -> ... -> Enterprise -> ... via ce chemin
+                // (Enterprise.financialReports -> FinancialReport.enterprise).
+                boolean savedEnterpriseAiUsageLogs = enterpriseConverter.isAiUsageLogs();
+                boolean savedEnterpriseEnterpriseMemberships = enterpriseConverter.isEnterpriseMemberships();
+                enterpriseConverter.setAiUsageLogs(false);
+                enterpriseConverter.setEnterpriseMemberships(false);
                 dto.setEnterprise(enterpriseConverter.toDto(item.getEnterprise())) ;
+                enterpriseConverter.setAiUsageLogs(savedEnterpriseAiUsageLogs);
+                enterpriseConverter.setEnterpriseMemberships(savedEnterpriseEnterpriseMemberships);
 
             }
             if(this.generatedBy && item.getGeneratedBy()!=null) {
+                // Meme garde-fou : evite Enterprise.financialReports -> FinancialReport.
+                // generatedBy -> Collaborator.enterpriseMemberships/aiUsageLogs -> ... -> Enterprise.
+                boolean savedCollaboratorEnterpriseMemberships = collaboratorConverter.isEnterpriseMemberships();
+                boolean savedCollaboratorAiUsageLogs = collaboratorConverter.isAiUsageLogs();
+                collaboratorConverter.setEnterpriseMemberships(false);
+                collaboratorConverter.setAiUsageLogs(false);
                 dto.setGeneratedBy(collaboratorConverter.toDto(item.getGeneratedBy())) ;
+                collaboratorConverter.setEnterpriseMemberships(savedCollaboratorEnterpriseMemberships);
+                collaboratorConverter.setAiUsageLogs(savedCollaboratorAiUsageLogs);
 
             }
         if(this.financialReportProperties && ListUtil.isNotEmpty(item.getFinancialReportProperties())){

@@ -88,11 +88,29 @@ public class EnterpriseMembershipConverter {
             if(StringUtil.isNotEmpty(item.getId()))
                 dto.setId(item.getId());
             if(this.collaborator && item.getCollaborator()!=null) {
+                // Casse le cycle EnterpriseMembership -> collaborator -> Collaborator.
+                // enterpriseMemberships/aiUsageLogs -> ... -> EnterpriseMembership -> ...
+                // (StackOverflowError) : le collaborateur reste affiche, seules ses propres
+                // listes qui referment le cycle sont desactivees (voir AiUsageLogConverter,
+                // CollaboratorConverter, EnterpriseConverter pour les memes garde-fous).
+                boolean savedCollaboratorEnterpriseMemberships = collaboratorConverter.isEnterpriseMemberships();
+                boolean savedCollaboratorAiUsageLogs = collaboratorConverter.isAiUsageLogs();
+                collaboratorConverter.setEnterpriseMemberships(false);
+                collaboratorConverter.setAiUsageLogs(false);
                 dto.setCollaborator(collaboratorConverter.toDto(item.getCollaborator())) ;
+                collaboratorConverter.setEnterpriseMemberships(savedCollaboratorEnterpriseMemberships);
+                collaboratorConverter.setAiUsageLogs(savedCollaboratorAiUsageLogs);
 
             }
             if(this.enterprise && item.getEnterprise()!=null) {
+                // Meme protection que pour "collaborator" ci-dessus, dans l'autre sens.
+                boolean savedEnterpriseAiUsageLogs = enterpriseConverter.isAiUsageLogs();
+                boolean savedEnterpriseEnterpriseMemberships = enterpriseConverter.isEnterpriseMemberships();
+                enterpriseConverter.setAiUsageLogs(false);
+                enterpriseConverter.setEnterpriseMemberships(false);
                 dto.setEnterprise(enterpriseConverter.toDto(item.getEnterprise())) ;
+                enterpriseConverter.setAiUsageLogs(savedEnterpriseAiUsageLogs);
+                enterpriseConverter.setEnterpriseMemberships(savedEnterpriseEnterpriseMemberships);
 
             }
             if(this.collaboratorRole && item.getCollaboratorRole()!=null) {
