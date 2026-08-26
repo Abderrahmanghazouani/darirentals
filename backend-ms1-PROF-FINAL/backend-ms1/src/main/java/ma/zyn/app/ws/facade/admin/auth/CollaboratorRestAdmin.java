@@ -19,6 +19,7 @@ import ma.zyn.app.ws.dto.auth.CollaboratorDto;
 import ma.zyn.app.zynerator.controller.AbstractController;
 import ma.zyn.app.zynerator.dto.AuditEntityDto;
 import ma.zyn.app.zynerator.util.PaginatedList;
+import ma.zyn.app.zynerator.security.service.facade.UserService;
 
 
 import ma.zyn.app.zynerator.security.bean.User;
@@ -122,7 +123,12 @@ public class CollaboratorRestAdmin {
             res = new ResponseEntity<>(HttpStatus.CONFLICT);
         else {
             Collaborator t = service.findById(dto.getId());
+            String oldPassword = t.getPassword();
             converter.copy(dto,t);
+            if (t.getPassword() != null && !t.getPassword().equals(oldPassword)) {
+                t.setPassword(userService.cryptPassword(t.getPassword()));
+                t.setPasswordChanged(true);
+            }
             Collaborator updated = service.update(t);
             CollaboratorDto myDto = converter.toDto(updated);
             res = new ResponseEntity<>(myDto, HttpStatus.OK);
@@ -230,13 +236,15 @@ public class CollaboratorRestAdmin {
 
 
 
-   public CollaboratorRestAdmin(CollaboratorAdminService service, CollaboratorConverter converter){
+    public CollaboratorRestAdmin(CollaboratorAdminService service, CollaboratorConverter converter, UserService userService){
         this.service = service;
         this.converter = converter;
+        this.userService = userService;
     }
 
     private final CollaboratorAdminService service;
     private final CollaboratorConverter converter;
+    private final UserService userService;
 
 
 

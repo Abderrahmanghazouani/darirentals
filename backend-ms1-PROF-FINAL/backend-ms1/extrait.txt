@@ -1,0 +1,17 @@
+﻿    @PutMapping("")
+    public ResponseEntity<CollaboratorDto> update(@RequestBody CollaboratorDto dto) throws Exception {
+        ResponseEntity<CollaboratorDto> res ;
+        if (dto.getId() == null || service.findById(dto.getId()) == null)
+            res = new ResponseEntity<>(HttpStatus.CONFLICT);
+        else {
+            Collaborator t = service.findById(dto.getId());
+            converter.copy(dto,t);
+            Collaborator updated = service.update(t);
+            CollaboratorDto myDto = converter.toDto(updated);
+            res = new ResponseEntity<>(myDto, HttpStatus.OK);
+        }
+        return res;
+    }
+
+    @Operation(summary = "Delete list of collaborator")
+    @PostMapping("multiple")

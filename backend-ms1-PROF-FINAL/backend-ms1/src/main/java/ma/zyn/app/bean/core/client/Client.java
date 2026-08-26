@@ -5,7 +5,6 @@ import java.util.List;
 
 
 
-
 import ma.zyn.app.bean.core.auth.Collaborator;
 import ma.zyn.app.bean.core.task.Task;
 import ma.zyn.app.bean.core.reservation.Reservation;
@@ -37,13 +36,8 @@ public class Client  extends User    {
 
 
     @Column(length = 500)
-    private String fullName;
-
-    @Column(length = 500)
-    private String phone;
-
-    @Column(length = 500)
     private String nationality;
+
 
 
 
@@ -77,25 +71,13 @@ public class Client  extends User    {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy =  GenerationType.SEQUENCE,generator="client_seq")
-      @Override
+    @Override
     public Long getId(){
         return this.id;
     }
-        @Override
+    @Override
     public void setId(Long id){
         this.id = id;
-    }
-    public String getFullName(){
-        return this.fullName;
-    }
-    public void setFullName(String fullName){
-        this.fullName = fullName;
-    }
-    public String getPhone(){
-        return this.phone;
-    }
-    public void setPhone(String phone){
-        this.phone = phone;
     }
     public String getNationality(){
         return this.nationality;
@@ -142,4 +124,3 @@ public class Client  extends User    {
     }
 
 }
-

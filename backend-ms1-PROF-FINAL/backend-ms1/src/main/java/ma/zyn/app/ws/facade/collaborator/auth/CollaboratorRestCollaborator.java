@@ -49,7 +49,8 @@ public class CollaboratorRestCollaborator {
         List<Collaborator> list = service.findAll();
         HttpStatus status = HttpStatus.NO_CONTENT;
         converter.initList(false);
-            converter.initObject(true);
+        converter.setEnterpriseMemberships(true);
+        converter.initObject(true);
         List<CollaboratorDto> dtos  = converter.toDto(list);
         if (dtos != null && !dtos.isEmpty())
             status = HttpStatus.OK;
