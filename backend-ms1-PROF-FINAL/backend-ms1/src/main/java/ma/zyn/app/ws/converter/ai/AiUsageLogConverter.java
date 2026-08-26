@@ -96,7 +96,18 @@ public class AiUsageLogConverter {
             if(item.getDate()!=null)
                 dto.setDate(DateUtil.dateTimeToString(item.getDate()));
             if(this.enterprise && item.getEnterprise()!=null) {
+                // Casse le cycle AiUsageLog -> enterprise -> Enterprise.aiUsageLogs/
+                // enterpriseMemberships -> ... -> AiUsageLog -> ... (StackOverflowError) :
+                // l'entreprise reste affichee, seules ses propres listes qui referment le
+                // cycle sont desactivees (voir EnterpriseConverter, CollaboratorConverter,
+                // EnterpriseMembershipConverter pour les memes garde-fous).
+                boolean savedEnterpriseAiUsageLogs = enterpriseConverter.isAiUsageLogs();
+                boolean savedEnterpriseEnterpriseMemberships = enterpriseConverter.isEnterpriseMemberships();
+                enterpriseConverter.setAiUsageLogs(false);
+                enterpriseConverter.setEnterpriseMemberships(false);
                 dto.setEnterprise(enterpriseConverter.toDto(item.getEnterprise())) ;
+                enterpriseConverter.setAiUsageLogs(savedEnterpriseAiUsageLogs);
+                enterpriseConverter.setEnterpriseMemberships(savedEnterpriseEnterpriseMemberships);
 
             }
             if(this.aiUsageType && item.getAiUsageType()!=null) {
@@ -104,7 +115,11 @@ public class AiUsageLogConverter {
 
             }
             if(this.collaborator && item.getCollaborator()!=null) {
+                // Meme protection que pour "enterprise" ci-dessus, dans l'autre sens.
+                boolean savedCollaboratorEnterpriseMemberships = collaboratorConverter.isEnterpriseMemberships();
+                collaboratorConverter.setEnterpriseMemberships(false);
                 dto.setCollaborator(collaboratorConverter.toDto(item.getCollaborator())) ;
+                collaboratorConverter.setEnterpriseMemberships(savedCollaboratorEnterpriseMemberships);
 
             }
             if(this.document && item.getDocument()!=null) {
