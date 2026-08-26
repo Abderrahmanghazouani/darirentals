@@ -24,6 +24,8 @@ import ma.zyn.app.zynerator.util.RefelexivityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import ma.zyn.app.service.facade.collaborator.auth.CollaboratorCollaboratorService ;
 import ma.zyn.app.bean.core.auth.Collaborator ;
@@ -40,16 +42,27 @@ import java.util.List;
 @Service
 public class FinancialReportCollaboratorServiceImpl implements FinancialReportCollaboratorService {
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Un FinancialReport est FIGE une fois genere (voir FinancialReportGenerationService et
+     * NOTES-rapports-financiers.md) : toute tentative de modification est silencieusement
+     * ignoree, l'entite existante est renvoyee inchangee. Seul un id inconnu produit une erreur.
+     *
+     * Voir FinancialReportAdminServiceImpl.update() pour l'explication complete : le controleur
+     * generique mute deja l'entite geree (meme instance, cache de 1er niveau Hibernate) avant
+     * d'appeler cette methode, donc un simple "retourner l'entite rechargee" ne suffit pas -
+     * seul entityManager.refresh() ecrase l'etat memoire par l'etat reel en base.
+     */
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public FinancialReport update(FinancialReport t) {
         FinancialReport loadedItem = dao.findById(t.getId()).orElse(null);
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{FinancialReport.class.getSimpleName(), t.getId().toString()});
-        } else {
-            updateWithAssociatedLists(t);
-            dao.save(t);
-            return loadedItem;
         }
+        entityManager.refresh(loadedItem);
+        return loadedItem;
     }
 
     public FinancialReport findById(Long id) {

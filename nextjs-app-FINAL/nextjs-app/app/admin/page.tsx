@@ -10,6 +10,7 @@ import {
   CalendarCheck,
   CalendarDays,
   Coins,
+  FileBarChart,
   Grid3x3,
   LogOut,
   Receipt,
@@ -48,6 +49,7 @@ const tools = [
   { href: "/admin/payments", label: "Paiements aux prestataires", icon: Wallet },
   { href: "/admin/tasks", label: "Tâches", icon: ListTodo },
   { href: "/admin/exchange-rates", label: "Taux de change", icon: Coins },
+  { href: "/admin/financial-reports", label: "Rapports financiers", icon: FileBarChart },
 ];
 
 export default function AdminHome() {

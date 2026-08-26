@@ -19,6 +19,7 @@ import ma.zyn.app.zynerator.bean.BaseEntity;
 import jakarta.persistence.*;
 import java.util.Objects;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "financial_report")
@@ -34,6 +35,13 @@ public class FinancialReport  extends BaseEntity     {
     private BigDecimal totalCharges = BigDecimal.ZERO;
 
     private BigDecimal netProfit = BigDecimal.ZERO;
+
+    // Periode couverte par le rapport (bornes incluses). Absente du schema genere a l'origine -
+    // ajoutee pour ce chantier, voir NOTES-rapports-financiers.md. Necessaire pour savoir quelles
+    // Reservation/Charge entrent dans le calcul (financialReportType ne donne que la NATURE de
+    // la periode - Mensuel/Annuel - jamais sa valeur reelle).
+    private LocalDate periodStart ;
+    private LocalDate periodEnd ;
 
     private LocalDateTime generatedAt ;
 
@@ -87,6 +95,18 @@ public class FinancialReport  extends BaseEntity     {
     }
     public void setNetProfit(BigDecimal netProfit){
         this.netProfit = netProfit;
+    }
+    public LocalDate getPeriodStart(){
+        return this.periodStart;
+    }
+    public void setPeriodStart(LocalDate periodStart){
+        this.periodStart = periodStart;
+    }
+    public LocalDate getPeriodEnd(){
+        return this.periodEnd;
+    }
+    public void setPeriodEnd(LocalDate periodEnd){
+        this.periodEnd = periodEnd;
     }
     public LocalDateTime getGeneratedAt(){
         return this.generatedAt;

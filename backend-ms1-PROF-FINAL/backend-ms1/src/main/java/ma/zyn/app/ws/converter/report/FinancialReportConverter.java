@@ -70,6 +70,10 @@ public class FinancialReportConverter {
                 item.setTotalCharges(dto.getTotalCharges());
             if(StringUtil.isNotEmpty(dto.getNetProfit()))
                 item.setNetProfit(dto.getNetProfit());
+            if(dto.getPeriodStart() != null)
+                item.setPeriodStart(dto.getPeriodStart());
+            if(dto.getPeriodEnd() != null)
+                item.setPeriodEnd(dto.getPeriodEnd());
             if(StringUtil.isNotEmpty(dto.getGeneratedAt()))
                 item.setGeneratedAt(DateUtil.stringEnToDate(dto.getGeneratedAt()));
             if(StringUtil.isNotEmpty(dto.getFile()))
@@ -115,6 +119,10 @@ public class FinancialReportConverter {
                 dto.setTotalCharges(item.getTotalCharges());
             if(StringUtil.isNotEmpty(item.getNetProfit()))
                 dto.setNetProfit(item.getNetProfit());
+            if(item.getPeriodStart() != null)
+                dto.setPeriodStart(item.getPeriodStart());
+            if(item.getPeriodEnd() != null)
+                dto.setPeriodEnd(item.getPeriodEnd());
             if(item.getGeneratedAt()!=null)
                 dto.setGeneratedAt(DateUtil.dateTimeToString(item.getGeneratedAt()));
             if(StringUtil.isNotEmpty(item.getFile()))

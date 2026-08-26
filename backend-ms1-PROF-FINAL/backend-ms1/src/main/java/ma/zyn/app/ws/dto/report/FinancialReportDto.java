@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 import java.util.Date;
+import java.time.LocalDate;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -22,6 +23,8 @@ public class FinancialReportDto  extends AuditBaseDto {
     private BigDecimal totalRevenue  ;
     private BigDecimal totalCharges  ;
     private BigDecimal netProfit  ;
+    private LocalDate periodStart ;
+    private LocalDate periodEnd ;
     private String generatedAt ;
     private String file  ;
 
@@ -58,6 +61,20 @@ public class FinancialReportDto  extends AuditBaseDto {
     }
     public void setNetProfit(BigDecimal netProfit){
         this.netProfit = netProfit;
+    }
+
+    public LocalDate getPeriodStart(){
+        return this.periodStart;
+    }
+    public void setPeriodStart(LocalDate periodStart){
+        this.periodStart = periodStart;
+    }
+
+    public LocalDate getPeriodEnd(){
+        return this.periodEnd;
+    }
+    public void setPeriodEnd(LocalDate periodEnd){
+        this.periodEnd = periodEnd;
     }
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy HH:mm")

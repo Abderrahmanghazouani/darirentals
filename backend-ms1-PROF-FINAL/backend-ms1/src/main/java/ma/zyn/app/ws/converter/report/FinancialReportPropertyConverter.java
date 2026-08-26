@@ -72,11 +72,31 @@ public class FinancialReportPropertyConverter {
             if(StringUtil.isNotEmpty(item.getId()))
                 dto.setId(item.getId());
             if(this.financialReport && item.getFinancialReport()!=null) {
+                // Meme logique que pour "property" ci-dessous : sans ce garde-fou, le cycle
+                // FinancialReportProperty -> FinancialReport -> Enterprise -> properties ->
+                // FinancialReportProperty -> ... provoque un StackOverflowError des que
+                // l'enterprise du converter partage est en initObject(true) (ex: findAll()).
+                boolean savedEnterprise = financialReportConverter.isEnterprise();
+                boolean savedFinancialReportProperties = financialReportConverter.isFinancialReportProperties();
+                financialReportConverter.setEnterprise(false);
+                financialReportConverter.setFinancialReportProperties(false);
                 dto.setFinancialReport(financialReportConverter.toDto(item.getFinancialReport())) ;
+                financialReportConverter.setEnterprise(savedEnterprise);
+                financialReportConverter.setFinancialReportProperties(savedFinancialReportProperties);
 
             }
             if(this.property && item.getProperty()!=null) {
+                // Evite le cycle infini (StackOverflowError) Property -> Enterprise ->
+                // properties -> financialReportProperties -> FinancialReport -> ... : on
+                // desactive temporairement ces deux expansions sur le converter partage avant
+                // de convertir la propriete, puis on restaure son etat precedent.
+                boolean savedEnterprise = propertyConverter.isEnterprise();
+                boolean savedFinancialReportProperties = propertyConverter.isFinancialReportProperties();
+                propertyConverter.setEnterprise(false);
+                propertyConverter.setFinancialReportProperties(false);
                 dto.setProperty(propertyConverter.toDto(item.getProperty())) ;
+                propertyConverter.setEnterprise(savedEnterprise);
+                propertyConverter.setFinancialReportProperties(savedFinancialReportProperties);
 
             }
 
