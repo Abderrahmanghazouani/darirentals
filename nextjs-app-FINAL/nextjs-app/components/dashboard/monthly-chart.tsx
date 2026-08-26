@@ -21,9 +21,13 @@ export interface MonthlyFinancials {
 
 interface MonthlyChartProps {
   data: MonthlyFinancials[];
+  /** Personnalise l'affichage des montants (ex: conversion devise). Par défaut : MAD brut. */
+  formatValue?: (value: number) => string;
 }
 
-export function MonthlyChart({ data }: MonthlyChartProps) {
+export function MonthlyChart({ data, formatValue }: MonthlyChartProps) {
+  const format = formatValue ?? ((value: number) => `${value.toLocaleString("fr-FR")} MAD`);
+
   if (data.length === 0) {
     return (
       <p className="text-sm text-muted-foreground text-center py-12">
@@ -40,7 +44,7 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip
-            formatter={(value: number) => `${value.toLocaleString("fr-FR")} MAD`}
+            formatter={(value) => format(Number(value))}
           />
           <Legend />
           <Bar dataKey="revenue" name="Revenus" fill="#16a34a" radius={[4, 4, 0, 0]} />

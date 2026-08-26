@@ -9,6 +9,7 @@ import {
   Building2,
   CalendarCheck,
   CalendarDays,
+  Coins,
   Grid3x3,
   LogOut,
   Receipt,
@@ -28,8 +29,13 @@ import { ClientDto } from "@/lib/types/Client";
 import { ChargeDto } from "@/lib/types/Charge";
 import { MonthlyChart } from "@/components/dashboard/monthly-chart";
 import { computeMonthlyFinancials } from "@/lib/compute-monthly-financials";
+import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
+import { CurrencySelector } from "@/components/currency/currency-selector";
 
 const ROLE = "admin" as const;
+
+const fetchCurrencies = () => getEntityClients(ROLE).currency.findAll();
+const fetchRates = () => getEntityClients(ROLE).exchangeRate.findAll();
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -41,11 +47,23 @@ const tools = [
   { href: "/admin/charges", label: "Charges", icon: Receipt },
   { href: "/admin/payments", label: "Paiements aux prestataires", icon: Wallet },
   { href: "/admin/tasks", label: "Tâches", icon: ListTodo },
+  { href: "/admin/exchange-rates", label: "Taux de change", icon: Coins },
 ];
 
 export default function AdminHome() {
   const ready = useRequireRole(ROLE);
+  if (!ready) return null;
+
+  return (
+    <CurrencyProvider fetchCurrencies={fetchCurrencies} fetchRates={fetchRates}>
+      <AdminDashboard />
+    </CurrencyProvider>
+  );
+}
+
+function AdminDashboard() {
   const router = useRouter();
+  const { format } = useCurrency();
 
   const [properties, setProperties] = useState<PropertyDto[] | null>(null);
   const [reservations, setReservations] = useState<ReservationDto[] | null>(null);
@@ -92,21 +110,22 @@ export default function AdminHome() {
 
   const loading = properties === null || reservations === null || clients === null;
 
-  if (!ready) return null;
-
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Tableau de bord</h1>
-        <Button
-          variant="outline"
-          onClick={() => {
-            logout();
-            router.push("/login");
-          }}
-        >
-          <LogOut className="size-4" /> Déconnexion
-        </Button>
+        <div className="flex items-center gap-2">
+          <CurrencySelector />
+          <Button
+            variant="outline"
+            onClick={() => {
+              logout();
+              router.push("/login");
+            }}
+          >
+            <LogOut className="size-4" /> Déconnexion
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -164,9 +183,8 @@ export default function AdminHome() {
               <div>
                 <p className="text-sm text-muted-foreground">Revenu (réservations)</p>
                 <p className="text-3xl font-bold">
-                  {loading ? "…" : stats.totalRevenue.toLocaleString("fr-FR")}
+                  {loading ? "…" : format(stats.totalRevenue)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">MAD</p>
               </div>
               <Wallet className="size-8 text-muted-foreground" />
             </div>
@@ -182,7 +200,7 @@ export default function AdminHome() {
           {loading ? (
             <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
           ) : (
-            <MonthlyChart data={monthlyData} />
+            <MonthlyChart data={monthlyData} formatValue={format} />
           )}
         </CardContent>
       </Card>

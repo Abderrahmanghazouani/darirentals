@@ -16,9 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import {
   fetchPublicProperties,
+  fetchPublicCurrencies,
+  fetchPublicExchangeRates,
   submitReservationRequest,
   PublicPropertyDto,
 } from "@/lib/public-api";
+import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
+import { CurrencySelector } from "@/components/currency/currency-selector";
 
 const CONTACT_PHONE = "+212 6 XX XX XX XX";
 
@@ -38,6 +42,15 @@ function MapLink(props: { lat: number; lng: number }) {
 }
 
 export default function ReserverPage() {
+  return (
+    <CurrencyProvider fetchCurrencies={fetchPublicCurrencies} fetchRates={fetchPublicExchangeRates}>
+      <ReserverContent />
+    </CurrencyProvider>
+  );
+}
+
+function ReserverContent() {
+  const { format } = useCurrency();
   const [properties, setProperties] = useState<PublicPropertyDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<PublicPropertyDto | null>(null);
@@ -104,6 +117,10 @@ export default function ReserverPage() {
         <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
           <Phone className="size-4" /> {CONTACT_PHONE}
         </p>
+        <div className="flex items-center justify-center gap-2 pt-1">
+          <span className="text-xs text-muted-foreground">Afficher les prix en :</span>
+          <CurrencySelector />
+        </div>
       </div>
 
       {loading ? (
@@ -133,7 +150,7 @@ export default function ReserverPage() {
                   )}
                 </div>
                 <p className="text-lg font-semibold">
-                  {p.pricePerNight != null ? p.pricePerNight + " MAD" : "—"}
+                  {p.pricePerNight != null ? format(p.pricePerNight) : "—"}
                   <span className="text-xs text-muted-foreground font-normal"> / nuit</span>
                 </p>
                 <Button className="w-full" onClick={() => openRequestForm(p)}>
