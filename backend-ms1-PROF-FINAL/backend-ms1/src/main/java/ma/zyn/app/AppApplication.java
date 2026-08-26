@@ -8,6 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.cloud.openfeign.EnableFeignClients;
@@ -60,6 +61,7 @@ import ma.zyn.app.bean.core.property.PropertyStatus;
 import ma.zyn.app.service.facade.admin.property.PropertyStatusAdminService;
 import ma.zyn.app.bean.core.currency.Currency;
 import ma.zyn.app.service.facade.admin.currency.CurrencyAdminService;
+import ma.zyn.app.service.facade.admin.currency.ExchangeRateAdminService;
 import ma.zyn.app.bean.core.report.FinancialReportType;
 import ma.zyn.app.service.facade.admin.report.FinancialReportTypeAdminService;
 import ma.zyn.app.bean.core.document.DocumentType;
@@ -69,6 +71,7 @@ import ma.zyn.app.zynerator.security.bean.User;
 import ma.zyn.app.zynerator.security.bean.Role;
 
 @SpringBootApplication
+@EnableScheduling
 //@EnableFeignClients
 public class AppApplication {
     public static ConfigurableApplicationContext ctx;
@@ -118,6 +121,7 @@ public class AppApplication {
             createTaskPriority();
             createPropertyStatus();
             createCurrency();
+            createExchangeRate();
             createFinancialReportType();
             createDocumentType();
 
@@ -486,23 +490,67 @@ public class AppApplication {
             itemSuccess.setStyle("success");
             itemSuccess.setLabel("MAD");
             itemSuccess.setCode("MAD");
+            itemSuccess.setSymbol("DH");
+            // Devise de reference de l'application (Maroc) - voir NOTES-devises.md.
+            itemSuccess.setIsDefault(true);
             currencyService.create(itemSuccess);
             Currency itemInfo = new Currency();
             itemInfo.setStyle("info");
             itemInfo.setLabel("EUR");
             itemInfo.setCode("EUR");
+            itemInfo.setSymbol("€");
             currencyService.create(itemInfo);
             Currency itemDanger = new Currency();
             itemDanger.setStyle("danger");
             itemDanger.setLabel("GBP");
             itemDanger.setCode("GBP");
+            itemDanger.setSymbol("£");
             currencyService.create(itemDanger);
             Currency itemWarning = new Currency();
             itemWarning.setStyle("warning");
             itemWarning.setLabel("USD");
             itemWarning.setCode("USD");
+            itemWarning.setSymbol("$");
             currencyService.create(itemWarning);
 
+    }
+
+    // Chantier devises : taux de change de depart (MAD -> devise), saisis manuellement.
+    // Un admin peut les corriger ensuite via l'ecran de gestion des taux de change.
+    // Idempotent : ne recree pas une ligne si un taux existe deja pour cette paire.
+    private void createExchangeRate(){
+        Currency mad = findCurrencyByCode("MAD");
+        if (mad == null) {
+            return;
+        }
+        createExchangeRateIfAbsent(mad, "EUR", new java.math.BigDecimal("0.092"), "Saisie manuelle (seed initial)");
+        createExchangeRateIfAbsent(mad, "USD", new java.math.BigDecimal("0.100"), "Saisie manuelle (seed initial)");
+        createExchangeRateIfAbsent(mad, "GBP", new java.math.BigDecimal("0.079"), "Saisie manuelle (seed initial)");
+    }
+
+    private Currency findCurrencyByCode(String code) {
+        return currencyService.findAll().stream()
+                .filter(c -> code.equals(c.getCode()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void createExchangeRateIfAbsent(Currency base, String targetCode, java.math.BigDecimal rate, String source) {
+        Currency target = findCurrencyByCode(targetCode);
+        if (target == null) {
+            return;
+        }
+        boolean exists = exchangeRateService.findByBaseCurrencyId(base.getId()).stream()
+                .anyMatch(er -> er.getTargetCurrency() != null && target.getId().equals(er.getTargetCurrency().getId()));
+        if (exists) {
+            return;
+        }
+        ma.zyn.app.bean.core.currency.ExchangeRate exchangeRate = new ma.zyn.app.bean.core.currency.ExchangeRate();
+        exchangeRate.setBaseCurrency(base);
+        exchangeRate.setTargetCurrency(target);
+        exchangeRate.setRate(rate);
+        exchangeRate.setSource(source);
+        exchangeRateService.create(exchangeRate);
     }
     private void createFinancialReportType(){
             FinancialReportType itemInfo = new FinancialReportType();
@@ -649,6 +697,8 @@ public class AppApplication {
     PropertyStatusAdminService propertyStatusService;
     @Autowired
     CurrencyAdminService currencyService;
+    @Autowired
+    ExchangeRateAdminService exchangeRateService;
     @Autowired
     FinancialReportTypeAdminService financialReportTypeService;
     @Autowired

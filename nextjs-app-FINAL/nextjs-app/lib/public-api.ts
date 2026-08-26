@@ -1,5 +1,9 @@
+import { CurrencyDto } from "@/lib/types/Currency";
+import { ExchangeRateDto } from "@/lib/types/ExchangeRate";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8036/api/";
 const BASE = API_BASE + "open/reservation-request/";
+const CURRENCY_BASE = API_BASE + "open/currency/";
 
 export interface PublicPropertyDto {
   id: number;
@@ -24,6 +28,20 @@ export interface PublicRequestInput {
 export async function fetchPublicProperties(): Promise<PublicPropertyDto[]> {
   const res = await fetch(BASE + "properties", { cache: "no-store" });
   if (!res.ok) throw new Error("Impossible de charger les propriétés");
+  const data = await res.json();
+  return data ?? [];
+}
+
+export async function fetchPublicCurrencies(): Promise<CurrencyDto[]> {
+  const res = await fetch(CURRENCY_BASE + "currencies", { cache: "no-store" });
+  if (!res.ok) throw new Error("Impossible de charger les devises");
+  const data = await res.json();
+  return data ?? [];
+}
+
+export async function fetchPublicExchangeRates(): Promise<ExchangeRateDto[]> {
+  const res = await fetch(CURRENCY_BASE + "exchange-rates", { cache: "no-store" });
+  if (!res.ok) throw new Error("Impossible de charger les taux de change");
   const data = await res.json();
   return data ?? [];
 }

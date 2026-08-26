@@ -2,11 +2,23 @@ package ma.zyn.app.zynerator.transverse.data;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
+/**
+ * Desactive par defaut : ce scheduler pousse un dump de la base vers un depot Git distant
+ * avec des identifiants places en placeholder dans application.properties
+ * (remoteRepo.accessToken=yourAccessTokenPlz). @EnableScheduling a ete ajoute pour le nouveau
+ * ExchangeRateSyncService (NOTES-devises.md) - sans ce garde-fou, ce scheduler se serait
+ * reveille par effet de bord (il etait inerte jusqu'ici faute de @EnableScheduling). A activer
+ * explicitement via database.dump.scheduler.enabled=true une fois de vrais identifiants
+ * configures.
+ */
 @Component
+@ConditionalOnProperty(name = "database.dump.scheduler.enabled", havingValue = "true")
 public class DatabaseDumpScheduler {
     @Value("${spring.datasource.username}")
     private String dbUsername;

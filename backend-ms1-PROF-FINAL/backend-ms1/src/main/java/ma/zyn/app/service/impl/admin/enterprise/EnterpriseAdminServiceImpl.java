@@ -167,6 +167,14 @@ public class EnterpriseAdminServiceImpl implements EnterpriseAdminService {
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public Enterprise create(Enterprise t) {
+        if (t.getCurrency() == null) {
+            // Devise de reference par defaut (MAD) si l'admin n'en choisit pas explicitement -
+            // voir NOTES-devises.md.
+            t.setCurrency(currencyService.findAll().stream()
+                    .filter(c -> Boolean.TRUE.equals(c.getIsDefault()))
+                    .findFirst()
+                    .orElse(null));
+        }
         Enterprise loaded = findByReferenceEntity(t);
         Enterprise saved;
         if (loaded == null) {
