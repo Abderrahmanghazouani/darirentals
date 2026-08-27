@@ -26,11 +26,11 @@ import { ReservationDto } from "@/lib/types/Reservation";
 import { ClientDto } from "@/lib/types/Client";
 import { ChargeDto } from "@/lib/types/Charge";
 import { TaskDto } from "@/lib/types/Task";
-import { MonthlyChart } from "@/components/dashboard/monthly-chart";
-import { computeMonthlyFinancials, CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
+import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 import { computeHealthScore } from "@/lib/dashboard/health-score";
 import { HealthScoreCard } from "@/components/dashboard/health-score-card";
 import { PremiumHeader } from "@/components/dashboard/premium-header";
+import { RevenueIntelligenceCard } from "@/components/dashboard/revenue-intelligence-card";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 
 const ROLE = "admin" as const;
@@ -108,10 +108,6 @@ function AdminDashboard() {
       totalClients: (clients ?? []).length,
     };
   }, [properties, reservations, clients]);
-
-  const monthlyData = useMemo(() => {
-    return computeMonthlyFinancials(reservations ?? [], charges ?? []);
-  }, [reservations, charges]);
 
   const healthScore = useMemo(() => {
     return computeHealthScore(properties ?? [], reservations ?? [], charges ?? [], tasks ?? []);
@@ -194,18 +190,15 @@ function AdminDashboard() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Revenus / Charges / Bénéfice — 6 derniers mois</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
+      {loading ? (
+        <Card>
+          <CardContent>
             <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
-          ) : (
-            <MonthlyChart data={monthlyData} formatValue={format} />
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <RevenueIntelligenceCard reservations={reservations ?? []} charges={charges ?? []} formatValue={format} />
+      )}
 
       <Card>
         <CardHeader>

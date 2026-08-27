@@ -11,8 +11,14 @@ const MONTH_LABELS = [
 // app/admin/page.tsx, qui doit exclure les mêmes réservations annulées.
 export const CANCELLED_STATUS_CODE = "Annulee";
 
+export type FinancialsGranularity = "day" | "month";
+
 function monthKey(dateStr: string): string {
   return dateStr.slice(0, 7); // "YYYY-MM"
+}
+
+function dayKey(dateStr: string): string {
+  return dateStr.slice(0, 10); // "YYYY-MM-DD"
 }
 
 function monthLabel(key: string): string {
@@ -21,41 +27,63 @@ function monthLabel(key: string): string {
   return `${MONTH_LABELS[index] ?? month} ${year}`;
 }
 
-/** Construit les 6 derniers mois (y compris le mois en cours), avec revenus/charges/bénéfice. */
+function dayLabel(key: string): string {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+}
+
+/**
+ * Construit une série revenus/charges/bénéfice sur les `count` dernières unités de temps
+ * (mois par défaut, jours si granularity="day"), unité en cours incluse.
+ *
+ * Compatibilité : le comportement par défaut (3 arguments, granularity="month") reste
+ * strictement identique à avant - voir les appels existants dans app/admin/page.tsx et
+ * lib/dashboard/health-score.ts, qui ne passent jamais de 4e argument.
+ */
 export function computeMonthlyFinancials(
   reservations: ReservationDto[],
   charges: ChargeDto[],
-  monthsCount = 6
+  count = 6,
+  granularity: FinancialsGranularity = "month"
 ): MonthlyFinancials[] {
   const now = new Date();
   const keys: string[] = [];
-  for (let i = monthsCount - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    keys.push(key);
+  for (let i = count - 1; i >= 0; i--) {
+    if (granularity === "day") {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      keys.push(
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+      );
+    } else {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
   }
 
-  const revenueByMonth: Record<string, number> = {};
-  const chargesByMonth: Record<string, number> = {};
+  const keyOf = granularity === "day" ? dayKey : monthKey;
+  const labelOf = granularity === "day" ? dayLabel : monthLabel;
+
+  const revenueByKey: Record<string, number> = {};
+  const chargesByKey: Record<string, number> = {};
 
   for (const r of reservations) {
     if (!r.checkInDate || r.amount == null) continue;
     if (r.reservationStatus?.code === CANCELLED_STATUS_CODE) continue;
-    const key = monthKey(r.checkInDate);
-    revenueByMonth[key] = (revenueByMonth[key] ?? 0) + r.amount;
+    const key = keyOf(r.checkInDate);
+    revenueByKey[key] = (revenueByKey[key] ?? 0) + r.amount;
   }
 
   for (const c of charges) {
     if (!c.chargeDate || c.amount == null) continue;
-    const key = monthKey(c.chargeDate);
-    chargesByMonth[key] = (chargesByMonth[key] ?? 0) + c.amount;
+    const key = keyOf(c.chargeDate);
+    chargesByKey[key] = (chargesByKey[key] ?? 0) + c.amount;
   }
 
   return keys.map((key) => {
-    const revenue = revenueByMonth[key] ?? 0;
-    const chargesTotal = chargesByMonth[key] ?? 0;
+    const revenue = revenueByKey[key] ?? 0;
+    const chargesTotal = chargesByKey[key] ?? 0;
     return {
-      month: monthLabel(key),
+      month: labelOf(key),
       revenue,
       charges: chargesTotal,
       profit: revenue - chargesTotal,

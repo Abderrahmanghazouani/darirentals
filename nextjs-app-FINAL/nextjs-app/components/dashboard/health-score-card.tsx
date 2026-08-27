@@ -1,6 +1,5 @@
 "use client";
 
-import { RadialBar, RadialBarChart, PolarAngleAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   HealthScore,
@@ -8,18 +7,21 @@ import {
   HEALTH_SCORE_LEVEL_LABEL,
 } from "@/lib/dashboard/health-score";
 
+// Tokens de thème (palette DariRentals - voir app/globals.css) : Excellent = succès (teal),
+// Bon et À surveiller = avertissement (ambre, 2 intensités de fond pour les distinguer),
+// Critique = destructif (rouge doux).
 const LEVEL_COLOR: Record<HealthScoreLevel, string> = {
-  excellent: "#16a34a", // green-600
-  good: "#84cc16", // lime-500
-  watch: "#f59e0b", // amber-500
-  critical: "#dc2626", // red-600
+  excellent: "var(--color-success)",
+  good: "var(--color-warning)",
+  watch: "var(--color-warning)",
+  critical: "var(--color-destructive)",
 };
 
 const LEVEL_BADGE_CLASS: Record<HealthScoreLevel, string> = {
-  excellent: "bg-green-600/10 text-green-700 dark:text-green-400",
-  good: "bg-lime-500/10 text-lime-700 dark:text-lime-400",
-  watch: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  critical: "bg-red-600/10 text-red-700 dark:text-red-400",
+  excellent: "bg-success/10 text-success",
+  good: "bg-warning/10 text-warning",
+  watch: "bg-warning/20 text-warning",
+  critical: "bg-destructive/10 text-destructive",
 };
 
 function componentColor(score: number): string {
@@ -33,9 +35,19 @@ interface HealthScoreCardProps {
   score: HealthScore;
 }
 
+// Anneau de progression en SVG pur (stroke-dasharray/dashoffset) - technique standard,
+// indépendante de recharts. Choisie après avoir constaté que le RadialBarChart de recharts
+// v3 (layout "centric", axe d'angle numérique) ne rendait aucun secteur pour ce cas d'usage
+// précis (jauge circulaire complète, valeur = angle) - comportement interne non documenté
+// et trop fragile pour un simple indicateur visuel.
+const GAUGE_SIZE = 180;
+const GAUGE_STROKE = 14;
+const GAUGE_RADIUS = (GAUGE_SIZE - GAUGE_STROKE) / 2;
+const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
+
 export function HealthScoreCard({ score }: HealthScoreCardProps) {
   const color = LEVEL_COLOR[score.level];
-  const gaugeData = [{ name: "score", value: score.total, fill: color }];
+  const dashOffset = GAUGE_CIRCUMFERENCE * (1 - score.total / 100);
 
   return (
     <Card>
@@ -44,27 +56,30 @@ export function HealthScoreCard({ score }: HealthScoreCardProps) {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row items-center gap-6">
-          <div className="relative shrink-0" style={{ width: 180, height: 180 }}>
-            <RadialBarChart
-              width={180}
-              height={180}
-              cx="50%"
-              cy="50%"
-              innerRadius="72%"
-              outerRadius="100%"
-              barSize={14}
-              data={gaugeData}
-              startAngle={90}
-              endAngle={-270}
-            >
-              <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-              <RadialBar
-                background={{ fill: "var(--muted)" }}
-                dataKey="value"
-                cornerRadius={10}
-                angleAxisId={0}
+          <div className="relative shrink-0" style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}>
+            <svg width={GAUGE_SIZE} height={GAUGE_SIZE} viewBox={`0 0 ${GAUGE_SIZE} ${GAUGE_SIZE}`}>
+              <circle
+                cx={GAUGE_SIZE / 2}
+                cy={GAUGE_SIZE / 2}
+                r={GAUGE_RADIUS}
+                fill="none"
+                stroke="var(--muted)"
+                strokeWidth={GAUGE_STROKE}
               />
-            </RadialBarChart>
+              <circle
+                cx={GAUGE_SIZE / 2}
+                cy={GAUGE_SIZE / 2}
+                r={GAUGE_RADIUS}
+                fill="none"
+                stroke={color}
+                strokeWidth={GAUGE_STROKE}
+                strokeLinecap="round"
+                strokeDasharray={GAUGE_CIRCUMFERENCE}
+                strokeDashoffset={dashOffset}
+                transform={`rotate(-90 ${GAUGE_SIZE / 2} ${GAUGE_SIZE / 2})`}
+                className="transition-[stroke-dashoffset] duration-500"
+              />
+            </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-4xl font-bold tabular-nums">{score.total}</span>
               <span
