@@ -7,6 +7,10 @@ const MONTH_LABELS = [
   "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc",
 ];
 
+// Code seedé dans AppApplication.createReservationStatus() - voir aussi totalRevenue dans
+// app/admin/page.tsx, qui doit exclure les mêmes réservations annulées.
+export const CANCELLED_STATUS_CODE = "Annulee";
+
 function monthKey(dateStr: string): string {
   return dateStr.slice(0, 7); // "YYYY-MM"
 }
@@ -36,6 +40,7 @@ export function computeMonthlyFinancials(
 
   for (const r of reservations) {
     if (!r.checkInDate || r.amount == null) continue;
+    if (r.reservationStatus?.code === CANCELLED_STATUS_CODE) continue;
     const key = monthKey(r.checkInDate);
     revenueByMonth[key] = (revenueByMonth[key] ?? 0) + r.amount;
   }
