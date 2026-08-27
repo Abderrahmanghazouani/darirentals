@@ -45,6 +45,10 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Animation d'apparition discrète, partagée par toutes les sections du dashboard - une
+// seule fois au montage, jamais rejouée au re-render (pas de dépendance à un état togglé).
+const ENTRANCE = "animate-in fade-in slide-in-from-bottom-2 duration-200 fill-mode-both";
+
 const tools = [
   { href: "/admin/property", label: "Propriétés", icon: Building2 },
   { href: "/admin/reservations", label: "Réservations (calendrier)", icon: CalendarDays },
@@ -130,16 +134,23 @@ function AdminDashboard() {
     reservationRequests === null;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    // min-w-0 : <body> (app/layout.tsx) est flex-col, donc cette racine de page est un enfant
+    // flex qui, sans ça, ne rétrécit jamais sous la largeur de son contenu le plus large -
+    // c'était la vraie source du débordement horizontal mobile (le graphique/tableau les plus
+    // larges remontaient jusqu'ici). Les fixs sur Card/CardContent restent utiles pour les
+    // futures cartes imbriquées dans un autre flex-col, mais celui-ci était le verrou manquant.
+    <div className="w-full min-w-0 p-6 max-w-6xl mx-auto space-y-6">
       <PremiumHeader activeProperties={stats.activeProperties} loading={loading} />
 
       {loading ? (
-        <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>
+        <p className={`text-sm text-muted-foreground text-center py-8 ${ENTRANCE}`}>Chargement...</p>
       ) : (
-        <HealthScoreCard score={healthScore} />
+        <div className={ENTRANCE}>
+          <HealthScoreCard score={healthScore} />
+        </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${ENTRANCE}`}>
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -204,31 +215,35 @@ function AdminDashboard() {
       </div>
 
       {loading ? (
-        <Card>
+        <Card className={ENTRANCE}>
           <CardContent>
             <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
           </CardContent>
         </Card>
       ) : (
-        <RevenueIntelligenceCard reservations={reservations ?? []} charges={charges ?? []} formatValue={format} />
+        <div className={ENTRANCE}>
+          <RevenueIntelligenceCard reservations={reservations ?? []} charges={charges ?? []} formatValue={format} />
+        </div>
       )}
 
       {loading ? (
-        <Card>
+        <Card className={ENTRANCE}>
           <CardContent>
             <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
           </CardContent>
         </Card>
       ) : (
-        <PropertyPerformanceCard
-          properties={properties ?? []}
-          reservations={reservations ?? []}
-          charges={charges ?? []}
-          formatValue={format}
-        />
+        <div className={ENTRANCE}>
+          <PropertyPerformanceCard
+            properties={properties ?? []}
+            reservations={reservations ?? []}
+            charges={charges ?? []}
+            formatValue={format}
+          />
+        </div>
       )}
 
-      <Card>
+      <Card className={ENTRANCE}>
         <CardHeader>
           <CardTitle>Outils</CardTitle>
         </CardHeader>
@@ -248,7 +263,7 @@ function AdminDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 ${ENTRANCE}`}>
         <Card>
           <CardHeader>
             <CardTitle>Prochaines arrivées</CardTitle>
@@ -292,7 +307,7 @@ function AdminDashboard() {
         )}
       </div>
 
-      <Card>
+      <Card className={ENTRANCE}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
