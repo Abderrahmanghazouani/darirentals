@@ -269,6 +269,143 @@ création de ServiceProvider, création de Collaborator, scan de facture IA — 
 
 ---
 
-## Chantier 3 — Restriction Gestionnaire par propriété précise
+## Réconciliation avec `main` (27/08)
 
-Pas commencé.
+Les Chantiers 1 et 2 ci-dessus ont été développés sur `feature/permissions-reelles` le
+25-26/08, mais cette branche n'avait jamais été mergée dans `main` — `main` a continué sur
+d'autres chantiers (rapports financiers, multi-devises, refonte design, corrections de
+cycles infinis dans les converters). Le travail a été récupéré et réconcilié manuellement
+sur `feature/permissions-reelles-v2` : seul `EnterpriseMembershipConverter.toItem()` avait
+été corrigé indépendamment des deux côtés pour le même bug (perte du `collaboratorRole` à la
+création) — les deux versions étaient fonctionnellement équivalentes, celle de `main` a été
+conservée après relecture ligne par ligne. Tous les autres fichiers du chantier permissions
+se sont appliqués sans chevauchement. Chantiers 1 et 2 entièrement re-testés avec de
+nouvelles données après réconciliation (voir sections ci-dessus) avant de démarrer le
+Chantier 3.
+
+---
+
+## Chantier 3 — Restriction Gestionnaire par propriété précise (FAIT)
+
+### Problème de départ
+
+Un Gestionnaire, même une fois ses 5 permissions de rôle correctement vérifiées (Chantier 2)
+et son accès isolé à sa société (Chantier 1), voyait et pouvait gérer **toutes** les
+propriétés de sa société, sans distinction. Le besoin : un Gestionnaire ne doit voir/gérer
+que les propriétés qui lui sont explicitement assignées ; un SubAdmin n'est jamais concerné
+par cette restriction (il garde un accès total à sa société, comme avant).
+
+### Ce qui a été construit
+
+**Entité `CollaboratorPropertyAccess`** (bean/DTO/DAO/converter/spécification déjà scaffoldés
+lors du Chantier 1, jamais branchés) : simple table de liaison `collaborator` <-> `property`.
+Sans ligne pour une property donnée, un Gestionnaire n'y a pas accès.
+
+**[`EnterpriseAccessService`](src/main/java/ma/zyn/app/service/security/EnterpriseAccessService.java)**
+— trois nouvelles méthodes qui étendent le service du Chantier 1 :
+- `isPropertyRestricted(enterpriseId)` : true sauf si le rôle de la membership du
+  collaborateur pour cette société a le code exact `"SubAdmin"`. **Décision de conception** :
+  une membership sans rôle du tout (edge case) est traitée comme restreinte (deny par défaut,
+  le choix le plus sûr), pas comme un accès total.
+- `getAccessiblePropertyIds()` : les ids de `Property` explicitement assignés au collaborateur
+  authentifié via `CollaboratorPropertyAccessDao.findByCollaboratorId`.
+- `isPropertyAccessible(property)` : point d'entrée unique combinant Chantier 1 (société
+  accessible) ET Chantier 3 (property assignée si restreint) — c'est la seule méthode que les
+  services doivent appeler désormais.
+
+**Branchement, avec un minimum de code grâce à une dépendance déjà existante** :
+`PropertyCollaboratorServiceImpl.isAccessible/findAll/filterAccessible/findByEnterpriseId`
+utilisent maintenant `isPropertyAccessible()`. Comme `ReservationCollaboratorServiceImpl`,
+`ChargeCollaboratorServiceImpl` et `TaskCollaboratorServiceImpl` calculaient déjà leurs
+`accessiblePropertyIds()` en délégant à `propertyService.findAll()` (Chantier 1), la
+restriction Chantier 3 s'y propage **automatiquement**, sans code supplémentaire dans ces 3
+fichiers, à l'exception de leur `isAccessible()` (`findById`/`findWithAssociatedLists`/
+`deleteById`) qui vérifiait l'entreprise directement sans repasser par `accessiblePropertyIds()`
+— corrigé pour rester cohérent.
+
+**Écriture** : `PropertyCollaboratorServiceImpl.update()`/`deleteById()` vérifient en plus
+`assertPropertyManageable()` (property CHARGÉE, pas le DTO envoyé) — un Gestionnaire ne peut
+ni modifier ni supprimer une propriété qui n'est pas dans sa liste. **Décision de conception** :
+`create()` d'une toute nouvelle Property n'est PAS soumis à cette restriction (elle ne peut pas
+déjà être "assignée" avant d'exister) — seule l'isolation par société (Chantier 1) s'applique à
+la création. Reservation/Charge/Task héritent aussi de la restriction en écriture via leur
+`assertPropertyAssignable()` existant (Chantier 1), qui utilise le même `accessiblePropertyIds()`.
+
+**Nettoyage FK** : suppression d'un Collaborator ou d'une Property supprime aussi les lignes
+`CollaboratorPropertyAccess` correspondantes (`CollaboratorPropertyAccessAdminService`/
+`CollaboratorPropertyAccessCollaboratorService`, nouveaux services CRUD standards sans
+logique de permission propre — le contrôle d'accès reste entièrement dans
+`EnterpriseAccessService`/`PropertyCollaboratorServiceImpl`).
+
+**Frontend** ([`app/admin/collaborator/collaborator-form.tsx`](../../nextjs-app-FINAL/nextjs-app/app/admin/collaborator/collaborator-form.tsx)) :
+la section "Rattachement à une société", auparavant visible uniquement à la création,
+s'affiche aussi en édition (société en lecture seule, rôle modifiable — limitation assumée :
+si un collaborateur a plusieurs memberships, seule la première est éditée via cet écran).
+Une sélection multiple de propriétés (checkboxes, filtrées par société choisie) apparaît
+uniquement quand le rôle sélectionné a le code `Gestionnaire`. À l'enregistrement, la liste
+choisie est réconciliée avec les lignes `CollaboratorPropertyAccess` existantes (création des
+nouvelles, suppression des retirées) ; passer un collaborateur de Gestionnaire à SubAdmin
+supprime toutes ses restrictions existantes (elles n'ont plus de sens pour ce rôle).
+
+### Comment retester manuellement
+
+```powershell
+# Gestionnaire avec acces a UNE SEULE propriete sur plusieurs disponibles dans sa societe :
+Invoke-RestMethod http://localhost:8036/api/collaborator/property/ -Headers $hGestionnaireRestreint
+# -> ne doit renvoyer QUE la propriete assignee
+
+Invoke-RestMethod http://localhost:8036/api/collaborator/property/id/<id_autre_propriete_meme_societe> -Headers $hGestionnaireRestreint
+# -> 404 (meme si meme societe)
+
+# Le meme SubAdmin de la meme societe :
+Invoke-RestMethod http://localhost:8036/api/collaborator/property/ -Headers $hSubAdmin
+# -> voit TOUTES les proprietes de la societe, sans exception
+```
+
+**Testé le 27/08** : Gestionnaire avec accès à 1 propriété sur 3 disponibles dans sa société —
+confirmé qu'il ne voit que celle-ci en liste (`findAll`), 403/404 sur l'accès direct par id aux
+2 autres, et sur les Reservation/Charge/Task rattachées à ces 2 autres propriétés (héritage
+automatique via `accessiblePropertyIds()`). Le SubAdmin de la même société continue de tout
+voir sans aucune restriction. Non-régression Chantier 1 (isolation inter-société) et Chantier 2
+(permissions de rôle) reconfirmée en parallèle.
+
+### Limites connues
+
+- Le formulaire admin d'édition d'un collaborateur ne gère qu'une seule `EnterpriseMembership`
+  à la fois (la première trouvée) — un collaborateur multi-société devra être édité société
+  par société via un futur écran dédié si ce besoin se confirme.
+- `CollaboratorPropertyAccessAdminService`/`CollaboratorPropertyAccessCollaboratorService`
+  n'appliquent aucun filtrage par société sur leurs propres `findAll`/`findByCriteria` — sans
+  impact réel puisqu'aucun contrôleur ne les expose pour un usage direct autre que la
+  réconciliation depuis l'écran collaborateur (protégée par `canManageUsers`, Chantier 2) et le
+  nettoyage interne en cascade.
+- **Race condition découverte en testant le multi-select frontend (non liée à la logique de
+  permission elle-même, découverte préexistante plus large)** : en rechargeant plusieurs fois
+  le formulaire d'édition d'un collaborateur, la liste de propriétés proposées dans le
+  multi-select était parfois incomplète (une propriété manquante, différente à chaque essai).
+  Cause tracée : `collaborator-form.tsx` appelle `clients.property.findAll()` au montage : React
+  StrictMode (actif par défaut en dev sur Next.js) invoque cet effet deux fois quasi
+  simultanément, ce qui déclenche deux requêtes concurrentes vers `GET /api/admin/property/`.
+  `PropertyConverter`/`EnterpriseConverter` (comme la quasi-totalité des converters de ce projet
+  généré) sont des `@Component` **singleton** avec des flags d'instance mutables
+  (`private boolean enterprise`, etc.) actionnés via un pattern save-flag/force/convert/restore
+  - exactement la même famille de bug que les cycles infinis déjà corrigés ailleurs cette
+  session (`EnterpriseMembershipConverter`, `AiUsageLogConverter`...). Quand deux requêtes HTTP
+  concurrentes traversent ce converter partagé en même temps, l'une peut voir le flag
+  temporairement mis à `false` par l'autre pendant la fenêtre de conversion, et perdre le champ
+  `enterprise` d'une ou plusieurs `Property` dans sa réponse - de façon non déterministe (quelle
+  requête "gagne" dépend du timing).
+  **Vérifié que ça n'affecte pas la logique de permission Chantier 1/2/3** : tous les tests
+  backend de ce document ont été faits via des appels API séquentiels (jamais concurrents), et
+  le contenu des cases cochées/décochées était systématiquement exact quand les données
+  arrivaient complètes. C'est un défaut d'UI (liste d'options parfois incomplète au rendu), pas
+  une fuite de données ni un contournement de permission.
+  **Portée réelle** : le double-appel StrictMode ne se produit qu'en dev (`next dev`) - un build
+  de production n'invoque pas les effets deux fois. Le risque sous-jacent (converters singleton
+  non thread-safe) reste néanmoins latent en production dès que deux requêtes légitimement
+  concurrentes touchent le même converter partagé (deux onglets admin, deux utilisateurs), avec
+  une probabilité de collision beaucoup plus faible qu'en dev.
+  **Non traité ici** : corriger ça correctement demanderait d'auditer la thread-safety de tous
+  les converters à flags mutables du projet (des dizaines de fichiers, tous générés avec le même
+  pattern) - un chantier à part entière, volontairement laissé de côté. À reprendre séparément
+  si des symptômes similaires (champs manquants de façon intermittente) réapparaissent ailleurs.

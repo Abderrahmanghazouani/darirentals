@@ -79,14 +79,15 @@ public class ChargeCollaboratorServiceImpl implements ChargeCollaboratorService 
         return found;
     }
 
-    /** Chantier 1 (isolation par societe) : Charge n'a pas de lien direct vers
-     * Enterprise, on passe par sa Property. Voir NOTES-permissions.md. */
+    /** Chantier 1 (isolation par societe) + Chantier 3 (restriction par propriete pour un
+     * Gestionnaire) : Charge n'a pas de lien direct vers Enterprise, on passe par sa
+     * Property - accessiblePropertyIds() applique deja les deux (via propertyService.findAll()
+     * qui les combine). Voir NOTES-permissions.md. */
     private boolean isAccessible(Charge charge) {
-        if (charge.getProperty() == null || charge.getProperty().getEnterprise() == null
-                || charge.getProperty().getEnterprise().getId() == null) {
+        if (charge.getProperty() == null || charge.getProperty().getId() == null) {
             return false;
         }
-        return enterpriseAccessService.getAccessibleEnterpriseIds().contains(charge.getProperty().getEnterprise().getId());
+        return accessiblePropertyIds().contains(charge.getProperty().getId());
     }
 
     private List<Charge> filterAccessible(List<Charge> items) {

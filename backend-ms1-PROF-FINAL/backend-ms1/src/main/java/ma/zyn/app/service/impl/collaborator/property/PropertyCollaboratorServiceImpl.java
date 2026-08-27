@@ -46,6 +46,7 @@ import ma.zyn.app.service.facade.collaborator.property.CityCollaboratorService ;
 import ma.zyn.app.bean.core.property.City ;
 import ma.zyn.app.service.facade.collaborator.charge.ChargeCollaboratorService ;
 import ma.zyn.app.bean.core.charge.Charge ;
+import ma.zyn.app.service.facade.collaborator.auth.CollaboratorPropertyAccessCollaboratorService ;
 
 import java.util.List;
 @Service
@@ -58,6 +59,7 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
             throw new EntityNotFoundException("errors.notFound", new String[]{Property.class.getSimpleName(), t.getId().toString()});
         } else {
             assertEnterpriseAssignable(t);
+            assertPropertyManageable(loadedItem);
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
@@ -84,13 +86,23 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
         return found;
     }
 
-    /** Chantier 1 (isolation par societe) : l'entreprise de la property doit faire partie
-     * des EnterpriseMembership du collaborateur authentifie. Voir NOTES-permissions.md. */
+    /** Chantier 1 (isolation par societe) + Chantier 3 (restriction par propriete pour un
+     * Gestionnaire) : combine les deux dans EnterpriseAccessService.isPropertyAccessible().
+     * Voir NOTES-permissions.md. */
     private boolean isAccessible(Property property) {
-        if (property.getEnterprise() == null || property.getEnterprise().getId() == null) {
-            return false;
+        return enterpriseAccessService.isPropertyAccessible(property);
+    }
+
+    /** Chantier 3 : un Gestionnaire ne peut modifier/supprimer que les proprietes qui lui
+     * sont explicitement assignees via CollaboratorPropertyAccess - verifie sur l'entite
+     * CHARGEE (avant modification), pas sur le DTO envoye par le client. Un SubAdmin n'est
+     * jamais concerne. Voir NOTES-permissions.md. */
+    private void assertPropertyManageable(Property loadedItem) {
+        if (!enterpriseAccessService.isPropertyAccessible(loadedItem)) {
+            throw new PermissionDeniedException(
+                "Cette propriete ne vous est pas assignee : impossible de la modifier ou de la supprimer.",
+                new String[]{"Property"});
         }
-        return enterpriseAccessService.getAccessibleEnterpriseIds().contains(property.getEnterprise().getId());
     }
 
 
@@ -108,7 +120,7 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
     }
 
     public List<Property> findAll() {
-        return dao.findByEnterpriseIdIn(enterpriseAccessService.getAccessibleEnterpriseIds());
+        return filterAccessible(dao.findByEnterpriseIdIn(enterpriseAccessService.getAccessibleEnterpriseIds()));
     }
 
     public List<Property> findByCriteria(PropertyCriteria criteria) {
@@ -124,9 +136,8 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
     }
 
     private List<Property> filterAccessible(List<Property> items) {
-        List<Long> accessibleIds = enterpriseAccessService.getAccessibleEnterpriseIds();
         return emptyIfNull(items).stream()
-                .filter(item -> item.getEnterprise() != null && accessibleIds.contains(item.getEnterprise().getId()))
+                .filter(enterpriseAccessService::isPropertyAccessible)
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -191,7 +202,7 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
         if (!enterpriseAccessService.hasAccessToEnterprise(id)) {
             return new ArrayList<>();
         }
-        return dao.findByEnterpriseId(id);
+        return filterAccessible(dao.findByEnterpriseId(id));
     }
     public int deleteByEnterpriseId(Long id){
         return dao.deleteByEnterpriseId(id);
@@ -206,12 +217,15 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
             Property target = dao.findById(id).orElse(null);
             if (target != null) {
                 Long enterpriseId = target.getEnterprise() != null ? target.getEnterprise().getId() : null;
-                // Chantier 1 : isolation par societe. Chantier 2 : permission de role.
+                // Chantier 1 : isolation par societe. Chantier 3 : restriction par propriete
+                // (Gestionnaire uniquement).
                 if (!enterpriseAccessService.hasAccessToEnterprise(enterpriseId)) {
                     throw new PermissionDeniedException(
                         "Vous n'etes pas rattache a cette societe : impossible de supprimer cette propriete.",
                         new String[]{"Property"});
                 }
+                assertPropertyManageable(target);
+                // Chantier 2 : permission de role.
                 effectivePermissionService.assertCanDeleteProperty(enterpriseId);
             }
             deleteAssociatedLists(id);
@@ -227,6 +241,9 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
         financialReportPropertyService.deleteByPropertyId(id);
         reservationRequestService.deleteByRequestedPropertyId(id);
         reservationRequestService.deleteByAlternativePropertyId(id);
+        // Chantier 3 (NOTES-permissions.md) : nettoie les affectations Gestionnaire liees
+        // a cette propriete, sinon lignes orphelines dans collaborator_property_access.
+        propertyAccessService.deleteByPropertyId(id);
     }
 
 
@@ -460,6 +477,8 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
     private EnterpriseAccessService enterpriseAccessService ;
     @Autowired
     private EffectivePermissionService effectivePermissionService ;
+    @Autowired
+    private CollaboratorPropertyAccessCollaboratorService propertyAccessService ;
 
     public PropertyCollaboratorServiceImpl(PropertyDao dao) {
         this.dao = dao;

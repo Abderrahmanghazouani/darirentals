@@ -23,8 +23,9 @@ import { useEntityCrud } from "@/lib/use-entity-crud";
 import { useRequireRole } from "@/lib/use-require-role";
 import { getEntityClients } from "@/lib/api";
 import { CollaboratorDto } from "@/lib/types/Collaborator";
+import { PropertyDto } from "@/lib/types/Property";
 import { newEnterpriseMembershipDto } from "@/lib/types/EnterpriseMembership";
-import { CollaboratorForm } from "./collaborator-form";
+import { CollaboratorForm, MembershipChange } from "./collaborator-form";
 
 const ROLE = "admin" as const;
 
@@ -37,34 +38,72 @@ export default function CollaboratorPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  async function handleFormSubmit(
-    dto: CollaboratorDto,
-    membership: { enterpriseId: number; roleId: number } | null
-  ) {
+  async function handleFormSubmit(dto: CollaboratorDto, membership: MembershipChange | null) {
     setSaving(true);
     setFormError(null);
     try {
       const clients = getEntityClients(ROLE);
+      let collaboratorId: number | null = dto.id;
 
       if (dto.id != null) {
         await clients.collaborator.update(dto);
       } else {
         const created = await clients.collaborator.create(dto);
+        collaboratorId = created.id;
+      }
 
-        if (membership && created.id != null) {
-          const enterprises = await clients.enterprise.findAll();
-          const roles = await clients.collaboratorRole.findAll();
-          const enterprise = enterprises.find((e) => e.id === membership.enterpriseId) ?? null;
-          const collaboratorRole = roles.find((r) => r.id === membership.roleId) ?? null;
+      if (membership && collaboratorId != null) {
+        const enterprises = await clients.enterprise.findAll();
+        const roles = await clients.collaboratorRole.findAll();
+        const enterprise = enterprises.find((e) => e.id === membership.enterpriseId) ?? null;
+        const collaboratorRole = roles.find((r) => r.id === membership.roleId) ?? null;
+        const collaboratorRef = { id: collaboratorId } as CollaboratorDto;
 
+        if (membership.existingMembershipId == null) {
           const membershipDto = {
             ...newEnterpriseMembershipDto(),
-            collaborator: created,
+            collaborator: collaboratorRef,
             enterprise,
             collaboratorRole,
           };
           await clients.enterpriseMembership.create(membershipDto);
+        } else {
+          await clients.enterpriseMembership.update({
+            ...newEnterpriseMembershipDto(),
+            id: membership.existingMembershipId,
+            collaborator: collaboratorRef,
+            enterprise,
+            collaboratorRole,
+          });
         }
+
+        // Chantier 3 : réconcilie les propriétés autorisées (Gestionnaire uniquement).
+        // selectedPropertyIds === null => rôle non-Gestionnaire (SubAdmin) : on retire toute
+        // restriction existante, elle n'a plus de sens pour ce rôle.
+        const currentRows = membership.existingAccessRows;
+        const desiredIds = new Set(membership.selectedPropertyIds ?? []);
+        const toDelete =
+          membership.selectedPropertyIds === null
+            ? currentRows
+            : currentRows.filter((r) => r.propertyId == null || !desiredIds.has(r.propertyId));
+        const existingPropertyIds = new Set(
+          currentRows.map((r) => r.propertyId).filter((id): id is number => id != null)
+        );
+        const toCreate =
+          membership.selectedPropertyIds === null
+            ? []
+            : membership.selectedPropertyIds.filter((id) => !existingPropertyIds.has(id));
+
+        await Promise.all(toDelete.map((r) => clients.collaboratorPropertyAccess.remove(r.id)));
+        await Promise.all(
+          toCreate.map((propertyId) =>
+            clients.collaboratorPropertyAccess.create({
+              id: null,
+              collaborator: collaboratorRef,
+              property: { id: propertyId } as PropertyDto,
+            })
+          )
+        );
       }
 
       await crud.refresh();

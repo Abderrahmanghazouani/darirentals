@@ -11,6 +11,7 @@ import type { EnterpriseDto } from "../types/Enterprise";
 import type { EnterpriseMembershipDto } from "../types/EnterpriseMembership";
 import type { CollaboratorDto } from "../types/Collaborator";
 import type { CollaboratorPermissionOverrideDto } from "../types/CollaboratorPermissionOverride";
+import type { CollaboratorPropertyAccessDto } from "../types/CollaboratorPropertyAccess";
 import type { CollaboratorRoleDto } from "../types/CollaboratorRole";
 import type { TaskDto } from "../types/Task";
 import type { TaskPriorityDto } from "../types/TaskPriority";
@@ -52,6 +53,7 @@ export function getEntityClients(role: Role) {
     enterpriseMembership: createEntityClient<EnterpriseMembershipDto>("enterpriseMembership", role),
     collaborator: createEntityClient<CollaboratorDto>("collaborator", role),
     collaboratorPermissionOverride: createEntityClient<CollaboratorPermissionOverrideDto>("collaboratorPermissionOverride", role),
+    collaboratorPropertyAccess: createEntityClient<CollaboratorPropertyAccessDto>("collaboratorPropertyAccess", role),
     collaboratorRole: createEntityClient<CollaboratorRoleDto>("collaboratorRole", role),
     task: createEntityClient<TaskDto>("task", role),
     taskPriority: createEntityClient<TaskPriorityDto>("taskPriority", role),

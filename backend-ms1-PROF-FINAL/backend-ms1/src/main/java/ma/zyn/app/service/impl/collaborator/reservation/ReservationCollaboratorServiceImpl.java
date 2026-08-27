@@ -78,14 +78,15 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
         return found;
     }
 
-    /** Chantier 1 (isolation par societe) : Reservation n'a pas de lien direct vers
-     * Enterprise, on passe par sa Property. Voir NOTES-permissions.md. */
+    /** Chantier 1 (isolation par societe) + Chantier 3 (restriction par propriete pour un
+     * Gestionnaire) : Reservation n'a pas de lien direct vers Enterprise, on passe par sa
+     * Property - accessiblePropertyIds() applique deja les deux (via propertyService.findAll()
+     * qui les combine). Voir NOTES-permissions.md. */
     private boolean isAccessible(Reservation reservation) {
-        if (reservation.getProperty() == null || reservation.getProperty().getEnterprise() == null
-                || reservation.getProperty().getEnterprise().getId() == null) {
+        if (reservation.getProperty() == null || reservation.getProperty().getId() == null) {
             return false;
         }
-        return enterpriseAccessService.getAccessibleEnterpriseIds().contains(reservation.getProperty().getEnterprise().getId());
+        return accessiblePropertyIds().contains(reservation.getProperty().getId());
     }
 
     private List<Reservation> filterAccessible(List<Reservation> items) {

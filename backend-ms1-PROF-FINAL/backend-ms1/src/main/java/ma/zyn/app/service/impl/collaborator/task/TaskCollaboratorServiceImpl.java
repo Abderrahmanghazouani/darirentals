@@ -76,15 +76,16 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
         return found;
     }
 
-    /** Chantier 1 (isolation par societe) : Task n'a pas de lien direct vers Enterprise,
-     * on passe par sa Property. Les tasks sans property (rattachees seulement a une
-     * reservation ou un prestataire) ne sont pas couvertes ici, voir NOTES-permissions.md. */
+    /** Chantier 1 (isolation par societe) + Chantier 3 (restriction par propriete pour un
+     * Gestionnaire) : Task n'a pas de lien direct vers Enterprise, on passe par sa Property -
+     * accessiblePropertyIds() applique deja les deux (via propertyService.findAll() qui les
+     * combine). Les tasks sans property (rattachees seulement a une reservation ou un
+     * prestataire) ne sont pas couvertes ici, voir NOTES-permissions.md. */
     private boolean isAccessible(Task task) {
-        if (task.getProperty() == null || task.getProperty().getEnterprise() == null
-                || task.getProperty().getEnterprise().getId() == null) {
+        if (task.getProperty() == null || task.getProperty().getId() == null) {
             return false;
         }
-        return enterpriseAccessService.getAccessibleEnterpriseIds().contains(task.getProperty().getEnterprise().getId());
+        return accessiblePropertyIds().contains(task.getProperty().getId());
     }
 
     private List<Task> filterAccessible(List<Task> items) {
