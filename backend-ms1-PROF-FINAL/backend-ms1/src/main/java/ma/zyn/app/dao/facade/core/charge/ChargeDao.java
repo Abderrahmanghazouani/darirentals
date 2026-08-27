@@ -13,6 +13,7 @@ public interface ChargeDao extends AbstractRepository<Charge,Long>  {
     List<Charge> findByPropertyId(Long id);
     int deleteByPropertyId(Long id);
     long countByPropertyId(Long id);
+    List<Charge> findByPropertyIdIn(List<Long> ids);
     List<Charge> findByChargeTypeCode(String code);
     List<Charge> findByChargeTypeId(Long id);
     int deleteByChargeTypeId(Long id);

@@ -3,11 +3,13 @@ package ma.zyn.app.service.impl.collaborator.reservation;
 
 
 import ma.zyn.app.zynerator.exception.EntityNotFoundException;
+import ma.zyn.app.zynerator.exception.PermissionDeniedException;
 import ma.zyn.app.bean.core.reservation.Reservation;
 import ma.zyn.app.dao.criteria.core.reservation.ReservationCriteria;
 import ma.zyn.app.dao.facade.core.reservation.ReservationDao;
 import ma.zyn.app.dao.specification.core.reservation.ReservationSpecification;
 import ma.zyn.app.service.facade.collaborator.reservation.ReservationCollaboratorService;
+import ma.zyn.app.service.security.EnterpriseAccessService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -50,14 +52,54 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{Reservation.class.getSimpleName(), t.getId().toString()});
         } else {
+            assertPropertyAssignable(t);
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
         }
     }
 
+    /** Chantier 1 (isolation par societe, cote ecriture) : la Property rattachee doit
+     * appartenir a une societe accessible. Voir NOTES-permissions.md. */
+    private void assertPropertyAssignable(Reservation t) {
+        Long propertyId = t.getProperty() != null ? t.getProperty().getId() : null;
+        if (propertyId == null || !accessiblePropertyIds().contains(propertyId)) {
+            throw new PermissionDeniedException(
+                "Vous n'etes pas rattache a la societe de cette propriete : impossible de creer ou modifier cette reservation.",
+                new String[]{"Reservation"});
+        }
+    }
+
     public Reservation findById(Long id) {
-        return dao.findById(id).orElse(null);
+        Reservation found = dao.findById(id).orElse(null);
+        if (found != null && !isAccessible(found)) {
+            return null;
+        }
+        return found;
+    }
+
+    /** Chantier 1 (isolation par societe) : Reservation n'a pas de lien direct vers
+     * Enterprise, on passe par sa Property. Voir NOTES-permissions.md. */
+    private boolean isAccessible(Reservation reservation) {
+        if (reservation.getProperty() == null || reservation.getProperty().getEnterprise() == null
+                || reservation.getProperty().getEnterprise().getId() == null) {
+            return false;
+        }
+        return enterpriseAccessService.getAccessibleEnterpriseIds().contains(reservation.getProperty().getEnterprise().getId());
+    }
+
+    private List<Reservation> filterAccessible(List<Reservation> items) {
+        List<Long> accessiblePropertyIds = accessiblePropertyIds();
+        return emptyIfNull(items).stream()
+                .filter(item -> item.getProperty() != null && accessiblePropertyIds.contains(item.getProperty().getId()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /** propertyService (PropertyCollaboratorServiceImpl) est deja filtre par societe (Chantier 1). */
+    private List<Long> accessiblePropertyIds() {
+        return propertyService.findAll().stream()
+                .map(Property::getId)
+                .collect(java.util.stream.Collectors.toList());
     }
 
 
@@ -75,7 +117,7 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
     }
 
     public List<Reservation> findAll() {
-        return dao.findAll();
+        return dao.findByPropertyIdIn(accessiblePropertyIds());
     }
 
     public List<Reservation> findByCriteria(ReservationCriteria criteria) {
@@ -86,7 +128,7 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
         } else {
             content = dao.findAll();
         }
-        return content;
+        return filterAccessible(content);
 
     }
 
@@ -101,13 +143,11 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
         order = (order != null && !order.isEmpty()) ? order : "desc";
         sortField = (sortField != null && !sortField.isEmpty()) ? sortField : "id";
         Pageable pageable = PageRequest.of(page, pageSize, Sort.Direction.fromString(order), sortField);
-        return dao.findAll(mySpecification, pageable).getContent();
+        return filterAccessible(dao.findAll(mySpecification, pageable).getContent());
     }
 
     public int getDataSize(ReservationCriteria criteria) {
-        ReservationSpecification mySpecification = constructSpecification(criteria);
-        mySpecification.setDistinct(true);
-        return ((Long) dao.count(mySpecification)).intValue();
+        return findByCriteria(criteria).size();
     }
 
     public List<Reservation> findByClientId(Long id){
@@ -120,6 +160,9 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
         return dao.countByClientEmail(email);
     }
     public List<Reservation> findByPropertyId(Long id){
+        if (!accessiblePropertyIds().contains(id)) {
+            return new ArrayList<>();
+        }
         return dao.findByPropertyId(id);
     }
     public int deleteByPropertyId(Long id){
@@ -162,6 +205,12 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
 	public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
+            Reservation target = dao.findById(id).orElse(null);
+            if (target != null && !isAccessible(target)) {
+                throw new PermissionDeniedException(
+                    "Vous n'etes pas rattache a la societe de cette propriete : impossible de supprimer cette reservation.",
+                    new String[]{"Reservation"});
+            }
             deleteAssociatedLists(id);
             dao.deleteById(id);
         }
@@ -194,6 +243,7 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public Reservation create(Reservation t) {
+        assertPropertyAssignable(t);
         Reservation loaded = findByReferenceEntity(t);
         Reservation saved;
         if (loaded == null) {
@@ -224,6 +274,9 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
 
     public Reservation findWithAssociatedLists(Long id){
         Reservation result = dao.findById(id).orElse(null);
+        if (result != null && !isAccessible(result)) {
+            return null;
+        }
         if(result!=null && result.getId() != null) {
             result.setDocuments(documentService.findByReservationId(id));
             result.setTasks(taskService.findByReservationId(id));
@@ -299,7 +352,9 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
 
 
     public List<Reservation> findAllOptimized() {
-        return dao.findAllOptimized();
+        // La projection findAllOptimized() ne charge pas "property" : on retombe sur
+        // la liste complete deja filtree par societe (Chantier 1).
+        return findAll();
     }
 
     @Override
@@ -358,6 +413,8 @@ public class ReservationCollaboratorServiceImpl implements ReservationCollaborat
     private ClientCollaboratorService clientService ;
     @Autowired
     private DocumentCollaboratorService documentService ;
+    @Autowired
+    private EnterpriseAccessService enterpriseAccessService ;
 
     public ReservationCollaboratorServiceImpl(ReservationDao dao) {
         this.dao = dao;

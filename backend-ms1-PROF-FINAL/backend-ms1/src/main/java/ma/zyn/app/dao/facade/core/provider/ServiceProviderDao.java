@@ -18,6 +18,7 @@ public interface ServiceProviderDao extends AbstractRepository<ServiceProvider,L
     List<ServiceProvider> findByEnterpriseId(Long id);
     int deleteByEnterpriseId(Long id);
     long countByEnterpriseId(Long id);
+    List<ServiceProvider> findByEnterpriseIdIn(List<Long> ids);
 
     @Query("SELECT NEW ServiceProvider(item.id,item.name) FROM ServiceProvider item")
     List<ServiceProvider> findAllOptimized();

@@ -13,6 +13,7 @@ public interface TaskDao extends AbstractRepository<Task,Long>  {
     List<Task> findByPropertyId(Long id);
     int deleteByPropertyId(Long id);
     long countByPropertyId(Long id);
+    List<Task> findByPropertyIdIn(List<Long> ids);
     List<Task> findByReservationId(Long id);
     int deleteByReservationId(Long id);
     long countByReservationReference(String reference);

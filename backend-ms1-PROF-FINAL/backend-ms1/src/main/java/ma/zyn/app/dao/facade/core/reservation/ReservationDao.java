@@ -19,6 +19,7 @@ public interface ReservationDao extends AbstractRepository<Reservation,Long>  {
     List<Reservation> findByPropertyId(Long id);
     int deleteByPropertyId(Long id);
     long countByPropertyId(Long id);
+    List<Reservation> findByPropertyIdIn(List<Long> ids);
     List<Reservation> findByReservationPlatformCode(String code);
     List<Reservation> findByReservationPlatformId(Long id);
     int deleteByReservationPlatformId(Long id);

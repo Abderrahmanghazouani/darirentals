@@ -3,11 +3,14 @@ package ma.zyn.app.service.impl.collaborator.provider;
 
 
 import ma.zyn.app.zynerator.exception.EntityNotFoundException;
+import ma.zyn.app.zynerator.exception.PermissionDeniedException;
 import ma.zyn.app.bean.core.provider.ServiceProvider;
 import ma.zyn.app.dao.criteria.core.provider.ServiceProviderCriteria;
 import ma.zyn.app.dao.facade.core.provider.ServiceProviderDao;
 import ma.zyn.app.dao.specification.core.provider.ServiceProviderSpecification;
 import ma.zyn.app.service.facade.collaborator.provider.ServiceProviderCollaboratorService;
+import ma.zyn.app.service.security.EnterpriseAccessService;
+import ma.zyn.app.service.security.EffectivePermissionService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -44,14 +47,45 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{ServiceProvider.class.getSimpleName(), t.getId().toString()});
         } else {
+            assertEnterpriseAssignable(t);
+            effectivePermissionService.assertCanManageServiceProviders(t.getEnterprise().getId());
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
         }
     }
 
+    /** Chantier 1 (isolation par societe, cote ecriture). Voir NOTES-permissions.md. */
+    private void assertEnterpriseAssignable(ServiceProvider t) {
+        Long enterpriseId = t.getEnterprise() != null ? t.getEnterprise().getId() : null;
+        if (!enterpriseAccessService.hasAccessToEnterprise(enterpriseId)) {
+            throw new PermissionDeniedException(
+                "Vous n'etes pas rattache a cette societe : impossible de creer ou modifier ce prestataire pour elle.",
+                new String[]{"ServiceProvider"});
+        }
+    }
+
     public ServiceProvider findById(Long id) {
-        return dao.findById(id).orElse(null);
+        ServiceProvider found = dao.findById(id).orElse(null);
+        if (found != null && !isAccessible(found)) {
+            return null;
+        }
+        return found;
+    }
+
+    /** Chantier 1 (isolation par societe). Voir NOTES-permissions.md. */
+    private boolean isAccessible(ServiceProvider provider) {
+        if (provider.getEnterprise() == null || provider.getEnterprise().getId() == null) {
+            return false;
+        }
+        return enterpriseAccessService.getAccessibleEnterpriseIds().contains(provider.getEnterprise().getId());
+    }
+
+    private List<ServiceProvider> filterAccessible(List<ServiceProvider> items) {
+        List<Long> accessibleIds = enterpriseAccessService.getAccessibleEnterpriseIds();
+        return emptyIfNull(items).stream()
+                .filter(item -> item.getEnterprise() != null && accessibleIds.contains(item.getEnterprise().getId()))
+                .collect(java.util.stream.Collectors.toList());
     }
 
 
@@ -69,7 +103,7 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
     }
 
     public List<ServiceProvider> findAll() {
-        return dao.findAll();
+        return dao.findByEnterpriseIdIn(enterpriseAccessService.getAccessibleEnterpriseIds());
     }
 
     public List<ServiceProvider> findByCriteria(ServiceProviderCriteria criteria) {
@@ -80,7 +114,7 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
         } else {
             content = dao.findAll();
         }
-        return content;
+        return filterAccessible(content);
 
     }
 
@@ -95,13 +129,11 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
         order = (order != null && !order.isEmpty()) ? order : "desc";
         sortField = (sortField != null && !sortField.isEmpty()) ? sortField : "id";
         Pageable pageable = PageRequest.of(page, pageSize, Sort.Direction.fromString(order), sortField);
-        return dao.findAll(mySpecification, pageable).getContent();
+        return filterAccessible(dao.findAll(mySpecification, pageable).getContent());
     }
 
     public int getDataSize(ServiceProviderCriteria criteria) {
-        ServiceProviderSpecification mySpecification = constructSpecification(criteria);
-        mySpecification.setDistinct(true);
-        return ((Long) dao.count(mySpecification)).intValue();
+        return findByCriteria(criteria).size();
     }
 
     public List<ServiceProvider> findByServiceTypeCode(String code){
@@ -120,6 +152,9 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
         return dao.countByServiceTypeCode(code);
     }
     public List<ServiceProvider> findByEnterpriseId(Long id){
+        if (!enterpriseAccessService.hasAccessToEnterprise(id)) {
+            return new ArrayList<>();
+        }
         return dao.findByEnterpriseId(id);
     }
     public int deleteByEnterpriseId(Long id){
@@ -132,6 +167,15 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
 	public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
+            ServiceProvider target = dao.findById(id).orElse(null);
+            if (target != null) {
+                if (!isAccessible(target)) {
+                    throw new PermissionDeniedException(
+                        "Vous n'etes pas rattache a cette societe : impossible de supprimer ce prestataire.",
+                        new String[]{"ServiceProvider"});
+                }
+                effectivePermissionService.assertCanManageServiceProviders(target.getEnterprise().getId());
+            }
             deleteAssociatedLists(id);
             dao.deleteById(id);
         }
@@ -163,6 +207,8 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public ServiceProvider create(ServiceProvider t) {
+        assertEnterpriseAssignable(t);
+        effectivePermissionService.assertCanManageServiceProviders(t.getEnterprise().getId());
         ServiceProvider loaded = findByReferenceEntity(t);
         ServiceProvider saved;
         if (loaded == null) {
@@ -187,6 +233,9 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
 
     public ServiceProvider findWithAssociatedLists(Long id){
         ServiceProvider result = dao.findById(id).orElse(null);
+        if (result != null && !isAccessible(result)) {
+            return null;
+        }
         if(result!=null && result.getId() != null) {
             result.setPayments(paymentService.findByServiceProviderId(id));
             result.setTasks(taskService.findByServiceProviderId(id));
@@ -255,7 +304,9 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
 
 
     public List<ServiceProvider> findAllOptimized() {
-        return dao.findAllOptimized();
+        // La projection findAllOptimized() ne charge pas "enterprise" : on retombe sur
+        // la liste complete deja filtree par societe (Chantier 1).
+        return findAll();
     }
 
     @Override
@@ -308,6 +359,10 @@ public class ServiceProviderCollaboratorServiceImpl implements ServiceProviderCo
     private ServiceTypeCollaboratorService serviceTypeService ;
     @Autowired
     private EnterpriseCollaboratorService enterpriseService ;
+    @Autowired
+    private EnterpriseAccessService enterpriseAccessService ;
+    @Autowired
+    private EffectivePermissionService effectivePermissionService ;
 
     public ServiceProviderCollaboratorServiceImpl(ServiceProviderDao dao) {
         this.dao = dao;
