@@ -20,6 +20,7 @@ import { getEntityClients } from "@/lib/api";
 import { PropertyDto } from "@/lib/types/Property";
 import { ReservationDto } from "@/lib/types/Reservation";
 import { ChargeDto } from "@/lib/types/Charge";
+import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 
 const ROLE = "admin" as const;
 
@@ -82,6 +83,9 @@ export default function PropertyRentabilitePage() {
   const matchedReservations = useMemo(() => {
     return reservations
       .filter((r) => r.property?.id === propertyId)
+      // Une réservation annulée n'est pas un revenu réel - voir aussi computeMonthlyFinancials
+      // et app/admin/page.tsx, qui appliquent le même filtre.
+      .filter((r) => r.reservationStatus?.code !== CANCELLED_STATUS_CODE)
       .filter((r) => !start || (r.checkInDate && r.checkInDate >= start))
       .sort((a, b) => (b.checkInDate ?? "").localeCompare(a.checkInDate ?? ""));
   }, [reservations, propertyId, start]);
