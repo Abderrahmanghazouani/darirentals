@@ -12,7 +12,6 @@ import {
   Coins,
   FileBarChart,
   Grid3x3,
-  LogOut,
   Receipt,
   Users,
   Wallet,
@@ -21,17 +20,18 @@ import {
 import { useRequireRole } from "@/lib/use-require-role";
 import { getEntityClients } from "@/lib/api";
 import { entityRegistry, entityKeys } from "@/lib/entity-registry";
-import { logout } from "@/lib/auth";
-import { useRouter } from "next/navigation";
 
 import { PropertyDto } from "@/lib/types/Property";
 import { ReservationDto } from "@/lib/types/Reservation";
 import { ClientDto } from "@/lib/types/Client";
 import { ChargeDto } from "@/lib/types/Charge";
+import { TaskDto } from "@/lib/types/Task";
 import { MonthlyChart } from "@/components/dashboard/monthly-chart";
 import { computeMonthlyFinancials, CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
+import { computeHealthScore } from "@/lib/dashboard/health-score";
+import { HealthScoreCard } from "@/components/dashboard/health-score-card";
+import { PremiumHeader } from "@/components/dashboard/premium-header";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
-import { CurrencySelector } from "@/components/currency/currency-selector";
 
 const ROLE = "admin" as const;
 
@@ -64,13 +64,13 @@ export default function AdminHome() {
 }
 
 function AdminDashboard() {
-  const router = useRouter();
   const { format } = useCurrency();
 
   const [properties, setProperties] = useState<PropertyDto[] | null>(null);
   const [reservations, setReservations] = useState<ReservationDto[] | null>(null);
   const [clients, setClients] = useState<ClientDto[] | null>(null);
   const [charges, setCharges] = useState<ChargeDto[] | null>(null);
+  const [tasks, setTasks] = useState<TaskDto[] | null>(null);
   const [showAllModules, setShowAllModules] = useState(false);
 
   useEffect(() => {
@@ -79,6 +79,7 @@ function AdminDashboard() {
     clients_.reservation.findAll().then((d) => setReservations(d ?? [])).catch(() => setReservations([]));
     clients_.client.findAll().then((d) => setClients(d ?? [])).catch(() => setClients([]));
     clients_.charge.findAll().then((d) => setCharges(d ?? [])).catch(() => setCharges([]));
+    clients_.task.findAll().then((d) => setTasks(d ?? [])).catch(() => setTasks([]));
   }, []);
 
   const stats = useMemo(() => {
@@ -112,25 +113,22 @@ function AdminDashboard() {
     return computeMonthlyFinancials(reservations ?? [], charges ?? []);
   }, [reservations, charges]);
 
-  const loading = properties === null || reservations === null || clients === null;
+  const healthScore = useMemo(() => {
+    return computeHealthScore(properties ?? [], reservations ?? [], charges ?? [], tasks ?? []);
+  }, [properties, reservations, charges, tasks]);
+
+  const loading =
+    properties === null || reservations === null || clients === null || charges === null || tasks === null;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Tableau de bord</h1>
-        <div className="flex items-center gap-2">
-          <CurrencySelector />
-          <Button
-            variant="outline"
-            onClick={() => {
-              logout();
-              router.push("/login");
-            }}
-          >
-            <LogOut className="size-4" /> Déconnexion
-          </Button>
-        </div>
-      </div>
+      <PremiumHeader activeProperties={stats.activeProperties} loading={loading} />
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>
+      ) : (
+        <HealthScoreCard score={healthScore} />
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
