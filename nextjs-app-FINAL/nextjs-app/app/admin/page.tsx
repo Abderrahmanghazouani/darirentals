@@ -31,6 +31,7 @@ import { computeHealthScore } from "@/lib/dashboard/health-score";
 import { HealthScoreCard } from "@/components/dashboard/health-score-card";
 import { PremiumHeader } from "@/components/dashboard/premium-header";
 import { RevenueIntelligenceCard } from "@/components/dashboard/revenue-intelligence-card";
+import { PropertyPerformanceCard } from "@/components/dashboard/property-performance-card";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 
 const ROLE = "admin" as const;
@@ -198,6 +199,21 @@ function AdminDashboard() {
         </Card>
       ) : (
         <RevenueIntelligenceCard reservations={reservations ?? []} charges={charges ?? []} formatValue={format} />
+      )}
+
+      {loading ? (
+        <Card>
+          <CardContent>
+            <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <PropertyPerformanceCard
+          properties={properties ?? []}
+          reservations={reservations ?? []}
+          charges={charges ?? []}
+          formatValue={format}
+        />
       )}
 
       <Card>
