@@ -47,8 +47,8 @@ export function MonthlyChart({ data, formatValue }: MonthlyChartProps) {
             formatter={(value) => format(Number(value))}
           />
           <Legend />
-          <Bar dataKey="revenue" name="Revenus" fill="#16a34a" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="charges" name="Charges" fill="#dc2626" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="revenue" name="Revenus" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="charges" name="Charges" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} />
           <Line
             type="monotone"
             dataKey="profit"

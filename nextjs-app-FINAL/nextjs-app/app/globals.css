@@ -6,13 +6,15 @@
 
 :root {
   --radius: 0.5rem;
-  --background: oklch(1 0 0);
+  /* Fond neutre chaud très clair (palette DariRentals) - remplace le blanc pur d'origine. */
+  --background: oklch(0.985 0.006 75);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  /* Bleu profond #185FA5 - couleur primaire de la marque. */
+  --primary: #185fa5;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -20,11 +22,20 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  /* Rouge doux #E24B4A - négatif/destructif de la marque. */
+  --destructive: #e24b4a;
   --destructive-foreground: oklch(0.985 0 0);
+  /* Teal #0F9B8E - accent positif de la marque (pas de token shadcn par défaut pour ça,
+     ajouté ici et exposé via --color-success dans @theme inline ci-dessous). */
+  --success: #0f9b8e;
+  --success-foreground: oklch(0.985 0 0);
+  /* Ambre doux #D97706 - niveaux intermédiaires (pas de token shadcn par défaut non plus,
+     même principe que --success, exposé via --color-warning). */
+  --warning: #d97706;
+  --warning-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: #185fa5;
 }
 
 .dark {
@@ -34,19 +45,23 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #185fa5;
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: #e24b4a;
   --destructive-foreground: oklch(0.985 0 0);
+  --success: #0f9b8e;
+  --success-foreground: oklch(0.985 0 0);
+  --warning: #d97706;
+  --warning-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: #185fa5;
 }
 
 @theme inline {
@@ -71,6 +86,10 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
