@@ -3,11 +3,13 @@ package ma.zyn.app.service.impl.collaborator.task;
 
 
 import ma.zyn.app.zynerator.exception.EntityNotFoundException;
+import ma.zyn.app.zynerator.exception.PermissionDeniedException;
 import ma.zyn.app.bean.core.task.Task;
 import ma.zyn.app.dao.criteria.core.task.TaskCriteria;
 import ma.zyn.app.dao.facade.core.task.TaskDao;
 import ma.zyn.app.dao.specification.core.task.TaskSpecification;
 import ma.zyn.app.service.facade.collaborator.task.TaskCollaboratorService;
+import ma.zyn.app.service.security.EnterpriseAccessService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -50,13 +52,54 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{Task.class.getSimpleName(), t.getId().toString()});
         } else {
+            assertPropertyAssignable(t);
             dao.save(t);
             return loadedItem;
         }
     }
 
+    /** Chantier 1 (isolation par societe, cote ecriture). Voir NOTES-permissions.md. */
+    private void assertPropertyAssignable(Task t) {
+        Long propertyId = t.getProperty() != null ? t.getProperty().getId() : null;
+        if (propertyId == null || !accessiblePropertyIds().contains(propertyId)) {
+            throw new PermissionDeniedException(
+                "Vous n'etes pas rattache a la societe de cette propriete : impossible de creer ou modifier cette tache.",
+                new String[]{"Task"});
+        }
+    }
+
     public Task findById(Long id) {
-        return dao.findById(id).orElse(null);
+        Task found = dao.findById(id).orElse(null);
+        if (found != null && !isAccessible(found)) {
+            return null;
+        }
+        return found;
+    }
+
+    /** Chantier 1 (isolation par societe) + Chantier 3 (restriction par propriete pour un
+     * Gestionnaire) : Task n'a pas de lien direct vers Enterprise, on passe par sa Property -
+     * accessiblePropertyIds() applique deja les deux (via propertyService.findAll() qui les
+     * combine). Les tasks sans property (rattachees seulement a une reservation ou un
+     * prestataire) ne sont pas couvertes ici, voir NOTES-permissions.md. */
+    private boolean isAccessible(Task task) {
+        if (task.getProperty() == null || task.getProperty().getId() == null) {
+            return false;
+        }
+        return accessiblePropertyIds().contains(task.getProperty().getId());
+    }
+
+    private List<Task> filterAccessible(List<Task> items) {
+        List<Long> accessiblePropertyIds = accessiblePropertyIds();
+        return emptyIfNull(items).stream()
+                .filter(item -> item.getProperty() != null && accessiblePropertyIds.contains(item.getProperty().getId()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /** propertyService (PropertyCollaboratorServiceImpl) est deja filtre par societe (Chantier 1). */
+    private List<Long> accessiblePropertyIds() {
+        return propertyService.findAll().stream()
+                .map(Property::getId)
+                .collect(java.util.stream.Collectors.toList());
     }
 
 
@@ -74,7 +117,7 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
     }
 
     public List<Task> findAll() {
-        return dao.findAll();
+        return dao.findByPropertyIdIn(accessiblePropertyIds());
     }
 
     public List<Task> findByCriteria(TaskCriteria criteria) {
@@ -85,7 +128,7 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
         } else {
             content = dao.findAll();
         }
-        return content;
+        return filterAccessible(content);
 
     }
 
@@ -100,16 +143,17 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
         order = (order != null && !order.isEmpty()) ? order : "desc";
         sortField = (sortField != null && !sortField.isEmpty()) ? sortField : "id";
         Pageable pageable = PageRequest.of(page, pageSize, Sort.Direction.fromString(order), sortField);
-        return dao.findAll(mySpecification, pageable).getContent();
+        return filterAccessible(dao.findAll(mySpecification, pageable).getContent());
     }
 
     public int getDataSize(TaskCriteria criteria) {
-        TaskSpecification mySpecification = constructSpecification(criteria);
-        mySpecification.setDistinct(true);
-        return ((Long) dao.count(mySpecification)).intValue();
+        return findByCriteria(criteria).size();
     }
 
     public List<Task> findByPropertyId(Long id){
+        if (!accessiblePropertyIds().contains(id)) {
+            return new ArrayList<>();
+        }
         return dao.findByPropertyId(id);
     }
     public int deleteByPropertyId(Long id){
@@ -194,6 +238,12 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
 	public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
+            Task target = dao.findById(id).orElse(null);
+            if (target != null && !isAccessible(target)) {
+                throw new PermissionDeniedException(
+                    "Vous n'etes pas rattache a la societe de cette propriete : impossible de supprimer cette tache.",
+                    new String[]{"Task"});
+            }
             dao.deleteById(id);
         }
         return condition;
@@ -219,6 +269,7 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public Task create(Task t) {
+        assertPropertyAssignable(t);
         Task loaded = findByReferenceEntity(t);
         Task saved;
         if (loaded == null) {
@@ -230,8 +281,7 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
     }
 
     public Task findWithAssociatedLists(Long id){
-        Task result = dao.findById(id).orElse(null);
-        return result;
+        return findById(id);
     }
 
 	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
@@ -288,7 +338,9 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
 
 
     public List<Task> findAllOptimized() {
-        return dao.findAllOptimized();
+        // La projection findAllOptimized() ne charge pas "property" : on retombe sur
+        // la liste complete deja filtree par societe (Chantier 1).
+        return findAll();
     }
 
     @Override
@@ -347,6 +399,8 @@ public class TaskCollaboratorServiceImpl implements TaskCollaboratorService {
     private PropertyCollaboratorService propertyService ;
     @Autowired
     private TaskStatusCollaboratorService taskStatusService ;
+    @Autowired
+    private EnterpriseAccessService enterpriseAccessService ;
 
     public TaskCollaboratorServiceImpl(TaskDao dao) {
         this.dao = dao;

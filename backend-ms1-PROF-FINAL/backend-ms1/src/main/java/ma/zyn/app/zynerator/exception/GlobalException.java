@@ -44,6 +44,10 @@ public class GlobalException extends Exception implements Serializable {
             BusinessRuleException businessRuleException = (BusinessRuleException) e;
             status = HttpStatus.CONFLICT;
             message = messageSource.getMessage(businessRuleException.getMessage(), businessRuleException.getParams(), null);
+        } else if (e instanceof PermissionDeniedException) {
+            PermissionDeniedException permissionDeniedException = (PermissionDeniedException) e;
+            status = HttpStatus.FORBIDDEN;
+            message = messageSource.getMessage(permissionDeniedException.getMessage(), permissionDeniedException.getParams(), null);
         } else if (e instanceof EntityNotFoundException) {
             EntityNotFoundException entityNotFoundException = (EntityNotFoundException) e;
             status = HttpStatus.NOT_FOUND;

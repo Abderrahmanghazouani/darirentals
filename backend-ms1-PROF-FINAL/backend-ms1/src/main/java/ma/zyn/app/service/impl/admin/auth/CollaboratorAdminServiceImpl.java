@@ -35,6 +35,7 @@ import ma.zyn.app.service.facade.admin.reservation.ReservationRequestAdminServic
 import ma.zyn.app.bean.core.reservation.ReservationRequest ;
 import ma.zyn.app.service.facade.admin.enterprise.EnterpriseMembershipAdminService ;
 import ma.zyn.app.bean.core.enterprise.EnterpriseMembership ;
+import ma.zyn.app.service.facade.admin.auth.CollaboratorPropertyAccessAdminService ;
 
 import java.time.LocalDateTime;
 import ma.zyn.app.zynerator.security.service.facade.UserService;
@@ -145,6 +146,9 @@ public class CollaboratorAdminServiceImpl implements CollaboratorAdminService {
         aiUsageLogService.deleteByCollaboratorId(id);
         taskService.deleteByAssignedToId(id);
         reservationRequestService.deleteByReviewedById(id);
+        // Chantier 3 (NOTES-permissions.md) : nettoie les affectations de proprietes
+        // du collaborateur supprime, sinon lignes orphelines dans collaborator_property_access.
+        propertyAccessService.deleteByCollaboratorId(id);
     }
 
 
@@ -378,6 +382,8 @@ public class CollaboratorAdminServiceImpl implements CollaboratorAdminService {
     private ReservationRequestAdminService reservationRequestService ;
     @Autowired
     private EnterpriseMembershipAdminService enterpriseMembershipService ;
+    @Autowired
+    private CollaboratorPropertyAccessAdminService propertyAccessService ;
 
     public CollaboratorAdminServiceImpl(CollaboratorDao dao) {
         this.dao = dao;

@@ -26,6 +26,7 @@ public interface PropertyDao extends AbstractRepository<Property,Long>  {
     List<Property> findByEnterpriseId(Long id);
     int deleteByEnterpriseId(Long id);
     long countByEnterpriseId(Long id);
+    List<Property> findByEnterpriseIdIn(List<Long> ids);
 
     @Query("SELECT NEW Property(item.id,item.name) FROM Property item")
     List<Property> findAllOptimized();

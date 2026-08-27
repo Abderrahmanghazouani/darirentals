@@ -67,8 +67,11 @@ public class EnterpriseMembershipConverter {
                 item.getEnterprise().setName(dto.getEnterprise().getName());
             }
 
-            if(this.collaboratorRole && dto.getCollaboratorRole()!=null)
-                item.setCollaboratorRole(collaboratorRoleConverter.toItem(dto.getCollaboratorRole())) ;
+            if(dto.getCollaboratorRole() != null && dto.getCollaboratorRole().getId() != null){
+                item.setCollaboratorRole(new CollaboratorRole());
+                item.getCollaboratorRole().setId(dto.getCollaboratorRole().getId());
+                item.getCollaboratorRole().setLabel(dto.getCollaboratorRole().getLabel());
+            }
 
 
             if(this.collaboratorPermissionOverrides && ListUtil.isNotEmpty(dto.getCollaboratorPermissionOverrides()))

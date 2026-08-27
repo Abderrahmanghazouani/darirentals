@@ -3,11 +3,14 @@ package ma.zyn.app.service.impl.collaborator.property;
 
 
 import ma.zyn.app.zynerator.exception.EntityNotFoundException;
+import ma.zyn.app.zynerator.exception.PermissionDeniedException;
 import ma.zyn.app.bean.core.property.Property;
 import ma.zyn.app.dao.criteria.core.property.PropertyCriteria;
 import ma.zyn.app.dao.facade.core.property.PropertyDao;
 import ma.zyn.app.dao.specification.core.property.PropertySpecification;
 import ma.zyn.app.service.facade.collaborator.property.PropertyCollaboratorService;
+import ma.zyn.app.service.security.EnterpriseAccessService;
+import ma.zyn.app.service.security.EffectivePermissionService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -43,6 +46,7 @@ import ma.zyn.app.service.facade.collaborator.property.CityCollaboratorService ;
 import ma.zyn.app.bean.core.property.City ;
 import ma.zyn.app.service.facade.collaborator.charge.ChargeCollaboratorService ;
 import ma.zyn.app.bean.core.charge.Charge ;
+import ma.zyn.app.service.facade.collaborator.auth.CollaboratorPropertyAccessCollaboratorService ;
 
 import java.util.List;
 @Service
@@ -54,14 +58,51 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{Property.class.getSimpleName(), t.getId().toString()});
         } else {
+            assertEnterpriseAssignable(t);
+            assertPropertyManageable(loadedItem);
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
         }
     }
 
+    /** Chantier 1 (isolation par societe, cote ecriture) : empeche de creer/reassigner
+     * une Property vers une societe a laquelle le collaborateur n'est pas rattache.
+     * Voir NOTES-permissions.md. */
+    private void assertEnterpriseAssignable(Property t) {
+        Long enterpriseId = t.getEnterprise() != null ? t.getEnterprise().getId() : null;
+        if (!enterpriseAccessService.hasAccessToEnterprise(enterpriseId)) {
+            throw new PermissionDeniedException(
+                "Vous n'etes pas rattache a cette societe : impossible de creer ou modifier cette propriete pour elle.",
+                new String[]{"Property"});
+        }
+    }
+
     public Property findById(Long id) {
-        return dao.findById(id).orElse(null);
+        Property found = dao.findById(id).orElse(null);
+        if (found != null && !isAccessible(found)) {
+            return null;
+        }
+        return found;
+    }
+
+    /** Chantier 1 (isolation par societe) + Chantier 3 (restriction par propriete pour un
+     * Gestionnaire) : combine les deux dans EnterpriseAccessService.isPropertyAccessible().
+     * Voir NOTES-permissions.md. */
+    private boolean isAccessible(Property property) {
+        return enterpriseAccessService.isPropertyAccessible(property);
+    }
+
+    /** Chantier 3 : un Gestionnaire ne peut modifier/supprimer que les proprietes qui lui
+     * sont explicitement assignees via CollaboratorPropertyAccess - verifie sur l'entite
+     * CHARGEE (avant modification), pas sur le DTO envoye par le client. Un SubAdmin n'est
+     * jamais concerne. Voir NOTES-permissions.md. */
+    private void assertPropertyManageable(Property loadedItem) {
+        if (!enterpriseAccessService.isPropertyAccessible(loadedItem)) {
+            throw new PermissionDeniedException(
+                "Cette propriete ne vous est pas assignee : impossible de la modifier ou de la supprimer.",
+                new String[]{"Property"});
+        }
     }
 
 
@@ -79,7 +120,7 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
     }
 
     public List<Property> findAll() {
-        return dao.findAll();
+        return filterAccessible(dao.findByEnterpriseIdIn(enterpriseAccessService.getAccessibleEnterpriseIds()));
     }
 
     public List<Property> findByCriteria(PropertyCriteria criteria) {
@@ -90,8 +131,14 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
         } else {
             content = dao.findAll();
         }
-        return content;
+        return filterAccessible(content);
 
+    }
+
+    private List<Property> filterAccessible(List<Property> items) {
+        return emptyIfNull(items).stream()
+                .filter(enterpriseAccessService::isPropertyAccessible)
+                .collect(java.util.stream.Collectors.toList());
     }
 
 
@@ -105,13 +152,11 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
         order = (order != null && !order.isEmpty()) ? order : "desc";
         sortField = (sortField != null && !sortField.isEmpty()) ? sortField : "id";
         Pageable pageable = PageRequest.of(page, pageSize, Sort.Direction.fromString(order), sortField);
-        return dao.findAll(mySpecification, pageable).getContent();
+        return filterAccessible(dao.findAll(mySpecification, pageable).getContent());
     }
 
     public int getDataSize(PropertyCriteria criteria) {
-        PropertySpecification mySpecification = constructSpecification(criteria);
-        mySpecification.setDistinct(true);
-        return ((Long) dao.count(mySpecification)).intValue();
+        return findByCriteria(criteria).size();
     }
 
     public List<Property> findByPropertyTypeCode(String code){
@@ -154,7 +199,10 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
         return dao.countByCityId(id);
     }
     public List<Property> findByEnterpriseId(Long id){
-        return dao.findByEnterpriseId(id);
+        if (!enterpriseAccessService.hasAccessToEnterprise(id)) {
+            return new ArrayList<>();
+        }
+        return filterAccessible(dao.findByEnterpriseId(id));
     }
     public int deleteByEnterpriseId(Long id){
         return dao.deleteByEnterpriseId(id);
@@ -166,6 +214,20 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
 	public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
+            Property target = dao.findById(id).orElse(null);
+            if (target != null) {
+                Long enterpriseId = target.getEnterprise() != null ? target.getEnterprise().getId() : null;
+                // Chantier 1 : isolation par societe. Chantier 3 : restriction par propriete
+                // (Gestionnaire uniquement).
+                if (!enterpriseAccessService.hasAccessToEnterprise(enterpriseId)) {
+                    throw new PermissionDeniedException(
+                        "Vous n'etes pas rattache a cette societe : impossible de supprimer cette propriete.",
+                        new String[]{"Property"});
+                }
+                assertPropertyManageable(target);
+                // Chantier 2 : permission de role.
+                effectivePermissionService.assertCanDeleteProperty(enterpriseId);
+            }
             deleteAssociatedLists(id);
             dao.deleteById(id);
         }
@@ -179,6 +241,9 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
         financialReportPropertyService.deleteByPropertyId(id);
         reservationRequestService.deleteByRequestedPropertyId(id);
         reservationRequestService.deleteByAlternativePropertyId(id);
+        // Chantier 3 (NOTES-permissions.md) : nettoie les affectations Gestionnaire liees
+        // a cette propriete, sinon lignes orphelines dans collaborator_property_access.
+        propertyAccessService.deleteByPropertyId(id);
     }
 
 
@@ -201,6 +266,7 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public Property create(Property t) {
+        assertEnterpriseAssignable(t);
         Property loaded = findByReferenceEntity(t);
         Property saved;
         if (loaded == null) {
@@ -249,6 +315,9 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
 
     public Property findWithAssociatedLists(Long id){
         Property result = dao.findById(id).orElse(null);
+        if (result != null && !isAccessible(result)) {
+            return null;
+        }
         if(result!=null && result.getId() != null) {
             result.setReservations(reservationService.findByPropertyId(id));
             result.setCharges(chargeService.findByPropertyId(id));
@@ -339,7 +408,9 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
 
 
     public List<Property> findAllOptimized() {
-        return dao.findAllOptimized();
+        // La projection findAllOptimized() ne charge pas "enterprise" : on ne peut pas filtrer
+        // dessus, donc on retombe sur la liste complete deja filtree par societe (Chantier 1).
+        return findAll();
     }
 
     @Override
@@ -402,6 +473,12 @@ public class PropertyCollaboratorServiceImpl implements PropertyCollaboratorServ
     private CityCollaboratorService cityService ;
     @Autowired
     private ChargeCollaboratorService chargeService ;
+    @Autowired
+    private EnterpriseAccessService enterpriseAccessService ;
+    @Autowired
+    private EffectivePermissionService effectivePermissionService ;
+    @Autowired
+    private CollaboratorPropertyAccessCollaboratorService propertyAccessService ;
 
     public PropertyCollaboratorServiceImpl(PropertyDao dao) {
         this.dao = dao;

@@ -43,6 +43,7 @@ import ma.zyn.app.service.facade.admin.property.CityAdminService ;
 import ma.zyn.app.bean.core.property.City ;
 import ma.zyn.app.service.facade.admin.charge.ChargeAdminService ;
 import ma.zyn.app.bean.core.charge.Charge ;
+import ma.zyn.app.service.facade.admin.auth.CollaboratorPropertyAccessAdminService ;
 
 import java.util.List;
 @Service
@@ -179,6 +180,9 @@ public class PropertyAdminServiceImpl implements PropertyAdminService {
         financialReportPropertyService.deleteByPropertyId(id);
         reservationRequestService.deleteByRequestedPropertyId(id);
         reservationRequestService.deleteByAlternativePropertyId(id);
+        // Chantier 3 (NOTES-permissions.md) : nettoie les affectations Gestionnaire liees
+        // a cette propriete, sinon lignes orphelines dans collaborator_property_access.
+        propertyAccessService.deleteByPropertyId(id);
     }
 
 
@@ -402,6 +406,8 @@ public class PropertyAdminServiceImpl implements PropertyAdminService {
     private CityAdminService cityService ;
     @Autowired
     private ChargeAdminService chargeService ;
+    @Autowired
+    private CollaboratorPropertyAccessAdminService propertyAccessService ;
 
     public PropertyAdminServiceImpl(PropertyDao dao) {
         this.dao = dao;

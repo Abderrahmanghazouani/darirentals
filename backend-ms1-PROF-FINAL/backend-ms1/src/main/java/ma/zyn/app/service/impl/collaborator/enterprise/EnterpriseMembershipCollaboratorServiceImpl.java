@@ -8,6 +8,7 @@ import ma.zyn.app.dao.criteria.core.enterprise.EnterpriseMembershipCriteria;
 import ma.zyn.app.dao.facade.core.enterprise.EnterpriseMembershipDao;
 import ma.zyn.app.dao.specification.core.enterprise.EnterpriseMembershipSpecification;
 import ma.zyn.app.service.facade.collaborator.enterprise.EnterpriseMembershipCollaboratorService;
+import ma.zyn.app.service.security.EffectivePermissionService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -44,6 +45,7 @@ public class EnterpriseMembershipCollaboratorServiceImpl implements EnterpriseMe
         if (loadedItem == null) {
             throw new EntityNotFoundException("errors.notFound", new String[]{EnterpriseMembership.class.getSimpleName(), t.getId().toString()});
         } else {
+            effectivePermissionService.assertCanManageUsers(t.getEnterprise() != null ? t.getEnterprise().getId() : null);
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
@@ -141,6 +143,10 @@ public class EnterpriseMembershipCollaboratorServiceImpl implements EnterpriseMe
 	public boolean deleteById(Long id) {
         boolean condition = (id != null);
         if (condition) {
+            EnterpriseMembership target = dao.findById(id).orElse(null);
+            if (target != null) {
+                effectivePermissionService.assertCanManageUsers(target.getEnterprise() != null ? target.getEnterprise().getId() : null);
+            }
             deleteAssociatedLists(id);
             dao.deleteById(id);
         }
@@ -171,6 +177,7 @@ public class EnterpriseMembershipCollaboratorServiceImpl implements EnterpriseMe
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class, readOnly = false)
     public EnterpriseMembership create(EnterpriseMembership t) {
+        effectivePermissionService.assertCanManageUsers(t.getEnterprise() != null ? t.getEnterprise().getId() : null);
         EnterpriseMembership loaded = findByReferenceEntity(t);
         EnterpriseMembership saved;
         if (loaded == null) {
@@ -306,6 +313,8 @@ public class EnterpriseMembershipCollaboratorServiceImpl implements EnterpriseMe
     private EnterpriseCollaboratorService enterpriseService ;
     @Autowired
     private CollaboratorRoleCollaboratorService collaboratorRoleService ;
+    @Autowired
+    private EffectivePermissionService effectivePermissionService ;
 
     public EnterpriseMembershipCollaboratorServiceImpl(EnterpriseMembershipDao dao) {
         this.dao = dao;

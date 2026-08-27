@@ -20,9 +20,9 @@ import {
 import { CollaboratorDto, newCollaboratorDto } from "@/lib/types/Collaborator";
 import { EnterpriseDto } from "@/lib/types/Enterprise";
 import { CollaboratorRoleDto } from "@/lib/types/CollaboratorRole";
+import { PropertyDto } from "@/lib/types/Property";
 import { getEntityClients } from "@/lib/api";
 import { Role } from "@/lib/api-client";
-import { newEnterpriseMembershipDto } from "@/lib/types/EnterpriseMembership";
 
 const collaboratorSchema = z.object({
   name: z.string().min(1, "Requis"),
@@ -35,11 +35,26 @@ const collaboratorSchema = z.object({
 
 type CollaboratorFormValues = z.infer<typeof collaboratorSchema>;
 
+const GESTIONNAIRE_CODE = "Gestionnaire";
+
+export interface MembershipChange {
+  /** null si aucune EnterpriseMembership n'existait encore pour ce collaborateur. */
+  existingMembershipId: number | null;
+  enterpriseId: number;
+  roleId: number;
+  /** Propriétés autorisées si le rôle choisi est Gestionnaire, sinon null (SubAdmin :
+   * pas de restriction, la liste n'a pas de sens). */
+  selectedPropertyIds: number[] | null;
+  /** IDs des lignes CollaboratorPropertyAccess déjà en base pour ce collaborateur, à
+   * réconcilier (créer les nouvelles, supprimer celles retirées). */
+  existingAccessRows: { id: number; propertyId: number | null }[];
+}
+
 interface CollaboratorFormProps {
   initial: CollaboratorDto | null;
   saving: boolean;
   role: Role;
-  onSubmit: (dto: CollaboratorDto, membership: { enterpriseId: number; roleId: number } | null) => void;
+  onSubmit: (dto: CollaboratorDto, membership: MembershipChange | null) => void;
   onCancel: () => void;
 }
 
@@ -49,14 +64,53 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
 
   const [enterprises, setEnterprises] = useState<EnterpriseDto[]>([]);
   const [roles, setRoles] = useState<CollaboratorRoleDto[]>([]);
+  const [properties, setProperties] = useState<PropertyDto[]>([]);
   const [enterpriseId, setEnterpriseId] = useState<number | null>(null);
   const [roleId, setRoleId] = useState<number | null>(null);
+  const [selectedPropertyIds, setSelectedPropertyIds] = useState<number[]>([]);
+
+  const [existingMembershipId, setExistingMembershipId] = useState<number | null>(null);
+  const [existingAccessRows, setExistingAccessRows] = useState<{ id: number; propertyId: number | null }[]>([]);
+  const [loadingMembership, setLoadingMembership] = useState(isEditing);
 
   useEffect(() => {
     const clients = getEntityClients(role);
     clients.enterprise.findAll().then((d) => setEnterprises(d ?? [])).catch(() => setEnterprises([]));
     clients.collaboratorRole.findAll().then((d) => setRoles(d ?? [])).catch(() => setRoles([]));
+    clients.property.findAll().then((d) => setProperties(d ?? [])).catch(() => setProperties([]));
   }, [role]);
+
+  // En édition : recharge la membership existante (société + rôle) et les propriétés déjà
+  // autorisées, puisque la liste allégée (findAll) qui alimente le tableau ne les inclut pas.
+  useEffect(() => {
+    if (!isEditing || initial?.id == null) {
+      setLoadingMembership(false);
+      return;
+    }
+    setLoadingMembership(true);
+    const clients = getEntityClients(role);
+    const collaboratorId = initial.id;
+
+    Promise.all([
+      clients.enterpriseMembership.findByCriteria({ collaborator: { id: collaboratorId } }),
+      clients.collaboratorPropertyAccess.findByCriteria({ collaborator: { id: collaboratorId } }),
+    ])
+      .then(([memberships, accessRows]) => {
+        const membership = (memberships ?? [])[0] ?? null;
+        setExistingMembershipId(membership?.id ?? null);
+        setEnterpriseId(membership?.enterprise?.id ?? null);
+        setRoleId(membership?.collaboratorRole?.id ?? null);
+
+        const rows = (accessRows ?? []).map((a) => ({ id: a.id as number, propertyId: a.property?.id ?? null }));
+        setExistingAccessRows(rows);
+        setSelectedPropertyIds(rows.map((r) => r.propertyId).filter((id): id is number => id != null));
+      })
+      .catch(() => {
+        // Pas bloquant : le collaborateur reste modifiable, seule la section
+        // rattachement/propriétés ne sera pas pré-remplie.
+      })
+      .finally(() => setLoadingMembership(false));
+  }, [isEditing, initial?.id, role]);
 
   const form = useForm<CollaboratorFormValues>({
     resolver: zodResolver(collaboratorSchema),
@@ -70,8 +124,17 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
     },
   });
 
+  const selectedRole = roles.find((r) => r.id === roleId) ?? null;
+  const isGestionnaire = selectedRole?.code === GESTIONNAIRE_CODE;
+  const enterpriseIsEditable = !isEditing || existingMembershipId == null;
+  const propertiesForEnterprise = properties.filter((p) => p.enterprise?.id === enterpriseId);
+
+  function togglePropertyId(id: number, checked: boolean) {
+    setSelectedPropertyIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
+  }
+
   function handleSubmit(values: CollaboratorFormValues) {
-  const dto: CollaboratorDto = {
+    const dto: CollaboratorDto = {
       ...base,
       name: values.name,
       email: values.email,
@@ -86,9 +149,15 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
       passwordChanged: true,
     };
 
-    const membership =
-      !isEditing && enterpriseId != null && roleId != null
-        ? { enterpriseId, roleId }
+    const membership: MembershipChange | null =
+      enterpriseId != null && roleId != null
+        ? {
+            existingMembershipId,
+            enterpriseId,
+            roleId,
+            selectedPropertyIds: isGestionnaire ? selectedPropertyIds : null,
+            existingAccessRows,
+          }
         : null;
 
     onSubmit(dto, membership);
@@ -143,49 +212,94 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
         <Label htmlFor="isActive">Compte actif</Label>
       </div>
 
-      {!isEditing && (
-        <div className="space-y-4 border-t pt-4">
-          <p className="text-sm font-medium">Rattachement à une société</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Société</Label>
-              <Select
-                value={enterpriseId != null ? String(enterpriseId) : undefined}
-                onValueChange={(v) => setEnterpriseId(Number(v))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="— Choisir —" />
-                </SelectTrigger>
-                <SelectContent>
-                  {enterprises.map((e) => (
-                    <SelectItem key={e.id} value={String(e.id)}>
-                      {e.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <div className="space-y-4 border-t pt-4">
+        <p className="text-sm font-medium">Rattachement à une société</p>
+        {loadingMembership ? (
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Société</Label>
+                {enterpriseIsEditable ? (
+                  <Select
+                    value={enterpriseId != null ? String(enterpriseId) : undefined}
+                    onValueChange={(v) => {
+                      setEnterpriseId(Number(v));
+                      setSelectedPropertyIds([]);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="— Choisir —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {enterprises.map((e) => (
+                        <SelectItem key={e.id} value={String(e.id)}>
+                          {e.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm py-2">
+                    {enterprises.find((e) => e.id === enterpriseId)?.name ?? "—"}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Rôle</Label>
+                <Select
+                  value={roleId != null ? String(roleId) : undefined}
+                  onValueChange={(v) => setRoleId(Number(v))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="— Choisir —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((r) => (
+                      <SelectItem key={r.id} value={String(r.id)}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Rôle</Label>
-              <Select
-                value={roleId != null ? String(roleId) : undefined}
-                onValueChange={(v) => setRoleId(Number(v))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="— Choisir —" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((r) => (
-                    <SelectItem key={r.id} value={String(r.id)}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      )}
+
+            {isGestionnaire && (
+              <div className="space-y-2">
+                <Label>Propriétés autorisées</Label>
+                <p className="text-xs text-muted-foreground">
+                  Un Gestionnaire ne voit et ne gère que les propriétés cochées ci-dessous. Aucune
+                  coche = aucun accès.
+                </p>
+                {enterpriseId == null ? (
+                  <p className="text-sm text-muted-foreground">Choisis d&apos;abord une société.</p>
+                ) : propertiesForEnterprise.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune propriété dans cette société.
+                  </p>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto rounded-md border p-2 space-y-1">
+                    {propertiesForEnterprise.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2 py-1">
+                        <Checkbox
+                          id={`property-${p.id}`}
+                          checked={p.id != null && selectedPropertyIds.includes(p.id)}
+                          onCheckedChange={(checked) => p.id != null && togglePropertyId(p.id, checked === true)}
+                        />
+                        <Label htmlFor={`property-${p.id}`} className="font-normal cursor-pointer">
+                          {p.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
