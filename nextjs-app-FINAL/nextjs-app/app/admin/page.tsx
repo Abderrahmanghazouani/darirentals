@@ -26,12 +26,14 @@ import { ReservationDto } from "@/lib/types/Reservation";
 import { ClientDto } from "@/lib/types/Client";
 import { ChargeDto } from "@/lib/types/Charge";
 import { TaskDto } from "@/lib/types/Task";
+import { ReservationRequestDto } from "@/lib/types/ReservationRequest";
 import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 import { computeHealthScore } from "@/lib/dashboard/health-score";
 import { HealthScoreCard } from "@/components/dashboard/health-score-card";
 import { PremiumHeader } from "@/components/dashboard/premium-header";
 import { RevenueIntelligenceCard } from "@/components/dashboard/revenue-intelligence-card";
 import { PropertyPerformanceCard } from "@/components/dashboard/property-performance-card";
+import { ActionCenterCard } from "@/components/dashboard/action-center-card";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 
 const ROLE = "admin" as const;
@@ -42,6 +44,10 @@ const fetchRates = () => getEntityClients(ROLE).exchangeRate.findAll();
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
+
+// Animation d'apparition discrète, partagée par toutes les sections du dashboard - une
+// seule fois au montage, jamais rejouée au re-render (pas de dépendance à un état togglé).
+const ENTRANCE = "animate-in fade-in slide-in-from-bottom-2 duration-200 fill-mode-both";
 
 const tools = [
   { href: "/admin/property", label: "Propriétés", icon: Building2 },
@@ -72,6 +78,7 @@ function AdminDashboard() {
   const [clients, setClients] = useState<ClientDto[] | null>(null);
   const [charges, setCharges] = useState<ChargeDto[] | null>(null);
   const [tasks, setTasks] = useState<TaskDto[] | null>(null);
+  const [reservationRequests, setReservationRequests] = useState<ReservationRequestDto[] | null>(null);
   const [showAllModules, setShowAllModules] = useState(false);
 
   useEffect(() => {
@@ -81,6 +88,10 @@ function AdminDashboard() {
     clients_.client.findAll().then((d) => setClients(d ?? [])).catch(() => setClients([]));
     clients_.charge.findAll().then((d) => setCharges(d ?? [])).catch(() => setCharges([]));
     clients_.task.findAll().then((d) => setTasks(d ?? [])).catch(() => setTasks([]));
+    clients_.reservationRequest
+      .findAll()
+      .then((d) => setReservationRequests(d ?? []))
+      .catch(() => setReservationRequests([]));
   }, []);
 
   const stats = useMemo(() => {
@@ -115,19 +126,31 @@ function AdminDashboard() {
   }, [properties, reservations, charges, tasks]);
 
   const loading =
-    properties === null || reservations === null || clients === null || charges === null || tasks === null;
+    properties === null ||
+    reservations === null ||
+    clients === null ||
+    charges === null ||
+    tasks === null ||
+    reservationRequests === null;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    // min-w-0 : <body> (app/layout.tsx) est flex-col, donc cette racine de page est un enfant
+    // flex qui, sans ça, ne rétrécit jamais sous la largeur de son contenu le plus large -
+    // c'était la vraie source du débordement horizontal mobile (le graphique/tableau les plus
+    // larges remontaient jusqu'ici). Les fixs sur Card/CardContent restent utiles pour les
+    // futures cartes imbriquées dans un autre flex-col, mais celui-ci était le verrou manquant.
+    <div className="w-full min-w-0 p-6 max-w-6xl mx-auto space-y-6">
       <PremiumHeader activeProperties={stats.activeProperties} loading={loading} />
 
       {loading ? (
-        <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>
+        <p className={`text-sm text-muted-foreground text-center py-8 ${ENTRANCE}`}>Chargement...</p>
       ) : (
-        <HealthScoreCard score={healthScore} />
+        <div className={ENTRANCE}>
+          <HealthScoreCard score={healthScore} />
+        </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${ENTRANCE}`}>
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -192,31 +215,35 @@ function AdminDashboard() {
       </div>
 
       {loading ? (
-        <Card>
+        <Card className={ENTRANCE}>
           <CardContent>
             <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
           </CardContent>
         </Card>
       ) : (
-        <RevenueIntelligenceCard reservations={reservations ?? []} charges={charges ?? []} formatValue={format} />
+        <div className={ENTRANCE}>
+          <RevenueIntelligenceCard reservations={reservations ?? []} charges={charges ?? []} formatValue={format} />
+        </div>
       )}
 
       {loading ? (
-        <Card>
+        <Card className={ENTRANCE}>
           <CardContent>
             <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
           </CardContent>
         </Card>
       ) : (
-        <PropertyPerformanceCard
-          properties={properties ?? []}
-          reservations={reservations ?? []}
-          charges={charges ?? []}
-          formatValue={format}
-        />
+        <div className={ENTRANCE}>
+          <PropertyPerformanceCard
+            properties={properties ?? []}
+            reservations={reservations ?? []}
+            charges={charges ?? []}
+            formatValue={format}
+          />
+        </div>
       )}
 
-      <Card>
+      <Card className={ENTRANCE}>
         <CardHeader>
           <CardTitle>Outils</CardTitle>
         </CardHeader>
@@ -236,39 +263,51 @@ function AdminDashboard() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Prochaines arrivées</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Chargement...</p>
-          ) : stats.upcomingReservations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune arrivée à venir.</p>
-          ) : (
-            <div className="space-y-2">
-              {stats.upcomingReservations.slice(0, 5).map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
-                >
-                  <div>
-                    <p className="font-medium">
-                      {r.property?.name ?? "Propriété inconnue"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {r.client?.fullName ?? "Client inconnu"} — arrivée le {r.checkInDate}
-                    </p>
+      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 ${ENTRANCE}`}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Prochaines arrivées</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Chargement...</p>
+            ) : stats.upcomingReservations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucune arrivée à venir.</p>
+            ) : (
+              <div className="space-y-2">
+                {stats.upcomingReservations.slice(0, 5).map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {r.property?.name ?? "Propriété inconnue"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {r.client?.fullName ?? "Client inconnu"} — arrivée le {r.checkInDate}
+                      </p>
+                    </div>
+                    {r.reservationStatus && <Badge>{r.reservationStatus.label}</Badge>}
                   </div>
-                  {r.reservationStatus && <Badge>{r.reservationStatus.label}</Badge>}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <Card>
+        {loading ? (
+          <Card>
+            <CardContent>
+              <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <ActionCenterCard tasks={tasks ?? []} reservationRequests={reservationRequests ?? []} />
+        )}
+      </div>
+
+      <Card className={ENTRANCE}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">

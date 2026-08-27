@@ -58,7 +58,7 @@ export function PremiumHeader({ activeProperties, loading }: PremiumHeaderProps)
   }
 
   return (
-    <div className="sticky top-0 z-10 -mx-6 mb-6 border-b bg-card/95 px-6 py-4 backdrop-blur supports-backdrop-filter:bg-card/80">
+    <div className="sticky top-0 z-10 -mx-6 mb-6 animate-in fade-in duration-200 border-b bg-card/95 px-6 py-4 backdrop-blur supports-backdrop-filter:bg-card/80">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
           <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">

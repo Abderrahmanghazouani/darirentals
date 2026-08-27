@@ -95,7 +95,13 @@ export function RevenueIntelligenceCard({ reservations, charges, formatValue }: 
           <p className="mt-2 text-sm text-muted-foreground">{comparison.summary}</p>
         </div>
 
-        <MonthlyChart data={seriesData} formatValue={formatValue} />
+        {/* min-w-0 : Card est un flex-col (voir components/ui/card.tsx) et un enfant flex ne
+            rétrécit jamais sous la largeur intrinsèque de son contenu par défaut - sans ça, le
+            ResponsiveContainer de recharts (beaucoup de libellés sur 12 mois) forçait toute la
+            page à déborder horizontalement sur mobile. */}
+        <div className="min-w-0">
+          <MonthlyChart data={seriesData} formatValue={formatValue} />
+        </div>
       </CardContent>
     </Card>
   );

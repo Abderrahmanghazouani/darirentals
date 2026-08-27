@@ -90,7 +90,10 @@ export function HealthScoreCard({ score }: HealthScoreCardProps) {
             </div>
           </div>
 
-          <div className="w-full space-y-3">
+          {/* min-w-0 : cette colonne est un enfant flex (voir le conteneur parent) qui ne
+              rétrécirait pas sous la largeur de son texte le plus long sans ça, cassant le
+              layout mobile (même famille de bug que MonthlyChart dans RevenueIntelligenceCard). */}
+          <div className="w-full min-w-0 space-y-3">
             {score.components.map((c) => (
               <div key={c.key} title={c.detail}>
                 <div className="flex items-center justify-between text-sm mb-1">

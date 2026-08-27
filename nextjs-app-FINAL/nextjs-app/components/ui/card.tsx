@@ -20,7 +20,10 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
+        // min-w-0 : Card est flex-col, donc CardHeader est un enfant flex qui, sans ça, ne
+        // rétrécirait jamais sous la largeur de son contenu (ex: un long titre) - casse le
+        // responsive mobile sinon.
+        "@container/card-header grid min-w-0 auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
         className
       )}
       {...props}
@@ -63,7 +66,11 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
 
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div data-slot="card-content" className={cn("px-6", className)} {...props} />
+    // min-w-0 : Card est flex-col, donc CardContent est un enfant flex qui, sans ça, ne
+    // rétrécirait jamais sous la largeur de son contenu le plus large (tableau, graphique,
+    // texte long) - casse le responsive mobile sinon. N'a aucun effet visuel sur un contenu
+    // qui tient déjà dans la largeur disponible.
+    <div data-slot="card-content" className={cn("min-w-0 px-6", className)} {...props} />
   );
 }
 
