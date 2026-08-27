@@ -29,7 +29,7 @@ import { ReservationDto } from "@/lib/types/Reservation";
 import { ClientDto } from "@/lib/types/Client";
 import { ChargeDto } from "@/lib/types/Charge";
 import { MonthlyChart } from "@/components/dashboard/monthly-chart";
-import { computeMonthlyFinancials } from "@/lib/compute-monthly-financials";
+import { computeMonthlyFinancials, CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 import { CurrencySelector } from "@/components/currency/currency-selector";
 
@@ -86,15 +86,17 @@ function AdminDashboard() {
     const resas = reservations ?? [];
     const today = todayIso();
 
-    const activeCount = props.filter(
-      (p) => p.propertyStatus?.code?.toLowerCase().includes("active")
-    ).length;
+    const activeCount = props.filter((p) => p.propertyStatus?.code === "Active").length;
 
     const upcoming = resas
       .filter((r) => r.checkInDate && r.checkInDate >= today)
       .sort((a, b) => (a.checkInDate ?? "").localeCompare(b.checkInDate ?? ""));
 
-    const totalRevenue = resas.reduce((sum, r) => sum + (r.amount ?? 0), 0);
+    // Une réservation annulée n'est pas un revenu réel - voir aussi computeMonthlyFinancials,
+    // qui applique le même filtre pour le graphique.
+    const totalRevenue = resas
+      .filter((r) => r.reservationStatus?.code !== CANCELLED_STATUS_CODE)
+      .reduce((sum, r) => sum + (r.amount ?? 0), 0);
 
     return {
       totalProperties: props.length,
