@@ -245,7 +245,7 @@ export default function ExchangeRatesPage() {
       </div>
 
       {syncMessage && (
-        <p className={`text-sm ${syncMessage.ok ? "text-green-600" : "text-destructive"}`}>
+        <p className={`text-sm ${syncMessage.ok ? "text-success" : "text-destructive"}`}>
           {syncMessage.text}
         </p>
       )}
