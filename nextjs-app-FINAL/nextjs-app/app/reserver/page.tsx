@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Home, MapPin, Phone } from "lucide-react";
+import { Building2, Home, MapPin, Phone } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -110,6 +110,12 @@ function ReserverContent() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="text-center space-y-2 py-6">
+        <div className="flex items-center justify-center gap-2.5">
+          <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <Building2 className="size-4.5" />
+          </div>
+          <span className="text-lg font-semibold tracking-tight">DariRentals</span>
+        </div>
         <h1 className="text-2xl font-bold">Nos logements disponibles</h1>
         <p className="text-muted-foreground">
           Choisissez un logement et envoyez-nous votre demande — nous vous répondons rapidement.

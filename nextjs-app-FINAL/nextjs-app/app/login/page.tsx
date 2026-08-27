@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,10 +35,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
+      <div className="flex items-center gap-2.5">
+        <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <Building2 className="size-4.5" />
+        </div>
+        <span className="text-lg font-semibold tracking-tight">DariRentals</span>
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Connexion — DariRentals</CardTitle>
+          <CardTitle>Connexion</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

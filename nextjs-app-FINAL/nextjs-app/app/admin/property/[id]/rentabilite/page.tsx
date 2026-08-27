@@ -149,14 +149,14 @@ export default function PropertyRentabilitePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Revenus</p>
-                <p className="text-3xl font-bold text-emerald-600">
+                <p className="text-3xl font-bold text-success">
                   {loading ? "…" : formatMoney(totalRevenue)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   MAD · {matchedReservations.length} réservation{matchedReservations.length > 1 ? "s" : ""}
                 </p>
               </div>
-              <TrendingUp className="size-8 text-emerald-600/60" />
+              <TrendingUp className="size-8 text-success/60" />
             </div>
           </CardContent>
         </Card>
@@ -166,12 +166,12 @@ export default function PropertyRentabilitePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Charges</p>
-                <p className="text-3xl font-bold text-rose-600">{loading ? "…" : formatMoney(totalCharges)}</p>
+                <p className="text-3xl font-bold text-destructive">{loading ? "…" : formatMoney(totalCharges)}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   MAD · {matchedCharges.length} charge{matchedCharges.length > 1 ? "s" : ""}
                 </p>
               </div>
-              <TrendingDown className="size-8 text-rose-600/60" />
+              <TrendingDown className="size-8 text-destructive/60" />
             </div>
           </CardContent>
         </Card>
@@ -181,12 +181,12 @@ export default function PropertyRentabilitePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Bénéfice net</p>
-                <p className={`text-3xl font-bold ${netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                <p className={`text-3xl font-bold ${netProfit >= 0 ? "text-success" : "text-destructive"}`}>
                   {loading ? "…" : formatMoney(netProfit)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">MAD</p>
               </div>
-              <Scale className={`size-8 ${netProfit >= 0 ? "text-emerald-600/60" : "text-rose-600/60"}`} />
+              <Scale className={`size-8 ${netProfit >= 0 ? "text-success/60" : "text-destructive/60"}`} />
             </div>
           </CardContent>
         </Card>

@@ -240,9 +240,9 @@ export function InvoiceScanDialog({
         {step === "verify" && (
           <div className="space-y-3">
             {scanResult?.warning && (
-              <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3">
-                <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-800">{scanResult.warning}</p>
+              <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
+                <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
+                <p className="text-sm text-warning">{scanResult.warning}</p>
               </div>
             )}
             {!scanResult && (
