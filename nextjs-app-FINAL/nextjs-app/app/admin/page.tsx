@@ -26,12 +26,14 @@ import { ReservationDto } from "@/lib/types/Reservation";
 import { ClientDto } from "@/lib/types/Client";
 import { ChargeDto } from "@/lib/types/Charge";
 import { TaskDto } from "@/lib/types/Task";
+import { ReservationRequestDto } from "@/lib/types/ReservationRequest";
 import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 import { computeHealthScore } from "@/lib/dashboard/health-score";
 import { HealthScoreCard } from "@/components/dashboard/health-score-card";
 import { PremiumHeader } from "@/components/dashboard/premium-header";
 import { RevenueIntelligenceCard } from "@/components/dashboard/revenue-intelligence-card";
 import { PropertyPerformanceCard } from "@/components/dashboard/property-performance-card";
+import { ActionCenterCard } from "@/components/dashboard/action-center-card";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 
 const ROLE = "admin" as const;
@@ -72,6 +74,7 @@ function AdminDashboard() {
   const [clients, setClients] = useState<ClientDto[] | null>(null);
   const [charges, setCharges] = useState<ChargeDto[] | null>(null);
   const [tasks, setTasks] = useState<TaskDto[] | null>(null);
+  const [reservationRequests, setReservationRequests] = useState<ReservationRequestDto[] | null>(null);
   const [showAllModules, setShowAllModules] = useState(false);
 
   useEffect(() => {
@@ -81,6 +84,10 @@ function AdminDashboard() {
     clients_.client.findAll().then((d) => setClients(d ?? [])).catch(() => setClients([]));
     clients_.charge.findAll().then((d) => setCharges(d ?? [])).catch(() => setCharges([]));
     clients_.task.findAll().then((d) => setTasks(d ?? [])).catch(() => setTasks([]));
+    clients_.reservationRequest
+      .findAll()
+      .then((d) => setReservationRequests(d ?? []))
+      .catch(() => setReservationRequests([]));
   }, []);
 
   const stats = useMemo(() => {
@@ -115,7 +122,12 @@ function AdminDashboard() {
   }, [properties, reservations, charges, tasks]);
 
   const loading =
-    properties === null || reservations === null || clients === null || charges === null || tasks === null;
+    properties === null ||
+    reservations === null ||
+    clients === null ||
+    charges === null ||
+    tasks === null ||
+    reservationRequests === null;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -236,37 +248,49 @@ function AdminDashboard() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Prochaines arrivées</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Chargement...</p>
-          ) : stats.upcomingReservations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune arrivée à venir.</p>
-          ) : (
-            <div className="space-y-2">
-              {stats.upcomingReservations.slice(0, 5).map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
-                >
-                  <div>
-                    <p className="font-medium">
-                      {r.property?.name ?? "Propriété inconnue"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {r.client?.fullName ?? "Client inconnu"} — arrivée le {r.checkInDate}
-                    </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Prochaines arrivées</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Chargement...</p>
+            ) : stats.upcomingReservations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucune arrivée à venir.</p>
+            ) : (
+              <div className="space-y-2">
+                {stats.upcomingReservations.slice(0, 5).map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {r.property?.name ?? "Propriété inconnue"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {r.client?.fullName ?? "Client inconnu"} — arrivée le {r.checkInDate}
+                      </p>
+                    </div>
+                    {r.reservationStatus && <Badge>{r.reservationStatus.label}</Badge>}
                   </div>
-                  {r.reservationStatus && <Badge>{r.reservationStatus.label}</Badge>}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {loading ? (
+          <Card>
+            <CardContent>
+              <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <ActionCenterCard tasks={tasks ?? []} reservationRequests={reservationRequests ?? []} />
+        )}
+      </div>
 
       <Card>
         <CardHeader>
