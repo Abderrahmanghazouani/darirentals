@@ -71,6 +71,32 @@ export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export interface CurrentUser {
+  username: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+/** Retourne les infos de l'utilisateur connecté (déduites du token stocké), ou null. */
+export function getCurrentUser(): CurrentUser | null {
+  const token = getStoredToken();
+  if (!token) return null;
+  const raw = token.replace(/^Bearer\s+/, "");
+  try {
+    const decoded = jwtDecode<DecodedToken>(raw);
+    if (decoded.exp * 1000 < Date.now()) return null;
+    return {
+      username: decoded.sub,
+      email: decoded.email,
+      firstName: decoded.firstName,
+      lastName: decoded.lastName,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Retourne le rôle courant (déduit du token stocké), ou null si non connecté / token expiré. */
 export function getCurrentRole(): Role | null {
   const token = getStoredToken();
