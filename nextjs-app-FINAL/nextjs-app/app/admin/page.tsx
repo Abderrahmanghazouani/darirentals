@@ -34,6 +34,8 @@ import { PremiumHeader } from "@/components/dashboard/premium-header";
 import { RevenueIntelligenceCard } from "@/components/dashboard/revenue-intelligence-card";
 import { PropertyPerformanceCard } from "@/components/dashboard/property-performance-card";
 import { ActionCenterCard } from "@/components/dashboard/action-center-card";
+import { MorningInsightsCard } from "@/components/dashboard/morning-insights-card";
+import { buildAssistantFacts } from "@/lib/dashboard/ai-facts";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 
 const ROLE = "admin" as const;
@@ -125,6 +127,18 @@ function AdminDashboard() {
     return computeHealthScore(properties ?? [], reservations ?? [], charges ?? [], tasks ?? []);
   }, [properties, reservations, charges, tasks]);
 
+  // AI Property Assistant : paquet de faits déjà calculés (mêmes fonctions que les cartes
+  // ci-dessous) - voir NOTES-ai-assistant.md. Gemini ne reçoit jamais que ce JSON.
+  const assistantFacts = useMemo(() => {
+    return buildAssistantFacts(
+      properties ?? [],
+      reservations ?? [],
+      charges ?? [],
+      tasks ?? [],
+      reservationRequests ?? []
+    );
+  }, [properties, reservations, charges, tasks, reservationRequests]);
+
   const loading =
     properties === null ||
     reservations === null ||
@@ -145,7 +159,8 @@ function AdminDashboard() {
       {loading ? (
         <p className={`text-sm text-muted-foreground text-center py-8 ${ENTRANCE}`}>Chargement...</p>
       ) : (
-        <div className={ENTRANCE}>
+        <div className={`space-y-4 ${ENTRANCE}`}>
+          <MorningInsightsCard facts={assistantFacts} role={ROLE} />
           <HealthScoreCard score={healthScore} />
         </div>
       )}
