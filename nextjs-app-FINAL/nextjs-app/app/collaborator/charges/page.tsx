@@ -70,6 +70,13 @@ export default function ChargesPage() {
     [crud.items, enterpriseId]
   );
 
+  // Meme filtre que pour les charges : evite qu'un collaborateur multi-societe voie les
+  // propriétés d'une autre société que celle actuellement sélectionnée dans le menu ci-dessous.
+  const scopedProperties = useMemo(
+    () => filterByEnterprise(properties, enterpriseId),
+    [properties, enterpriseId]
+  );
+
   const filteredItems = useMemo(() => {
     return scopedItems.filter((c) => {
       if (filterProperty !== "all" && String(c.property?.id ?? "") !== filterProperty) return false;
@@ -158,7 +165,7 @@ export default function ChargesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les propriétés</SelectItem>
-                {properties.map((p) => (
+                {scopedProperties.map((p) => (
                   <SelectItem key={p.id} value={String(p.id)}>
                     {p.name}
                   </SelectItem>

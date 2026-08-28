@@ -22,6 +22,8 @@ import { ChargeTypeDto } from "@/lib/types/ChargeType";
 import { PaymentDto } from "@/lib/types/Payment";
 import { getEntityClients } from "@/lib/api";
 import { Role } from "@/lib/api-client";
+import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
+import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
 const chargeSchema = z.object({
   label: z.string().min(1, "Requis"),
@@ -53,9 +55,14 @@ export function ChargeForm({
     property: defaultPropertyId != null ? ({ id: defaultPropertyId } as PropertyDto) : null,
   };
 
+  const enterpriseId = useSelectedEnterpriseId();
   const [properties, setProperties] = useState<PropertyDto[]>([]);
   const [chargeTypes, setChargeTypes] = useState<ChargeTypeDto[]>([]);
   const [payments, setPayments] = useState<PaymentDto[]>([]);
+
+  // Pas d'effet pour un admin (pas de societe selectionnee, filterByEnterprise ne filtre rien) -
+  // evite qu'un collaborateur multi-societe voie les propriétés d'une autre société dans ce menu.
+  const scopedProperties = filterByEnterprise(properties, enterpriseId);
 
   const [propertyId, setPropertyId] = useState<number | null>(base.property?.id ?? null);
   const [chargeTypeId, setChargeTypeId] = useState<number | null>(base.chargeType?.id ?? null);
@@ -117,7 +124,7 @@ export function ChargeForm({
               <SelectValue placeholder="— Choisir —" />
             </SelectTrigger>
             <SelectContent>
-              {properties.map((p) => (
+              {scopedProperties.map((p) => (
                 <SelectItem key={p.id} value={String(p.id)}>
                   {p.name || `#${p.id}`}
                 </SelectItem>

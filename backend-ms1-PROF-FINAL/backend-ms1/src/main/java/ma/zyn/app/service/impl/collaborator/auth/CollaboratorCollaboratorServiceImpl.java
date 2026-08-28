@@ -9,6 +9,7 @@ import ma.zyn.app.dao.facade.core.auth.CollaboratorDao;
 import ma.zyn.app.dao.specification.core.auth.CollaboratorSpecification;
 import ma.zyn.app.service.facade.collaborator.auth.CollaboratorCollaboratorService;
 import ma.zyn.app.service.security.EffectivePermissionService;
+import ma.zyn.app.service.security.EnterpriseAccessService;
 import ma.zyn.app.zynerator.service.AbstractServiceImpl;
 import static ma.zyn.app.zynerator.util.ListUtil.*;
 
@@ -75,7 +76,25 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
     }
 
     public Collaborator findById(Long id) {
-        return dao.findById(id).orElse(null);
+        Collaborator found = dao.findById(id).orElse(null);
+        if (found != null && !isAccessible(found)) {
+            return null;
+        }
+        return found;
+    }
+
+    /** Chantier 1 (isolation par societe, trou trouve apres coup - voir NOTES-permissions.md) :
+     * accessible si au moins une des societes de ce collaborateur est aussi accessible au
+     * collaborateur authentifie. */
+    private boolean isAccessible(Collaborator c) {
+        return c != null && c.getId() != null && enterpriseAccessService.getAccessibleCollaboratorIds().contains(c.getId());
+    }
+
+    private List<Collaborator> filterAccessible(List<Collaborator> items) {
+        List<Long> accessibleIds = enterpriseAccessService.getAccessibleCollaboratorIds();
+        return emptyIfNull(items).stream()
+                .filter(c -> c.getId() != null && accessibleIds.contains(c.getId()))
+                .collect(java.util.stream.Collectors.toList());
     }
 
 
@@ -93,7 +112,7 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
     }
 
     public List<Collaborator> findAll() {
-        return dao.findAll();
+        return filterAccessible(dao.findAll());
     }
 
     public List<Collaborator> findByCriteria(CollaboratorCriteria criteria) {
@@ -104,7 +123,7 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
         } else {
             content = dao.findAll();
         }
-        return content;
+        return filterAccessible(content);
 
     }
 
@@ -119,13 +138,11 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
         order = (order != null && !order.isEmpty()) ? order : "desc";
         sortField = (sortField != null && !sortField.isEmpty()) ? sortField : "id";
         Pageable pageable = PageRequest.of(page, pageSize, Sort.Direction.fromString(order), sortField);
-        return dao.findAll(mySpecification, pageable).getContent();
+        return filterAccessible(dao.findAll(mySpecification, pageable).getContent());
     }
 
     public int getDataSize(CollaboratorCriteria criteria) {
-        CollaboratorSpecification mySpecification = constructSpecification(criteria);
-        mySpecification.setDistinct(true);
-        return ((Long) dao.count(mySpecification)).intValue();
+        return findByCriteria(criteria).size();
     }
 
     public List<Collaborator> findByDisplayCurrencyCode(String code){
@@ -184,6 +201,9 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
 
     public Collaborator findWithAssociatedLists(Long id){
         Collaborator result = dao.findById(id).orElse(null);
+        if (result != null && !isAccessible(result)) {
+            return null;
+        }
         if(result!=null && result.getId() != null) {
             result.setEnterpriseMemberships(enterpriseMembershipService.findByCollaboratorId(id));
             result.setAiUsageLogs(aiUsageLogService.findByCollaboratorId(id));
@@ -261,7 +281,10 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
 
 
     public List<Collaborator> findAllOptimized() {
-        return dao.findAllOptimized();
+        // Contrairement a Property/Reservation (Chantier 1), le filtre ici ne depend que de
+        // l'id (getAccessibleCollaboratorIds()), pas d'un champ charge par la projection - pas
+        // besoin de retomber sur findAll().
+        return filterAccessible(dao.findAllOptimized());
     }
 
     @Override
@@ -397,6 +420,8 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
     private EnterpriseMembershipCollaboratorService enterpriseMembershipService ;
     @Autowired
     private EffectivePermissionService effectivePermissionService ;
+    @Autowired
+    private EnterpriseAccessService enterpriseAccessService ;
 
     public CollaboratorCollaboratorServiceImpl(CollaboratorDao dao) {
         this.dao = dao;

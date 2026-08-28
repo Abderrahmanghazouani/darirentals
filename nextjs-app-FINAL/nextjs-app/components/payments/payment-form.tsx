@@ -24,6 +24,8 @@ import { PaymentTypeDto } from "@/lib/types/PaymentType";
 import { PaymentStatusDto } from "@/lib/types/PaymentStatus";
 import { getEntityClients } from "@/lib/api";
 import { Role } from "@/lib/api-client";
+import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
+import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
 const paymentSchema = z.object({
   amount: z.coerce.number().nullable().optional(),
@@ -49,8 +51,13 @@ interface PaymentFormProps {
 export function PaymentForm({ initial, saving, role, onSubmit, onCancel }: PaymentFormProps) {
   const base = initial ?? newPaymentDto();
 
+  const enterpriseId = useSelectedEnterpriseId();
   const [providers, setProviders] = useState<ServiceProviderDto[]>([]);
   const [types, setTypes] = useState<PaymentTypeDto[]>([]);
+
+  // ServiceProvider a un lien direct vers enterprise (contrairement a Payment) - pas d'effet
+  // pour un admin (pas de societe selectionnee, filterByEnterprise ne filtre rien).
+  const scopedProviders = filterByEnterprise(providers, enterpriseId);
   const [statuses, setStatuses] = useState<PaymentStatusDto[]>([]);
   const [allCharges, setAllCharges] = useState<ChargeDto[]>([]);
 
@@ -118,7 +125,7 @@ export function PaymentForm({ initial, saving, role, onSubmit, onCancel }: Payme
               <SelectValue placeholder="— Choisir —" />
             </SelectTrigger>
             <SelectContent>
-              {providers.map((p) => (
+              {scopedProviders.map((p) => (
                 <SelectItem key={p.id} value={String(p.id)}>
                   {p.name}
                 </SelectItem>

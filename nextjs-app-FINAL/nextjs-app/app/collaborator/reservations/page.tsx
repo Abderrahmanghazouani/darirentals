@@ -110,7 +110,11 @@ export default function ReservationsPage() {
       setReservations(res ?? []);
       setProperties(props ?? []);
       setStatuses(sts ?? []);
-      setCalendarPropertyId((prev) => prev ?? (props?.[0]?.id ?? null));
+      // Le defaut de propriete affichee doit respecter la societe actuellement selectionnee
+      // (collaborateur multi-societe) - sinon le calendrier peut s'ouvrir sur une propriete
+      // d'une autre societe que celle en cours.
+      const scopedProps = filterByEnterprise(props ?? [], enterpriseId);
+      setCalendarPropertyId((prev) => prev ?? (scopedProps[0]?.id ?? null));
     } catch (e) {
       if (!handleAuthError(e)) {
         setError(e instanceof Error ? e.message : "Erreur de chargement");
@@ -118,7 +122,7 @@ export default function ReservationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [reservationClient, handleAuthError]);
+  }, [reservationClient, handleAuthError, enterpriseId]);
 
   useEffect(() => {
     refresh();
@@ -127,6 +131,13 @@ export default function ReservationsPage() {
   const scopedReservations = useMemo(
     () => filterByEnterprise(reservations, enterpriseId),
     [reservations, enterpriseId]
+  );
+
+  // Meme filtre que pour les reservations : evite qu'un collaborateur multi-societe voie les
+  // propriétés d'une autre société que celle actuellement sélectionnée dans les menus ci-dessous.
+  const scopedProperties = useMemo(
+    () => filterByEnterprise(properties, enterpriseId),
+    [properties, enterpriseId]
   );
 
   const filtered = useMemo(() => {
@@ -247,7 +258,7 @@ export default function ReservationsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes</SelectItem>
-                  {properties.map((p) => (
+                  {scopedProperties.map((p) => (
                     <SelectItem key={p.id} value={String(p.id)}>
                       {p.name || `#${p.id}`}
                     </SelectItem>
@@ -318,7 +329,7 @@ export default function ReservationsPage() {
                     <SelectValue placeholder="Choisir une propriété" />
                   </SelectTrigger>
                   <SelectContent>
-                    {properties.map((p) => (
+                    {scopedProperties.map((p) => (
                       <SelectItem key={p.id} value={String(p.id)}>
                         {p.name || `#${p.id}`}
                       </SelectItem>
@@ -327,7 +338,7 @@ export default function ReservationsPage() {
                 </Select>
               </div>
 
-              {properties.length === 0 ? (
+              {scopedProperties.length === 0 ? (
                 <p className="text-muted-foreground text-sm py-8 text-center">
                   Crée d&apos;abord au moins une propriété (CRUD générique) pour voir le calendrier.
                 </p>
