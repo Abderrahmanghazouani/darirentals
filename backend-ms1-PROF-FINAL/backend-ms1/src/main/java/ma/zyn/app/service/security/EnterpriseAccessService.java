@@ -70,6 +70,23 @@ public class EnterpriseAccessService {
         return enterpriseId != null && getAccessibleEnterpriseIds().contains(enterpriseId);
     }
 
+    /** Isolation par societe appliquee a Collaborator (trou trouve apres coup - absent de la
+     * liste initiale du Chantier 1, qui ne couvrait que Property/Client/ServiceProvider/
+     * Reservation/Charge/Task/Payment). Collaborator n'a pas un lien direct unique vers
+     * Enterprise (potentiellement multi-societe via EnterpriseMembership) : accessible si AU
+     * MOINS une de ses societes est aussi accessible au collaborateur authentifie. */
+    public List<Long> getAccessibleCollaboratorIds() {
+        List<Long> accessibleEnterpriseIds = getAccessibleEnterpriseIds();
+        if (accessibleEnterpriseIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return enterpriseMembershipDao.findByEnterpriseIdIn(accessibleEnterpriseIds).stream()
+                .map(m -> m.getCollaborator() != null ? m.getCollaborator().getId() : null)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
     /** Chantier 3 (NOTES-permissions.md) : true si ce collaborateur est restreint a une liste
      * explicite de proprietes pour cette societe. Seul un role de code "SubAdmin" en est
      * exempte - tout le reste (Gestionnaire, ou meme une membership sans role du tout) est

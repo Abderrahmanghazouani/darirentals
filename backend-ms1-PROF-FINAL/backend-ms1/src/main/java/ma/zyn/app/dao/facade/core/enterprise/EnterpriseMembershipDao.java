@@ -13,6 +13,7 @@ public interface EnterpriseMembershipDao extends AbstractRepository<EnterpriseMe
     int deleteByCollaboratorId(Long id);
     long countByCollaboratorEmail(String email);
     List<EnterpriseMembership> findByEnterpriseId(Long id);
+    List<EnterpriseMembership> findByEnterpriseIdIn(List<Long> ids);
     int deleteByEnterpriseId(Long id);
     long countByEnterpriseId(Long id);
     List<EnterpriseMembership> findByCollaboratorRoleCode(String code);

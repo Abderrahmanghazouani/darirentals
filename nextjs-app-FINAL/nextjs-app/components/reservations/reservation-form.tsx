@@ -20,6 +20,8 @@ import { ClientDto } from "@/lib/types/Client";
 import { PropertyDto } from "@/lib/types/Property";
 import { ReservationPlatformDto } from "@/lib/types/ReservationPlatform";
 import { ReservationStatusDto } from "@/lib/types/ReservationStatus";
+import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
+import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
 interface ReservationFormProps {
   role: Role;
@@ -64,8 +66,13 @@ export function ReservationForm({
     return base;
   });
 
+  const enterpriseId = useSelectedEnterpriseId();
   const [clients, setClients] = useState<ClientDto[]>([]);
   const [properties, setProperties] = useState<PropertyDto[]>([]);
+
+  // Pas d'effet pour un admin (pas de societe selectionnee, filterByEnterprise ne filtre rien) -
+  // evite qu'un collaborateur multi-societe voie les propriétés d'une autre société dans ce menu.
+  const scopedProperties = filterByEnterprise(properties, enterpriseId);
   const [platforms, setPlatforms] = useState<ReservationPlatformDto[]>([]);
   const [statuses, setStatuses] = useState<ReservationStatusDto[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -209,7 +216,7 @@ export function ReservationForm({
           <Select
             value={values.property?.id != null ? String(values.property.id) : undefined}
             onValueChange={(val) => {
-              const found = properties.find((p) => String(p.id) === val) ?? null;
+              const found = scopedProperties.find((p) => String(p.id) === val) ?? null;
               setValues((prev) => ({
                 ...prev,
                 property: found,
@@ -221,7 +228,7 @@ export function ReservationForm({
               <SelectValue placeholder="— Choisir —" />
             </SelectTrigger>
             <SelectContent>
-              {properties.map((p) => (
+              {scopedProperties.map((p) => (
                 <SelectItem key={p.id} value={String(p.id)}>
                   {p.name || `#${p.id}`}
                 </SelectItem>

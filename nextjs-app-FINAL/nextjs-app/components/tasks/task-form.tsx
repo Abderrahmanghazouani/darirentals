@@ -24,6 +24,8 @@ import { TaskPriorityDto } from "@/lib/types/TaskPriority";
 import { TaskStatusDto } from "@/lib/types/TaskStatus";
 import { getEntityClients } from "@/lib/api";
 import { Role } from "@/lib/api-client";
+import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
+import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Requis"),
@@ -55,8 +57,13 @@ export function TaskForm({
     property: defaultPropertyId != null ? ({ id: defaultPropertyId } as PropertyDto) : null,
   };
 
+  const enterpriseId = useSelectedEnterpriseId();
   const [properties, setProperties] = useState<PropertyDto[]>([]);
   const [collaborators, setCollaborators] = useState<CollaboratorDto[]>([]);
+
+  // Pas d'effet pour un admin (pas de societe selectionnee, filterByEnterprise ne filtre rien) -
+  // evite qu'un collaborateur multi-societe voie les propriétés d'une autre société dans ce menu.
+  const scopedProperties = filterByEnterprise(properties, enterpriseId);
   const [types, setTypes] = useState<TaskTypeDto[]>([]);
   const [priorities, setPriorities] = useState<TaskPriorityDto[]>([]);
   const [statuses, setStatuses] = useState<TaskStatusDto[]>([]);
@@ -130,7 +137,7 @@ export function TaskForm({
               <SelectValue placeholder="— Choisir —" />
             </SelectTrigger>
             <SelectContent>
-              {properties.map((p) => (
+              {scopedProperties.map((p) => (
                 <SelectItem key={p.id} value={String(p.id)}>
                   {p.name || `#${p.id}`}
                 </SelectItem>

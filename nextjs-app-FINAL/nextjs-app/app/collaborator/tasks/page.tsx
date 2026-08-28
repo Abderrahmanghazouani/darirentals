@@ -92,6 +92,13 @@ export default function TasksPage() {
     [crud.items, enterpriseId]
   );
 
+  // Meme filtre que pour les tâches : evite qu'un collaborateur multi-societe voie les
+  // propriétés d'une autre société que celle actuellement sélectionnée dans le menu ci-dessous.
+  const scopedProperties = useMemo(
+    () => filterByEnterprise(properties, enterpriseId),
+    [properties, enterpriseId]
+  );
+
   const filteredItems = useMemo(() => {
     return scopedItems.filter((t) => {
       if (filterProperty !== "all" && String(t.property?.id ?? "") !== filterProperty) return false;
@@ -164,7 +171,7 @@ export default function TasksPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les propriétés</SelectItem>
-                {properties.map((p) => (
+                {scopedProperties.map((p) => (
                   <SelectItem key={p.id} value={String(p.id)}>
                     {p.name}
                   </SelectItem>

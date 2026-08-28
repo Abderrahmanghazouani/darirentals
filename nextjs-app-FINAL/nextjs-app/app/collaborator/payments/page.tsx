@@ -43,6 +43,7 @@ import { ChargeDto } from "@/lib/types/Charge";
 import { ServiceProviderDto } from "@/lib/types/ServiceProvider";
 import { PaymentStatusDto } from "@/lib/types/PaymentStatus";
 import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
+import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
 const ROLE: Role = "collaborator";
 
@@ -129,6 +130,13 @@ export default function PaymentsPage() {
     if (enterpriseId == null) return payments;
     return payments.filter((p) => p.serviceProvider?.enterprise?.id === enterpriseId);
   }, [payments, enterpriseId]);
+
+  // Meme raisonnement que scopedPayments ci-dessus : ServiceProvider a un lien direct vers
+  // enterprise, donc filterByEnterprise s'applique directement ici (contrairement a Payment).
+  const scopedProviders = useMemo(
+    () => filterByEnterprise(providers, enterpriseId),
+    [providers, enterpriseId]
+  );
 
   const filteredPayments = useMemo(() => {
     return scopedPayments.filter((p) => {
@@ -223,7 +231,7 @@ export default function PaymentsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les prestataires</SelectItem>
-                {providers.map((p) => (
+                {scopedProviders.map((p) => (
                   <SelectItem key={p.id} value={String(p.id)}>
                     {p.name}
                   </SelectItem>
