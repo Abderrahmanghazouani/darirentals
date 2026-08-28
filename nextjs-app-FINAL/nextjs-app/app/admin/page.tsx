@@ -35,6 +35,7 @@ import { RevenueIntelligenceCard } from "@/components/dashboard/revenue-intellig
 import { PropertyPerformanceCard } from "@/components/dashboard/property-performance-card";
 import { ActionCenterCard } from "@/components/dashboard/action-center-card";
 import { MorningInsightsCard } from "@/components/dashboard/morning-insights-card";
+import { PortfolioChatCard } from "@/components/dashboard/portfolio-chat-card";
 import { buildAssistantFacts } from "@/lib/dashboard/ai-facts";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 
@@ -162,6 +163,7 @@ function AdminDashboard() {
         <div className={`space-y-4 ${ENTRANCE}`}>
           <MorningInsightsCard facts={assistantFacts} role={ROLE} />
           <HealthScoreCard score={healthScore} />
+          <PortfolioChatCard facts={assistantFacts} role={ROLE} />
         </div>
       )}
 

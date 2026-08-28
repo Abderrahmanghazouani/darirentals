@@ -98,6 +98,70 @@ console) — comportement identique, zéro erreur console.
 
 ---
 
-## Chantier 2 — Chat "Pose une question à ton portefeuille"
+## Chantier 2 — Chat "Pose une question à ton portefeuille" (FAIT)
 
-En cours.
+### Ce qui a été construit
+
+Réutilise entièrement l'infrastructure du Chantier 1 : même paquet `AssistantFacts`
+(`ai-facts.ts`), même `PropertyAssistantService` (méthode `answerQuestion`, déjà écrite en
+même temps que `generateMorningInsights` puisqu'elles partagent tout le reste — quota, appel
+Gemini, journalisation), même contrôleur (`POST /api/admin/property-assistant/chat`, reçoit
+`{facts, question, enterpriseId}`).
+
+**Prompt strict** (voir `answerQuestion()`) : le paquet JSON complet + la question, avec
+instruction de répondre UNIQUEMENT à partir des données fournies, de dire explicitement
+"je n'ai pas cette information" plutôt que d'inventer, d'utiliser uniquement la devise du
+champ `currency`, et de refuser poliment toute question hors gestion de portefeuille (météo,
+actualités...).
+
+**Frontend** :
+[`components/dashboard/portfolio-chat-card.tsx`](../../nextjs-app-FINAL/nextjs-app/components/dashboard/portfolio-chat-card.tsx)
+(nouveau) — champ de saisie + historique des échanges (question/réponse) de la session,
+affichée sous le Health Score sur le Dashboard. Utilise `askPortfolioQuestion()`
+(`lib/ai-assistant-api.ts`, déjà écrit au Chantier 1).
+
+### Testé le 28/08 avec de vraies questions, sur le vrai portefeuille (via l'UI réelle)
+
+| Question | Réponse | Vérification |
+|---|---|---|
+| « Combien j'ai gagné ce mois-ci ? » | « Ce mois-ci, vos revenus s'élèvent à 3300 MAD. Après déduction des charges du mois en cours qui sont de 500 MAD, votre profit net s'élève à 2800 MAD. » | 3300 et 500 vérifiés contre le Dashboard ; 2800 = simple soustraction correcte, pas un chiffre inventé |
+| « Quelles tâches sont en retard ? » | « Il n'y a actuellement aucune tâche en retard dans le portefeuille. » | Correct : 0/3 tâches en retard (Health Score) |
+| « Quel est le classement des propriétés par bénéfice ? » | Classement des 3 propriétés de `topProperties` avec leurs vrais montants | Correspond exactement au paquet envoyé |
+| **« Quel temps fait-il aujourd'hui ? »** (hors périmètre) | « Je suis désolé, mais je ne peux pas répondre à cette question. Mon rôle est strictement limité aux informations concernant la gestion de votre portefeuille immobilier. » | **Refus propre confirmé** — aucune tentative de répondre |
+| **« Combien gagne mon voisin avec ses locations ? »** (semble du domaine, mais absent des données) | « Je ne dispose pas de cette information. Les données fournies concernent uniquement votre portefeuille immobilier et ne contiennent aucune donnée sur les revenus de votre voisin. » | **Aucune invention** — distinction correcte entre "hors sujet" et "dans le sujet mais absent des données" |
+
+### Quota et journalisation — vérifiés avec un vrai `AiQuota` configuré
+
+La vue Dashboard admin n'a pas de société unique (`enterpriseId: null` toujours envoyé), donc
+`checkQuota()` ne s'applique jamais dans l'usage réel actuel (voir Chantier 1 - comportement
+volontaire, pas un oubli). Pour vérifier que le MÉCANISME lui-même fonctionne bien (identique à
+`InvoiceScanService`), testé directement en forçant un `enterpriseId` réel dans la requête :
+
+- **Société A**, quota délibérément fixé à 1 token alors que 2864 tokens étaient déjà
+  consommés (tests scan-facture antérieurs) → **403... `429 Too Many Requests`** avec le message
+  exact `"Quota IA épuisé pour cette société (2864/1 tokens utilisés)."` — appel Gemini jamais
+  déclenché.
+- **Société B**, quota généreux (100 000 tokens), 0 usage préalable → `200 OK`, réponse
+  correcte, `tokensUsed: 996`.
+- Vérifié ensuite via `GET /api/admin/aiUsageLog/enterprise/id/4` : une nouvelle ligne
+  `AiUsageLog` (id 12, 996 tokens, société B) a bien été créée immédiatement après l'appel —
+  journalisation confirmée, même mécanisme que le scan de facture.
+- Les 2 `AiQuota` de test ont été supprimés après vérification (sinon la Société A restait
+  bloquée en permanence sur le scan de facture à cause du quota artificiel de 1 token).
+
+### Limites connues
+
+- Comme documenté au Chantier 1, l'admin Dashboard n'a pas de société unique : le quota par
+  société ne s'applique donc jamais en usage réel actuel (seulement vérifié manuellement
+  ci-dessus). S'applique normalement si l'assistant est un jour exposé côté `/collaborator`.
+- **Effet observé de React StrictMode (dev uniquement)** : les insights du matin déclenchent
+  parfois 2 appels Gemini au montage (React invoque l'effet deux fois en dev pour détecter les
+  bugs de cleanup manquant) — visible dans `AiUsageLog` sous forme de 2 lignes créées à la même
+  seconde. N'affecte ni la justesse de la réponse affichée, ni le comportement en production
+  (`next build` n'a pas ce double-appel) — juste un coût de tokens ~doublé en dev. Pas corrigé
+  (mineur, cohérent avec la fragilité StrictMode déjà documentée dans NOTES-permissions.md pour
+  un autre composant) ; à garder à l'œil si le volume de test augmente.
+- Le chat ne conserve pas d'historique de conversation entre les questions (chaque question est
+  envoyée indépendamment avec le même paquet `facts` figé au chargement de la page) — cohérent
+  avec le principe "aucune connaissance au-delà des faits fournis", mais signifie qu'une question
+  de suivi ("et le mois d'avant ?") ne bénéficie pas du contexte de la question précédente.
