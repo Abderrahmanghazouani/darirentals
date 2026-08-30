@@ -6,6 +6,7 @@ import {
   HealthScoreLevel,
   HEALTH_SCORE_LEVEL_LABEL,
 } from "@/lib/dashboard/health-score";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 // Tokens de thème (palette DariRentals - voir app/globals.css) : Excellent = succès (teal),
 // Bon et À surveiller = avertissement (ambre, 2 intensités de fond pour les distinguer),
@@ -46,13 +47,14 @@ const GAUGE_RADIUS = (GAUGE_SIZE - GAUGE_STROKE) / 2;
 const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
 
 export function HealthScoreCard({ score }: HealthScoreCardProps) {
+  const { dict } = useLanguage();
   const color = LEVEL_COLOR[score.level];
   const dashOffset = GAUGE_CIRCUMFERENCE * (1 - score.total / 100);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Santé du portefeuille</CardTitle>
+        <CardTitle>{dict.healthScore.title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row items-center gap-6">

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { TaskDto } from "@/lib/types/Task";
 import { ReservationRequestDto } from "@/lib/types/ReservationRequest";
 import { ActionItem, computeActionItems } from "@/lib/dashboard/action-center";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 const KIND_ICON: Record<ActionItem["kind"], typeof AlertTriangle> = {
   "overdue-task": AlertTriangle,
@@ -28,6 +29,7 @@ interface ActionCenterCardProps {
 
 export function ActionCenterCard({ tasks, reservationRequests }: ActionCenterCardProps) {
   const router = useRouter();
+  const { dict } = useLanguage();
 
   const items = useMemo(() => computeActionItems(tasks, reservationRequests), [tasks, reservationRequests]);
   const visibleItems = items.slice(0, MAX_VISIBLE);
@@ -37,7 +39,7 @@ export function ActionCenterCard({ tasks, reservationRequests }: ActionCenterCar
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
-          <CardTitle>Centre d&apos;actions</CardTitle>
+          <CardTitle>{dict.actionCenter.title}</CardTitle>
           {items.length > 0 && <Badge variant="outline">{items.length}</Badge>}
         </div>
       </CardHeader>
@@ -45,10 +47,8 @@ export function ActionCenterCard({ tasks, reservationRequests }: ActionCenterCar
         {items.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
             <PartyPopper className="size-8 text-success" />
-            <p className="text-sm font-medium">Rien à faire aujourd&apos;hui</p>
-            <p className="text-xs text-muted-foreground">
-              Aucune tâche en retard, aucune demande en attente.
-            </p>
+            <p className="text-sm font-medium">{dict.actionCenter.allDoneTitle}</p>
+            <p className="text-xs text-muted-foreground">{dict.actionCenter.allDoneSubtitle}</p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -71,7 +71,7 @@ export function ActionCenterCard({ tasks, reservationRequests }: ActionCenterCar
             })}
             {remaining > 0 && (
               <p className="pt-1 text-center text-xs text-muted-foreground">
-                +{remaining} autre{remaining > 1 ? "s" : ""}
+                +{remaining} {remaining > 1 ? dict.actionCenter.andMoreMany : dict.actionCenter.andMoreOne}
               </p>
             )}
           </div>

@@ -7,6 +7,7 @@ import { Sparkles, RefreshCw } from "lucide-react";
 import { AssistantFacts } from "@/lib/dashboard/ai-facts";
 import { getMorningInsights, AssistantError } from "@/lib/ai-assistant-api";
 import { Role } from "@/lib/api-client";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 interface MorningInsightsCardProps {
   facts: AssistantFacts;
@@ -17,23 +18,32 @@ interface MorningInsightsCardProps {
  * Insights du matin : 2-3 phrases générées par Gemini à partir du paquet "facts" déjà calculé
  * par le Dashboard (mêmes données que Health Score / Revenue Intelligence / Action Center).
  * Voir NOTES-ai-assistant.md — aucun chiffre n'est jamais inventé, Gemini ne fait que reformuler.
+ * Seul le CHROME fixe de cette carte (chargement, erreur, bouton) suit la langue choisie - le
+ * message généré par Gemini reste en français (voir NOTES-ai-assistant.md).
  */
 export function MorningInsightsCard({ facts, role }: MorningInsightsCardProps) {
+  const { dict } = useLanguage();
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Comme pour /login et /reserver : on stocke le message serveur brut à part du texte de
+  // secours traduit, pour que ce dernier se retraduise si l'utilisateur change de langue après
+  // avoir vu l'erreur (voir NOTES-multi-langue.md).
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [hasGenericError, setHasGenericError] = useState(false);
+  const error = serverError ?? (hasGenericError ? dict.assistant.insightsError : null);
 
   function load() {
     setLoading(true);
-    setError(null);
+    setServerError(null);
+    setHasGenericError(false);
     getMorningInsights(facts, role)
       .then((res) => setMessage(res.message))
       .catch((e) => {
-        setError(
-          e instanceof AssistantError
-            ? e.message
-            : "L'assistant n'a pas pu générer les insights du jour."
-        );
+        if (e instanceof AssistantError && e.message) {
+          setServerError(e.message);
+        } else {
+          setHasGenericError(true);
+        }
       })
       .finally(() => setLoading(false));
   }
@@ -53,12 +63,12 @@ export function MorningInsightsCard({ facts, role }: MorningInsightsCardProps) {
           </div>
           <div className="flex-1 min-w-0 space-y-1">
             {loading ? (
-              <p className="text-sm text-muted-foreground">L&apos;assistant prépare le résumé du jour...</p>
+              <p className="text-sm text-muted-foreground">{dict.assistant.insightsLoading}</p>
             ) : error ? (
               <div className="space-y-2">
                 <p className="text-sm text-destructive">{error}</p>
                 <Button type="button" variant="outline" size="sm" onClick={load}>
-                  <RefreshCw className="size-3.5" /> Réessayer
+                  <RefreshCw className="size-3.5" /> {dict.assistant.retry}
                 </Button>
               </div>
             ) : (
