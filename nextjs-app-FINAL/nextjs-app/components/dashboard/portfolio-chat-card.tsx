@@ -8,6 +8,7 @@ import { MessageCircleQuestion, Loader2 } from "lucide-react";
 import { AssistantFacts } from "@/lib/dashboard/ai-facts";
 import { askPortfolioQuestion, AssistantError } from "@/lib/ai-assistant-api";
 import { Role } from "@/lib/api-client";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 interface PortfolioChatCardProps {
   facts: AssistantFacts;
@@ -17,15 +18,22 @@ interface PortfolioChatCardProps {
 interface Exchange {
   question: string;
   answer: string | null;
-  error: string | null;
+  // Comme pour /login, /reserver et MorningInsightsCard : la nature de l'erreur est stockée,
+  // pas un texte déjà traduit, pour qu'un changement de langue retraduise aussi l'historique
+  // (voir NOTES-multi-langue.md).
+  serverError: string | null;
+  hasGenericError: boolean;
 }
 
 /**
  * "Pose une question à ton portefeuille" : Gemini répond UNIQUEMENT à partir du paquet
  * "facts" déjà calculé par le Dashboard (voir NOTES-ai-assistant.md) — jamais de requête
- * libre vers la base, jamais un chiffre inventé.
+ * libre vers la base, jamais un chiffre inventé. Seul le CHROME fixe (titre, placeholder,
+ * bouton, messages système) suit la langue choisie - les réponses de Gemini restent en
+ * français (voir NOTES-ai-assistant.md).
  */
 export function PortfolioChatCard({ facts, role }: PortfolioChatCardProps) {
+  const { dict } = useLanguage();
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
@@ -38,11 +46,16 @@ export function PortfolioChatCard({ facts, role }: PortfolioChatCardProps) {
     setQuestion("");
     try {
       const res = await askPortfolioQuestion(facts, q, role);
-      setExchanges((prev) => [{ question: q, answer: res.message, error: null }, ...prev]);
+      setExchanges((prev) => [
+        { question: q, answer: res.message, serverError: null, hasGenericError: false },
+        ...prev,
+      ]);
     } catch (e) {
-      const message =
-        e instanceof AssistantError ? e.message : "L'assistant n'a pas pu répondre pour le moment.";
-      setExchanges((prev) => [{ question: q, answer: null, error: message }, ...prev]);
+      const serverError = e instanceof AssistantError && e.message ? e.message : null;
+      setExchanges((prev) => [
+        { question: q, answer: null, serverError, hasGenericError: !serverError },
+        ...prev,
+      ]);
     } finally {
       setAsking(false);
     }
@@ -52,7 +65,7 @@ export function PortfolioChatCard({ facts, role }: PortfolioChatCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <MessageCircleQuestion className="size-4.5" /> Pose une question à ton portefeuille
+          <MessageCircleQuestion className="size-4.5" /> {dict.assistant.chatTitle}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -60,26 +73,25 @@ export function PortfolioChatCard({ facts, role }: PortfolioChatCardProps) {
           <Input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ex : combien j'ai gagné ce mois-ci ?"
+            placeholder={dict.assistant.chatPlaceholder}
             disabled={asking}
           />
           <Button type="submit" disabled={asking || !question.trim()}>
-            {asking ? <Loader2 className="size-4 animate-spin" /> : "Demander"}
+            {asking ? <Loader2 className="size-4 animate-spin" /> : dict.assistant.chatButton}
           </Button>
         </form>
 
         {exchanges.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Pose une question sur tes revenus, charges, réservations à venir ou tâches en retard —
-            l&apos;assistant répond uniquement à partir des vraies données de ton portefeuille.
-          </p>
+          <p className="text-sm text-muted-foreground">{dict.assistant.chatHint}</p>
         ) : (
           <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
             {exchanges.map((ex, i) => (
               <div key={i} className="space-y-1 border-b pb-3 last:border-0 last:pb-0">
                 <p className="text-sm font-medium">{ex.question}</p>
-                {ex.error ? (
-                  <p className="text-sm text-destructive">{ex.error}</p>
+                {ex.serverError || ex.hasGenericError ? (
+                  <p className="text-sm text-destructive">
+                    {ex.serverError ?? dict.assistant.chatError}
+                  </p>
                 ) : (
                   <p className="text-sm text-muted-foreground leading-relaxed">{ex.answer}</p>
                 )}

@@ -23,6 +23,20 @@ export interface LoginResult {
   username: string;
 }
 
+/**
+ * Erreur de login typée : "unrecognized_role" n'a jamais de texte utilisateur codé en dur ici
+ * (voir LanguageProvider) - c'est à l'appelant (ex: /login) d'afficher son propre message
+ * traduit pour ce cas précis. "server" porte le message brut renvoyé par le serveur, le cas
+ * échéant (peut être vide - voir login() ci-dessous).
+ */
+export class LoginError extends Error {
+  code: "server" | "unrecognized_role";
+  constructor(code: "server" | "unrecognized_role", serverMessage = "") {
+    super(serverMessage);
+    this.code = code;
+  }
+}
+
 /** Convertit une autorité Spring ("ROLE_ADMIN") en clé de route ("admin"). */
 function roleFromAuthority(authority: string): Role | null {
   const key = authority.replace("ROLE_", "").toLowerCase();
@@ -38,14 +52,18 @@ export async function login(username: string, password: string): Promise<LoginRe
   });
 
   if (!res.ok) {
-    let message = "Échec de la connexion";
+    // Pas de message par défaut ici : un texte codé en dur ne suivrait pas la langue choisie
+    // par l'utilisateur (voir LanguageProvider). Message vide = "pas de raison utilisable
+    // renvoyée par le serveur" ; c'est à l'appelant (ex: /login) d'afficher son propre texte
+    // par défaut traduit dans ce cas.
+    let message = "";
     try {
       const data = await res.json();
-      message = data?.message || data?.error || (typeof data === "string" ? data : message);
+      message = data?.message || data?.error || (typeof data === "string" ? data : "");
     } catch {
-      // réponse non-JSON, on garde le message par défaut
+      // réponse non-JSON (ex: message brut de Spring Security) : pas de message utilisable.
     }
-    throw new Error(message);
+    throw new LoginError("server", message);
   }
 
   const data = await res.json();
@@ -55,7 +73,7 @@ export async function login(username: string, password: string): Promise<LoginRe
   const decoded = jwtDecode<DecodedToken>(rawToken);
   const role = decoded.roles?.map(roleFromAuthority).find((r) => r != null);
   if (!role) {
-    throw new Error("Rôle non reconnu pour cet utilisateur.");
+    throw new LoginError("unrecognized_role");
   }
 
   localStorage.setItem(TOKEN_KEY, bearer);

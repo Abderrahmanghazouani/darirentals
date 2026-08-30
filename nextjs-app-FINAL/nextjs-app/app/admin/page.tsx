@@ -38,6 +38,8 @@ import { MorningInsightsCard } from "@/components/dashboard/morning-insights-car
 import { PortfolioChatCard } from "@/components/dashboard/portfolio-chat-card";
 import { buildAssistantFacts } from "@/lib/dashboard/ai-facts";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
+import { useLanguage } from "@/lib/i18n/language-context";
+import { Dict } from "@/lib/i18n/translations";
 
 const ROLE = "admin" as const;
 
@@ -52,15 +54,17 @@ function todayIso() {
 // seule fois au montage, jamais rejouée au re-render (pas de dépendance à un état togglé).
 const ENTRANCE = "animate-in fade-in slide-in-from-bottom-2 duration-200 fill-mode-both";
 
-const tools = [
-  { href: "/admin/property", label: "Propriétés", icon: Building2 },
-  { href: "/admin/reservations", label: "Réservations (calendrier)", icon: CalendarDays },
-  { href: "/admin/charges", label: "Charges", icon: Receipt },
-  { href: "/admin/payments", label: "Paiements aux prestataires", icon: Wallet },
-  { href: "/admin/tasks", label: "Tâches", icon: ListTodo },
-  { href: "/admin/exchange-rates", label: "Taux de change", icon: Coins },
-  { href: "/admin/financial-reports", label: "Rapports financiers", icon: FileBarChart },
-];
+function toolsFor(dict: Dict) {
+  return [
+    { href: "/admin/property", label: dict.tools.properties, icon: Building2 },
+    { href: "/admin/reservations", label: dict.tools.reservationsCalendar, icon: CalendarDays },
+    { href: "/admin/charges", label: dict.tools.charges, icon: Receipt },
+    { href: "/admin/payments", label: dict.tools.payments, icon: Wallet },
+    { href: "/admin/tasks", label: dict.tools.tasks, icon: ListTodo },
+    { href: "/admin/exchange-rates", label: dict.tools.exchangeRates, icon: Coins },
+    { href: "/admin/financial-reports", label: dict.tools.financialReports, icon: FileBarChart },
+  ];
+}
 
 export default function AdminHome() {
   const ready = useRequireRole(ROLE);
@@ -75,6 +79,8 @@ export default function AdminHome() {
 
 function AdminDashboard() {
   const { format } = useCurrency();
+  const { dict } = useLanguage();
+  const tools = useMemo(() => toolsFor(dict), [dict]);
 
   const [properties, setProperties] = useState<PropertyDto[] | null>(null);
   const [reservations, setReservations] = useState<ReservationDto[] | null>(null);
@@ -158,7 +164,7 @@ function AdminDashboard() {
       <PremiumHeader activeProperties={stats.activeProperties} loading={loading} />
 
       {loading ? (
-        <p className={`text-sm text-muted-foreground text-center py-8 ${ENTRANCE}`}>Chargement...</p>
+        <p className={`text-sm text-muted-foreground text-center py-8 ${ENTRANCE}`}>{dict.common.loading}</p>
       ) : (
         <div className={`space-y-4 ${ENTRANCE}`}>
           <MorningInsightsCard facts={assistantFacts} role={ROLE} />
@@ -172,12 +178,12 @@ function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Propriétés</p>
+                <p className="text-sm text-muted-foreground">{dict.dashboardStats.properties}</p>
                 <p className="text-3xl font-bold">
                   {loading ? "…" : stats.totalProperties}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {loading ? "" : `${stats.activeProperties} active(s)`}
+                  {loading ? "" : `${stats.activeProperties} ${dict.dashboardStats.active}`}
                 </p>
               </div>
               <Building2 className="size-8 text-muted-foreground" />
@@ -189,12 +195,12 @@ function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Réservations</p>
+                <p className="text-sm text-muted-foreground">{dict.dashboardStats.reservations}</p>
                 <p className="text-3xl font-bold">
                   {loading ? "…" : stats.totalReservations}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {loading ? "" : `${stats.upcomingReservations.length} à venir`}
+                  {loading ? "" : `${stats.upcomingReservations.length} ${dict.dashboardStats.upcoming}`}
                 </p>
               </div>
               <CalendarCheck className="size-8 text-muted-foreground" />
@@ -206,7 +212,7 @@ function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Clients</p>
+                <p className="text-sm text-muted-foreground">{dict.dashboardStats.clients}</p>
                 <p className="text-3xl font-bold">
                   {loading ? "…" : stats.totalClients}
                 </p>
@@ -220,7 +226,7 @@ function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Revenu (réservations)</p>
+                <p className="text-sm text-muted-foreground">{dict.dashboardStats.revenue}</p>
                 <p className="text-3xl font-bold">
                   {loading ? "…" : format(stats.totalRevenue)}
                 </p>
@@ -234,7 +240,7 @@ function AdminDashboard() {
       {loading ? (
         <Card className={ENTRANCE}>
           <CardContent>
-            <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
+            <p className="text-sm text-muted-foreground text-center py-12">{dict.common.loading}</p>
           </CardContent>
         </Card>
       ) : (
@@ -246,7 +252,7 @@ function AdminDashboard() {
       {loading ? (
         <Card className={ENTRANCE}>
           <CardContent>
-            <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
+            <p className="text-sm text-muted-foreground text-center py-12">{dict.common.loading}</p>
           </CardContent>
         </Card>
       ) : (
@@ -262,7 +268,7 @@ function AdminDashboard() {
 
       <Card className={ENTRANCE}>
         <CardHeader>
-          <CardTitle>Outils</CardTitle>
+          <CardTitle>{dict.tools.title}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -283,13 +289,13 @@ function AdminDashboard() {
       <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 ${ENTRANCE}`}>
         <Card>
           <CardHeader>
-            <CardTitle>Prochaines arrivées</CardTitle>
+            <CardTitle>{dict.upcomingArrivals.title}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-sm text-muted-foreground">Chargement...</p>
+              <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
             ) : stats.upcomingReservations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune arrivée à venir.</p>
+              <p className="text-sm text-muted-foreground">{dict.upcomingArrivals.none}</p>
             ) : (
               <div className="space-y-2">
                 {stats.upcomingReservations.slice(0, 5).map((r) => (
@@ -299,10 +305,11 @@ function AdminDashboard() {
                   >
                     <div>
                       <p className="font-medium">
-                        {r.property?.name ?? "Propriété inconnue"}
+                        {r.property?.name ?? dict.upcomingArrivals.unknownProperty}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {r.client?.fullName ?? "Client inconnu"} — arrivée le {r.checkInDate}
+                        {r.client?.fullName ?? dict.upcomingArrivals.unknownClient} —{" "}
+                        {dict.upcomingArrivals.arrivingOn} {r.checkInDate}
                       </p>
                     </div>
                     {r.reservationStatus && <Badge>{r.reservationStatus.label}</Badge>}
@@ -316,7 +323,7 @@ function AdminDashboard() {
         {loading ? (
           <Card>
             <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-12">Chargement...</p>
+              <p className="text-sm text-muted-foreground text-center py-12">{dict.common.loading}</p>
             </CardContent>
           </Card>
         ) : (
@@ -328,10 +335,10 @@ function AdminDashboard() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Grid3x3 className="size-5" /> Tous les modules
+              <Grid3x3 className="size-5" /> {dict.allModules.title}
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={() => setShowAllModules((v) => !v)}>
-              {showAllModules ? "Masquer" : "Afficher"}
+              {showAllModules ? dict.allModules.hide : dict.allModules.show}
             </Button>
           </div>
         </CardHeader>

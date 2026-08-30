@@ -28,12 +28,16 @@ import {
   sortPropertyPerformance,
   PropertyPerformanceSort,
 } from "@/lib/dashboard/property-performance";
+import { useLanguage } from "@/lib/i18n/language-context";
+import { Dict } from "@/lib/i18n/translations";
 
-const SORT_LABEL: Record<PropertyPerformanceSort, string> = {
-  netProfit: "Bénéfice net",
-  revenue: "Revenu",
-  occupancy: "Occupation",
-};
+function sortLabels(dict: Dict): Record<PropertyPerformanceSort, string> {
+  return {
+    netProfit: dict.propertyPerformance.sortNetProfit,
+    revenue: dict.propertyPerformance.sortRevenue,
+    occupancy: dict.propertyPerformance.sortOccupancy,
+  };
+}
 
 const ACTIVE_STATUS_CODE = "Active";
 
@@ -51,6 +55,7 @@ export function PropertyPerformanceCard({
   formatValue,
 }: PropertyPerformanceCardProps) {
   const router = useRouter();
+  const { dict } = useLanguage();
   const [sort, setSort] = useState<PropertyPerformanceSort>("netProfit");
 
   const rows = useMemo(() => {
@@ -58,19 +63,21 @@ export function PropertyPerformanceCard({
     return sortPropertyPerformance(computed, sort);
   }, [properties, reservations, charges, sort]);
 
+  const sortLabel = sortLabels(dict);
+
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle>Performance des propriétés</CardTitle>
+          <CardTitle>{dict.propertyPerformance.title}</CardTitle>
           <Select value={sort} onValueChange={(v) => setSort(v as PropertyPerformanceSort)}>
             <SelectTrigger size="sm" className="w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(Object.keys(SORT_LABEL) as PropertyPerformanceSort[]).map((key) => (
+              {(Object.keys(sortLabel) as PropertyPerformanceSort[]).map((key) => (
                 <SelectItem key={key} value={key}>
-                  Trier par {SORT_LABEL[key]}
+                  {dict.propertyPerformance.sortByPrefix} {sortLabel[key]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -80,18 +87,18 @@ export function PropertyPerformanceCard({
       <CardContent>
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            Aucune propriété enregistrée pour l&apos;instant.
+            {dict.propertyPerformance.noProperties}
           </p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Propriété</TableHead>
-                  <TableHead className="text-right">Revenu</TableHead>
-                  <TableHead className="text-right">Charges</TableHead>
-                  <TableHead className="text-right">Bénéfice net</TableHead>
-                  <TableHead className="text-right">Occupation</TableHead>
+                  <TableHead>{dict.propertyPerformance.columnProperty}</TableHead>
+                  <TableHead className="text-right">{dict.propertyPerformance.columnRevenue}</TableHead>
+                  <TableHead className="text-right">{dict.propertyPerformance.columnCharges}</TableHead>
+                  <TableHead className="text-right">{dict.propertyPerformance.columnNetProfit}</TableHead>
+                  <TableHead className="text-right">{dict.propertyPerformance.columnOccupancy}</TableHead>
                   <TableHead className="w-8" />
                 </TableRow>
               </TableHeader>
@@ -107,7 +114,7 @@ export function PropertyPerformanceCard({
                         {r.propertyName}
                         {r.propertyStatusCode !== ACTIVE_STATUS_CODE && (
                           <Badge variant="outline" className="text-xs font-normal">
-                            {r.propertyStatusLabel ?? "Statut inconnu"}
+                            {r.propertyStatusLabel ?? dict.propertyPerformance.unknownStatus}
                           </Badge>
                         )}
                       </div>

@@ -1,0 +1,255 @@
+/**
+ * Traductions FR/EN — solution maison (voir NOTES-multi-langue.md pour le choix technique).
+ * "fr" est la référence de forme : "en" doit avoir EXACTEMENT les mêmes clés (TypeScript
+ * lève une erreur de compilation sinon, via `satisfies Dict` plus bas).
+ *
+ * Ne contient QUE des libellés fixes de l'UI — jamais de données (noms de propriétés, montants,
+ * contenu généré par l'IA...), qui restent tels quels quelle que soit la langue choisie.
+ */
+
+const fr = {
+  common: {
+    loading: "Chargement...",
+    cancel: "Annuler",
+    close: "Fermer",
+  },
+  reserver: {
+    heroTitle: "Nos logements disponibles",
+    heroSubtitle: "Choisissez un logement et envoyez-nous votre demande — nous vous répondons rapidement.",
+    displayPricesIn: "Afficher les prix en :",
+    loadingProperties: "Chargement...",
+    noProperties: "Aucun logement disponible pour le moment.",
+    perNight: "/ nuit",
+    people: "personnes",
+    viewPosition: "Voir la position",
+    request: "Demander",
+    requestForPrefix: "Demande pour :",
+    requestSentTitle: "Demande envoyée",
+    thanksTitle: "Merci !",
+    requestSentBody: "Votre demande a bien été envoyée. Nous vous recontactons rapidement au",
+    checkIn: "Arrivée",
+    checkOut: "Départ",
+    fullName: "Nom complet",
+    phone: "Téléphone",
+    messageOptional: "Message (optionnel)",
+    minimumFieldsError: "Renseigne au moins ton nom et ton téléphone.",
+    genericSubmitError: "Erreur lors de l'envoi",
+    sendRequest: "Envoyer la demande",
+    sending: "Envoi...",
+  },
+  login: {
+    title: "Connexion",
+    username: "Nom d'utilisateur",
+    password: "Mot de passe",
+    submit: "Se connecter",
+    submitting: "Connexion...",
+    genericError: "Échec de la connexion",
+    unrecognizedRoleError: "Rôle non reconnu pour cet utilisateur.",
+  },
+  dashboardHeader: {
+    title: "Tableau de bord",
+    activeProperty: "propriété active",
+    activeProperties: "propriétés actives",
+    account: "Compte",
+    logout: "Déconnexion",
+  },
+  dashboardStats: {
+    properties: "Propriétés",
+    active: "active(s)",
+    reservations: "Réservations",
+    upcoming: "à venir",
+    clients: "Clients",
+    revenue: "Revenu (réservations)",
+  },
+  healthScore: {
+    title: "Santé du portefeuille",
+  },
+  revenueIntelligence: {
+    title: "Revenus",
+    newBadge: "Nouveau",
+    currentMonthRevenue: "revenu du mois en cours",
+  },
+  propertyPerformance: {
+    title: "Performance des propriétés",
+    sortByPrefix: "Trier par",
+    sortNetProfit: "Bénéfice net",
+    sortRevenue: "Revenu",
+    sortOccupancy: "Occupation",
+    noProperties: "Aucune propriété enregistrée pour l'instant.",
+    columnProperty: "Propriété",
+    columnRevenue: "Revenu",
+    columnCharges: "Charges",
+    columnNetProfit: "Bénéfice net",
+    columnOccupancy: "Occupation",
+    unknownStatus: "Statut inconnu",
+  },
+  actionCenter: {
+    title: "Centre d'actions",
+    allDoneTitle: "Rien à faire aujourd'hui",
+    allDoneSubtitle: "Aucune tâche en retard, aucune demande en attente.",
+    andMoreOne: "autre",
+    andMoreMany: "autres",
+  },
+  tools: {
+    title: "Outils",
+    properties: "Propriétés",
+    reservationsCalendar: "Réservations (calendrier)",
+    charges: "Charges",
+    payments: "Paiements aux prestataires",
+    tasks: "Tâches",
+    exchangeRates: "Taux de change",
+    financialReports: "Rapports financiers",
+  },
+  upcomingArrivals: {
+    title: "Prochaines arrivées",
+    none: "Aucune arrivée à venir.",
+    unknownProperty: "Propriété inconnue",
+    unknownClient: "Client inconnu",
+    arrivingOn: "arrivée le",
+  },
+  allModules: {
+    title: "Tous les modules",
+    show: "Afficher",
+    hide: "Masquer",
+  },
+  // Chrome fixe des cartes AI Property Assistant uniquement (titre, placeholder, bouton,
+  // messages système) - le CONTENU généré par Gemini (insight du matin, réponses du chat)
+  // reste en français, voir NOTES-ai-assistant.md / NOTES-multi-langue.md.
+  assistant: {
+    insightsLoading: "L'assistant prépare le résumé du jour...",
+    insightsError: "L'assistant n'a pas pu générer les insights du jour.",
+    retry: "Réessayer",
+    chatTitle: "Pose une question à ton portefeuille",
+    chatPlaceholder: "Ex : combien j'ai gagné ce mois-ci ?",
+    chatButton: "Demander",
+    chatHint:
+      "Pose une question sur tes revenus, charges, réservations à venir ou tâches en retard — l'assistant répond uniquement à partir des vraies données de ton portefeuille.",
+    chatError: "L'assistant n'a pas pu répondre pour le moment.",
+  },
+};
+
+// Pas de "as const" ici : on veut que chaque feuille soit typée `string` (n'importe quel texte
+// valide), pas la valeur littérale française exacte - "en" doit juste avoir les MÊMES CLÉS,
+// pas les mêmes valeurs.
+export type Dict = { [K in keyof typeof fr]: { [J in keyof (typeof fr)[K]]: string } };
+
+const en: Dict = {
+  common: {
+    loading: "Loading...",
+    cancel: "Cancel",
+    close: "Close",
+  },
+  reserver: {
+    heroTitle: "Our available properties",
+    heroSubtitle: "Choose a property and send us your request — we'll get back to you quickly.",
+    displayPricesIn: "Show prices in:",
+    loadingProperties: "Loading...",
+    noProperties: "No properties available at the moment.",
+    perNight: "/ night",
+    people: "people",
+    viewPosition: "View location",
+    request: "Request",
+    requestForPrefix: "Request for:",
+    requestSentTitle: "Request sent",
+    thanksTitle: "Thank you!",
+    requestSentBody: "Your request has been sent. We'll contact you shortly at",
+    checkIn: "Check-in",
+    checkOut: "Check-out",
+    fullName: "Full name",
+    phone: "Phone",
+    messageOptional: "Message (optional)",
+    minimumFieldsError: "Please provide at least your name and phone number.",
+    genericSubmitError: "Error while sending",
+    sendRequest: "Send request",
+    sending: "Sending...",
+  },
+  login: {
+    title: "Login",
+    username: "Username",
+    password: "Password",
+    submit: "Sign in",
+    submitting: "Signing in...",
+    genericError: "Login failed",
+    unrecognizedRoleError: "Unrecognized role for this user.",
+  },
+  dashboardHeader: {
+    title: "Dashboard",
+    activeProperty: "active property",
+    activeProperties: "active properties",
+    account: "Account",
+    logout: "Log out",
+  },
+  dashboardStats: {
+    properties: "Properties",
+    active: "active",
+    reservations: "Reservations",
+    upcoming: "upcoming",
+    clients: "Clients",
+    revenue: "Revenue (reservations)",
+  },
+  healthScore: {
+    title: "Portfolio health",
+  },
+  revenueIntelligence: {
+    title: "Revenue",
+    newBadge: "New",
+    currentMonthRevenue: "current month revenue",
+  },
+  propertyPerformance: {
+    title: "Property performance",
+    sortByPrefix: "Sort by",
+    sortNetProfit: "Net profit",
+    sortRevenue: "Revenue",
+    sortOccupancy: "Occupancy",
+    noProperties: "No properties registered yet.",
+    columnProperty: "Property",
+    columnRevenue: "Revenue",
+    columnCharges: "Charges",
+    columnNetProfit: "Net profit",
+    columnOccupancy: "Occupancy",
+    unknownStatus: "Unknown status",
+  },
+  actionCenter: {
+    title: "Action center",
+    allDoneTitle: "Nothing to do today",
+    allDoneSubtitle: "No overdue tasks, no pending requests.",
+    andMoreOne: "other",
+    andMoreMany: "others",
+  },
+  tools: {
+    title: "Tools",
+    properties: "Properties",
+    reservationsCalendar: "Reservations (calendar)",
+    charges: "Charges",
+    payments: "Payments to service providers",
+    tasks: "Tasks",
+    exchangeRates: "Exchange rates",
+    financialReports: "Financial reports",
+  },
+  upcomingArrivals: {
+    title: "Upcoming arrivals",
+    none: "No upcoming arrivals.",
+    unknownProperty: "Unknown property",
+    unknownClient: "Unknown client",
+    arrivingOn: "arriving on",
+  },
+  allModules: {
+    title: "All modules",
+    show: "Show",
+    hide: "Hide",
+  },
+  assistant: {
+    insightsLoading: "The assistant is preparing today's summary...",
+    insightsError: "The assistant couldn't generate today's insights.",
+    retry: "Retry",
+    chatTitle: "Ask your portfolio a question",
+    chatPlaceholder: "E.g.: how much did I earn this month?",
+    chatButton: "Ask",
+    chatHint:
+      "Ask a question about your revenue, charges, upcoming reservations, or overdue tasks — the assistant only answers from your portfolio's real data.",
+    chatError: "The assistant couldn't answer right now.",
+  },
+};
+
+export const translations = { fr, en };
+export type Locale = keyof typeof translations;

@@ -22,12 +22,15 @@ async function post(path: string, role: Role, body: unknown): Promise<AssistantR
   });
 
   if (!res.ok) {
-    let message = `Erreur ${res.status}`;
+    // Pas de message par défaut codé en dur (voir LoginError dans lib/auth.ts pour la même
+    // idée) : un texte fixe ne suivrait pas la langue choisie par l'utilisateur. Message vide
+    // = à l'appelant (MorningInsightsCard/PortfolioChatCard) d'afficher son propre texte traduit.
+    let message = "";
     try {
       const data = await res.json();
       if (data?.message) message = data.message;
     } catch {
-      // corps non-JSON, on garde le message générique
+      // corps non-JSON : pas de message utilisable.
     }
     throw new AssistantError(message, res.status);
   }
