@@ -53,7 +53,10 @@ export async function submitReservationRequest(input: PublicRequestInput): Promi
     body: JSON.stringify(input),
   });
   if (!res.ok) {
+    // Pas de message par défaut codé en dur ici (voir LoginError dans lib/auth.ts pour la même
+    // idée) : un texte français fixe ne suivrait pas la langue choisie par l'utilisateur.
+    // Message vide = à l'appelant (/reserver) d'afficher son propre texte traduit.
     const text = await res.text().catch(() => "");
-    throw new Error(text || "Erreur lors de l'envoi de la demande");
+    throw new Error(text);
   }
 }

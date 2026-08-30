@@ -35,6 +35,8 @@ import { MorningInsightsCard } from "@/components/dashboard/morning-insights-car
 import { PortfolioChatCard } from "@/components/dashboard/portfolio-chat-card";
 import { buildAssistantFacts } from "@/lib/dashboard/ai-facts";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
+import { useLanguage } from "@/lib/i18n/language-context";
+import { Locale } from "@/lib/i18n/translations";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { ReservationCalendar } from "@/components/reservations/reservation-calendar";
@@ -49,8 +51,14 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function longDateToday(): string {
-  return new Date().toLocaleDateString("fr-FR", {
+// La date reste au format long propre à la langue choisie (voir premium-header.tsx) : "long"
+// veut dire "vendredi 30 août 2026" / "Friday, August 30, 2026", pas un libellé fixe traduit.
+function localeTag(locale: Locale) {
+  return locale === "en" ? "en-US" : "fr-FR";
+}
+
+function longDateToday(locale: Locale): string {
+  return new Date().toLocaleDateString(localeTag(locale), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -58,8 +66,8 @@ function longDateToday(): string {
   });
 }
 
-function currentMonthLabel(month: Date): string {
-  return month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+function currentMonthLabel(month: Date, locale: Locale): string {
+  return month.toLocaleDateString(localeTag(locale), { month: "long", year: "numeric" });
 }
 
 // Animation d'apparition discrète, partagée par toutes les sections du dashboard.
@@ -78,6 +86,7 @@ export default function AdminHome() {
 
 function AdminDashboard() {
   const { format } = useCurrency();
+  const { dict, locale } = useLanguage();
 
   const [properties, setProperties] = useState<PropertyDto[] | null>(null);
   const [reservations, setReservations] = useState<ReservationDto[] | null>(null);
@@ -178,27 +187,27 @@ function AdminDashboard() {
       <div className={`flex flex-wrap items-start justify-between gap-4 ${ENTRANCE}`}>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {longDateToday()}
+            {longDateToday(locale)}
           </p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight">
-            Bonjour{firstName ? ` ${firstName}` : ""},{" "}
-            <span className="font-normal text-muted-foreground">ravi de vous revoir.</span>
+            {dict.dashboardHome.greeting}{firstName ? ` ${firstName}` : ""},{" "}
+            <span className="font-normal text-muted-foreground">
+              {dict.dashboardHome.greetingReturning}
+            </span>
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Voici ce qui se passe dans votre portefeuille aujourd&apos;hui.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{dict.dashboardHome.subtitle}</p>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Sélecteur de mois (visuel) */}
           <span className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm capitalize">
             <CalendarDays className="size-4 text-muted-foreground" />
-            {currentMonthLabel(new Date())}
+            {currentMonthLabel(new Date(), locale)}
             <ChevronDown className="size-3.5 text-muted-foreground" />
           </span>
           <Button asChild>
             <Link href="/admin/charges">
-              <ScanLine className="size-4" /> Scanner une facture
+              <ScanLine className="size-4" /> {dict.dashboardHome.scanInvoice}
             </Link>
           </Button>
         </div>
@@ -207,14 +216,14 @@ function AdminDashboard() {
       {/* Cartes de stats */}
       <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 ${ENTRANCE}`}>
         <StatCard
-          label="Chiffre d'affaires"
+          label={dict.dashboardHome.statRevenue}
           value={loading ? "…" : format(stats.totalRevenue)}
           icon={Wallet}
           iconTone="primary"
-          hint="Hors réservations annulées"
+          hint={dict.dashboardHome.statRevenueHint}
         />
         <StatCard
-          label="Taux d'occupation"
+          label={dict.dashboardHome.statOccupancy}
           // TODO: aucun calcul de taux d'occupation n'existe encore côté client
           // (il faudrait le total de nuits réservées / nuits disponibles sur la période).
           value="—"
@@ -222,19 +231,23 @@ function AdminDashboard() {
           iconTone="success"
         />
         <StatCard
-          label="Réservations"
+          label={dict.dashboardHome.statReservations}
           value={loading ? "…" : stats.totalReservations}
           icon={ClipboardList}
           iconTone="warning"
-          hint={loading ? undefined : `${stats.upcomingReservations.length} à venir`}
+          hint={
+            loading
+              ? undefined
+              : `${stats.upcomingReservations.length} ${dict.dashboardHome.upcomingSuffix}`
+          }
         />
         <StatCard
-          label="Revenu net"
+          label={dict.dashboardHome.statNetRevenue}
           value={loading ? "…" : format(stats.netRevenue)}
           icon={Wallet}
           iconTone="info"
           valueTone={loading ? "default" : stats.netRevenue >= 0 ? "success" : "destructive"}
-          hint="Revenus − charges"
+          hint={dict.dashboardHome.statNetRevenueHint}
         />
       </div>
 
@@ -244,7 +257,9 @@ function AdminDashboard() {
           {loading ? (
             <Card>
               <CardContent>
-                <p className="py-12 text-center text-sm text-muted-foreground">Chargement...</p>
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  {dict.common.loading}
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -258,14 +273,14 @@ function AdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">À faire aujourd&apos;hui</CardTitle>
-            <p className="text-sm text-muted-foreground">Les tâches qui nécessitent votre attention</p>
+            <CardTitle className="text-base">{dict.dashboardHome.todoTitle}</CardTitle>
+            <p className="text-sm text-muted-foreground">{dict.dashboardHome.todoSubtitle}</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {loading ? (
-              <p className="text-sm text-muted-foreground">Chargement...</p>
+              <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
             ) : todoTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Rien d&apos;urgent aujourd&apos;hui.</p>
+              <p className="text-sm text-muted-foreground">{dict.dashboardHome.todoEmpty}</p>
             ) : (
               todoTasks.slice(0, 5).map((t) => (
                 <Link
@@ -279,7 +294,7 @@ function AdminDashboard() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{t.title}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {t.property?.name ?? t.taskType?.label ?? "Tâche"}
+                      {t.property?.name ?? t.taskType?.label ?? dict.dashboardHome.taskFallback}
                       {t.dueDate ? ` · ${t.dueDate}` : ""}
                     </p>
                   </div>
@@ -291,7 +306,7 @@ function AdminDashboard() {
               href="/admin/tasks"
               className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-primary hover:underline"
             >
-              Voir toutes les tâches <ArrowUpRight className="size-3.5" />
+              {dict.dashboardHome.seeAllTasks} <ArrowUpRight className="size-3.5" />
             </Link>
           </CardContent>
         </Card>
@@ -303,32 +318,36 @@ function AdminDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Réservations récentes</CardTitle>
-                <p className="text-sm text-muted-foreground">Les dernières réservations de vos logements</p>
+                <CardTitle className="text-base">
+                  {dict.dashboardHome.recentReservationsTitle}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {dict.dashboardHome.recentReservationsSubtitle}
+                </p>
               </div>
               <Link
                 href="/admin/reservations"
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
               >
-                Voir toutes <ArrowUpRight className="size-3.5" />
+                {dict.dashboardHome.seeAll} <ArrowUpRight className="size-3.5" />
               </Link>
             </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-sm text-muted-foreground">Chargement...</p>
+              <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
             ) : stats.recentReservations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune réservation.</p>
+              <p className="text-sm text-muted-foreground">{dict.dashboardHome.noReservations}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="pb-2 font-medium">Logement</th>
-                      <th className="pb-2 font-medium">Client</th>
-                      <th className="pb-2 font-medium">Dates</th>
-                      <th className="pb-2 text-right font-medium">Montant</th>
-                      <th className="pb-2 text-right font-medium">Statut</th>
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colProperty}</th>
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colClient}</th>
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colDates}</th>
+                      <th className="pb-2 text-right font-medium">{dict.dashboardHome.colAmount}</th>
+                      <th className="pb-2 text-right font-medium">{dict.dashboardHome.colStatus}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -357,8 +376,8 @@ function AdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Calendrier</CardTitle>
-            <p className="text-sm text-muted-foreground">Occupation des logements</p>
+            <CardTitle className="text-base">{dict.dashboardHome.calendarTitle}</CardTitle>
+            <p className="text-sm text-muted-foreground">{dict.dashboardHome.calendarSubtitle}</p>
           </CardHeader>
           <CardContent className="text-xs">
             <ReservationCalendar

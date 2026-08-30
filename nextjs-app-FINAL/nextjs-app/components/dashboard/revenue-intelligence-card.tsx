@@ -21,6 +21,7 @@ import {
   RevenuePeriod,
   RevenueTrend,
 } from "@/lib/dashboard/revenue-intelligence";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 // Tokens de thème (palette DariRentals - voir app/globals.css) : succès = teal, négatif =
 // rouge doux (= --destructive), neutre = gris muted existant.
@@ -45,6 +46,7 @@ interface RevenueIntelligenceCardProps {
 }
 
 export function RevenueIntelligenceCard({ reservations, charges, formatValue }: RevenueIntelligenceCardProps) {
+  const { dict } = useLanguage();
   const [period, setPeriod] = useState<RevenuePeriod>("12m");
 
   const comparison = useMemo(
@@ -63,7 +65,7 @@ export function RevenueIntelligenceCard({ reservations, charges, formatValue }: 
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle>Revenus</CardTitle>
+          <CardTitle>{dict.revenueIntelligence.title}</CardTitle>
           <Select value={period} onValueChange={(v) => setPeriod(v as RevenuePeriod)}>
             <SelectTrigger size="sm" className="w-[120px]">
               <SelectValue />
@@ -88,9 +90,11 @@ export function RevenueIntelligenceCard({ reservations, charges, formatValue }: 
               <TrendIcon className="size-3.5" />
               {comparison.percentChange !== null
                 ? `${comparison.percentChange >= 0 ? "+" : ""}${comparison.percentChange.toFixed(1)}%`
-                : "Nouveau"}
+                : dict.revenueIntelligence.newBadge}
             </span>
-            <span className="mb-1.5 text-sm text-muted-foreground">revenu du mois en cours</span>
+            <span className="mb-1.5 text-sm text-muted-foreground">
+              {dict.revenueIntelligence.currentMonthRevenue}
+            </span>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">{comparison.summary}</p>
         </div>
