@@ -34,6 +34,7 @@ import { CityDto } from "@/lib/types/City";
 import { PropertyTypeDto } from "@/lib/types/PropertyType";
 import { PropertyStatusDto } from "@/lib/types/PropertyStatus";
 import { PropertyForm } from "./property-form";
+import { StatusBadge } from "@/components/status-badge";
 import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
 import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
@@ -96,7 +97,7 @@ const filteredItems = useMemo(() => {
     },
     {
       header: "Statut",
-      render: (p) => (p.propertyStatus ? <Badge>{p.propertyStatus.label}</Badge> : "—"),
+      render: (p) => <StatusBadge status={p.propertyStatus} />,
     },
     {
       header: "Capacité",
@@ -120,7 +121,7 @@ const filteredItems = useMemo(() => {
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Propriétés</CardTitle>

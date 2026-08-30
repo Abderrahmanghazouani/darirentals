@@ -36,30 +36,22 @@ import { TaskPriorityDto } from "@/lib/types/TaskPriority";
 import { TaskForm } from "@/components/tasks/task-form";
 import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
 import { filterByEnterprise } from "@/lib/filter-by-enterprise";
+import { isOverdue } from "@/lib/tasks/is-overdue";
+import { StatusBadge } from "@/components/status-badge";
 
 const ROLE = "collaborator" as const;
 
-function priorityVariant(style?: string | null): "default" | "secondary" | "destructive" | "outline" {
+// Priorités : urgente=destructive, normale=info, basse=secondary (mapping plateforme).
+function priorityVariant(
+  style?: string | null
+): "default" | "secondary" | "destructive" | "outline" | "info" {
   const s = (style ?? "").toLowerCase();
-  if (s.includes("danger") || s.includes("destructive") || s.includes("urgent")) return "destructive";
-  if (s.includes("warning")) return "secondary";
-  if (s.includes("success") || s.includes("primary")) return "default";
+  if (s.includes("danger") || s.includes("destructive") || s.includes("urgent") || s.includes("haut") || s.includes("high"))
+    return "destructive";
+  if (s.includes("warning") || s.includes("bas") || s.includes("low")) return "secondary";
+  if (s.includes("success") || s.includes("primary") || s.includes("normal") || s.includes("info"))
+    return "info";
   return "outline";
-}
-
-// Le générateur ne fige pas les codes de statut (créés librement via le CRUD TaskStatus), donc on
-// détecte "Terminée" par heuristique sur le libellé/code plutôt que de dépendre d'un code fixe
-// (même approche que pour les réservations annulées).
-function looksDone(status?: TaskStatusDto | null): boolean {
-  if (!status) return false;
-  const probe = `${status.code ?? ""} ${status.label ?? ""}`.toLowerCase();
-  return probe.includes("done") || probe.includes("termin") || probe.includes("complet") || probe.includes("fini");
-}
-
-function isOverdue(task: TaskDto): boolean {
-  if (!task.dueDate || looksDone(task.taskStatus)) return false;
-  const today = new Date().toISOString().slice(0, 10);
-  return task.dueDate < today;
 }
 
 export default function TasksPage() {
@@ -148,14 +140,14 @@ export default function TasksPage() {
     },
     {
       header: "Statut",
-      render: (t) => (t.taskStatus ? <Badge>{t.taskStatus.label}</Badge> : "—"),
+      render: (t) => <StatusBadge status={t.taskStatus} />,
     },
   ];
 
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Tâches</CardTitle>

@@ -122,7 +122,12 @@ export default function CollaboratorPage() {
     { header: "Username", render: (c) => c.username },
     {
       header: "Actif",
-      render: (c) => (c.isActive ? <Badge>Oui</Badge> : <Badge variant="outline">Non</Badge>),
+      render: (c) =>
+        c.isActive ? (
+          <Badge variant="success">Oui</Badge>
+        ) : (
+          <Badge variant="secondary">Non</Badge>
+        ),
     },
     {
       header: "Sociétés",
@@ -135,7 +140,7 @@ export default function CollaboratorPage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Collaborateurs</CardTitle>

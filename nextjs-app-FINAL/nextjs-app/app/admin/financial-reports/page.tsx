@@ -230,7 +230,7 @@ export default function FinancialReportsPage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <Button variant="ghost" size="sm" onClick={() => router.push("/admin")} className="mb-1 -ml-2">
           <ArrowLeft className="size-4" /> Retour au tableau de bord

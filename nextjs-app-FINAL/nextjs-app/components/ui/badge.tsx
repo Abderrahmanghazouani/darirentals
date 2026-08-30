@@ -13,6 +13,10 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground",
         destructive: "border-transparent bg-destructive text-white",
         outline: "text-foreground",
+        // Badges de statut - fonds pastel, texte de la même teinte en foncé.
+        success: "border-transparent bg-success/15 text-success",
+        warning: "border-transparent bg-warning/15 text-warning",
+        info: "border-transparent bg-info/15 text-info",
       },
     },
     defaultVariants: {
