@@ -50,7 +50,7 @@ export default function CollaboratorEntityPage({
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{descriptor.label}</CardTitle>

@@ -35,6 +35,7 @@ import { CityDto } from "@/lib/types/City";
 import { PropertyTypeDto } from "@/lib/types/PropertyType";
 import { PropertyStatusDto } from "@/lib/types/PropertyStatus";
 import { PropertyForm } from "./property-form";
+import { StatusBadge } from "@/components/status-badge";
 
 const ROLE = "admin" as const;
 
@@ -94,7 +95,7 @@ export default function PropertyPage() {
     },
     {
       header: "Statut",
-      render: (p) => (p.propertyStatus ? <Badge>{p.propertyStatus.label}</Badge> : "—"),
+      render: (p) => <StatusBadge status={p.propertyStatus} />,
     },
     {
       header: "Capacité",
@@ -120,7 +121,7 @@ export default function PropertyPage() {
           <Link
             href={`/admin/property/${p.id}/rentabilite`}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 text-primary hover:underline"
+            className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-accent"
           >
             <TrendingUp className="size-3.5" /> Voir
           </Link>
@@ -133,7 +134,7 @@ export default function PropertyPage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Propriétés</CardTitle>

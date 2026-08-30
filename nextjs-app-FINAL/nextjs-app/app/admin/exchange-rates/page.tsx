@@ -220,7 +220,7 @@ export default function ExchangeRatesPage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <Button variant="ghost" size="sm" onClick={() => router.push("/admin")} className="mb-1 -ml-2">

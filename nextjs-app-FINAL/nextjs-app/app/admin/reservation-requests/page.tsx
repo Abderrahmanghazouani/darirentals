@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import {
   Table,
   TableBody,
@@ -75,7 +75,7 @@ export default function ReservationRequestsPage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Demandes de réservation</CardTitle>
@@ -119,11 +119,7 @@ export default function ReservationRequestsPage() {
                       {r.clientNote || "—"}
                     </TableCell>
                     <TableCell>
-                      {r.reservationRequestStatus ? (
-                        <Badge>{r.reservationRequestStatus.label}</Badge>
-                      ) : (
-                        "—"
-                      )}
+                      <StatusBadge status={r.reservationRequestStatus} />
                     </TableCell>
                     <TableCell className="text-right space-x-1">
                       {r.reservationRequestStatus?.code === "EnAttente" && (

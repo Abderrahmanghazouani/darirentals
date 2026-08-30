@@ -37,6 +37,7 @@ import { Pencil, Trash2, Plus, CalendarDays, List as ListIcon } from "lucide-rea
 import { EntityFormDialog } from "@/components/crud/entity-form-dialog";
 import { ReservationForm } from "@/components/reservations/reservation-form";
 import { ReservationCalendar } from "@/components/reservations/reservation-calendar";
+import { StatusBadge } from "@/components/status-badge";
 import { getGenericClient } from "@/lib/generic-client";
 import { UnauthorizedError } from "@/lib/api-client";
 import { logout } from "@/lib/auth";
@@ -199,7 +200,7 @@ export default function ReservationsPage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Réservations</CardTitle>
@@ -367,7 +368,9 @@ export default function ReservationsPage() {
                     <TableCell>{r.checkOutDate ?? "—"}</TableCell>
                     <TableCell>{nights(r.checkInDate, r.checkOutDate) ?? "—"}</TableCell>
                     <TableCell>{r.amount != null ? r.amount : "—"}</TableCell>
-                    <TableCell>{r.reservationStatus?.label ?? "—"}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={r.reservationStatus} />
+                    </TableCell>
                     <TableCell className="text-right space-x-1">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(r)}>
                         <Pencil className="size-4" />

@@ -5,37 +5,32 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.5rem;
-  /* Fond neutre chaud très clair (palette DariRentals) - remplace le blanc pur d'origine. */
-  --background: oklch(0.985 0.006 75);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* Bleu profond #185FA5 - couleur primaire de la marque. */
-  --primary: #185fa5;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  /* Rouge doux #E24B4A - négatif/destructif de la marque. */
-  --destructive: #e24b4a;
-  --destructive-foreground: oklch(0.985 0 0);
-  /* Teal #0F9B8E - accent positif de la marque (pas de token shadcn par défaut pour ça,
-     ajouté ici et exposé via --color-success dans @theme inline ci-dessous). */
-  --success: #0f9b8e;
-  --success-foreground: oklch(0.985 0 0);
-  /* Ambre doux #D97706 - niveaux intermédiaires (pas de token shadcn par défaut non plus,
-     même principe que --success, exposé via --color-warning). */
-  --warning: #d97706;
-  --warning-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: #185fa5;
+  --radius: 0.65rem;
+  --background: #f6f4f1;
+  --foreground: #242127;
+  --card: #ffffff;
+  --card-foreground: #242127;
+  --popover: #ffffff;
+  --popover-foreground: #242127;
+  --primary: #5a3b5d;
+  --primary-foreground: #ffffff;
+  --secondary: #f2eff4;
+  --secondary-foreground: #5a3b5d;
+  --muted: #f3f1ee;
+  --muted-foreground: #817d84;
+  --accent: #ede6ef;
+  --accent-foreground: #5a3b5d;
+  --destructive: #c75c59;
+  --destructive-foreground: #ffffff;
+  --border: #e7e3df;
+  --input: #e1ddd9;
+  --ring: #96759a;
+  --success: #4f8b72;
+  --success-foreground: #ffffff;
+  --warning: #c4924d;
+  --warning-foreground: #242127;
+  --info: #6584a2;
+  --info-foreground: #ffffff;
 }
 
 .dark {
@@ -45,23 +40,25 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #185fa5;
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #96759a;
+  --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: #e24b4a;
+  --destructive: #c75c59;
   --destructive-foreground: oklch(0.985 0 0);
-  --success: #0f9b8e;
-  --success-foreground: oklch(0.985 0 0);
-  --warning: #d97706;
-  --warning-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: #185fa5;
+  --ring: #96759a;
+  --success: #4f8b72;
+  --success-foreground: oklch(0.985 0 0);
+  --warning: #c4924d;
+  --warning-foreground: oklch(0.985 0 0);
+  --info: #6584a2;
+  --info-foreground: oklch(0.985 0 0);
 }
 
 @theme inline {
@@ -90,12 +87,14 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-dm-mono);
 }
 
 @layer base {
@@ -104,5 +103,23 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Zone de contenu des pages /admin/** et /collaborator/** - largeur max centrée,
+     cohérente avec la maquette de référence. */
+  .page-content {
+    width: 100%;
+    max-width: 1370px;
+    margin-inline: auto;
+    padding: 1.5rem;
+  }
+
+  /* Carte de statistique : chiffre en gros, mono, badge d'icône en haut à droite. */
+  .stat-card-value {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 }
