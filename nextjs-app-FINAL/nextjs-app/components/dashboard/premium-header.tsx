@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CurrencySelector } from "@/components/currency/currency-selector";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { Locale } from "@/lib/i18n/translations";
 import { logout, getCurrentUser, CurrentUser } from "@/lib/auth";
@@ -74,6 +75,7 @@ export function PremiumHeader({ activeProperties, loading }: PremiumHeaderProps)
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <LanguageToggle />
           <CurrencySelector />
 

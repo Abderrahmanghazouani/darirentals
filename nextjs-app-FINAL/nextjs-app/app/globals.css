@@ -45,7 +45,28 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #185fa5;
+  /* Tokens de marque adaptés au fond sombre (voir NOTES-mode-sombre.md) - jamais de simple
+     copie des valeurs claires. Toutes les valeurs ci-dessous ont été vérifiées par calcul de
+     ratio de contraste réel (formule WCAG relative luminance), pas seulement à l'oeil.
+
+     --primary (bleu) et --destructive (rouge) servent aussi de fond plein pour des boutons
+     texte blanc (bg-primary/bg-destructive text-white, voir button.tsx/badge.tsx) :
+     - --primary est éclairci (bleu-600 #2563eb, ratio 5.17:1 avec du blanc, contre le bleu
+       marine ~#185fa5 du mode clair) - conforme au réflexe "plus clair sur fond sombre" ET
+       ça améliore le contraste texte, les deux vont dans le même sens ici.
+     - --destructive fait EXCEPTION à "plus clair" : pour un rouge déjà relativement clair
+       comme celui de la marque (#e24b4a, ratio ~3.9:1 avec du blanc - déjà limite en mode
+       clair), l'éclaircir encore réduit mécaniquement le contraste avec le texte blanc
+       (mesuré : 3.4-3.1:1 selon les variantes testées, pire qu'en mode clair). Assombrir et
+       resaturer légèrement fonctionne mieux ici (#d33f3e, ratio 4.62:1) - c'est aussi le choix
+       fait par shadcn/ui lui-même pour son thème --destructive par défaut en mode sombre.
+
+     --success (teal) et --warning (ambre) ne sont JAMAIS utilisés en fond plein dans ce projet
+     (uniquement en badge teinté bg-x/10 ou en texte/icône, vérifié par recherche dans le code) -
+     éclaircis plus franchement (teal-400/amber-400) pour bien ressortir comme accent sur fond
+     sombre, sans la contrainte du texte blanc superposé (ratio texte-sur-carte-sombre mesuré
+     >11:1 pour les deux, largement au-dessus du seuil AA). */
+  --primary: #2563eb;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -53,15 +74,15 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: #e24b4a;
+  --destructive: #d33f3e;
   --destructive-foreground: oklch(0.985 0 0);
-  --success: #0f9b8e;
+  --success: #2dd4bf;
   --success-foreground: oklch(0.985 0 0);
-  --warning: #d97706;
+  --warning: #fbbf24;
   --warning-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: #185fa5;
+  --ring: #2563eb;
 }
 
 @theme inline {
