@@ -11,6 +11,7 @@ import {
   ChevronRight,
   FileText,
   ListTodo,
+  Loader2,
   Receipt,
   ScanLine,
   ShieldCheck,
@@ -130,7 +131,17 @@ export default function Home() {
     }
   }, [loggedIn, role, router]);
 
-  if (loggedIn) return null;
+  // Utilisateur déjà connecté : la redirection ci-dessus part au prochain effet, quasi
+  // instantanée - mais un `return null` laisse un flash d'écran vide le temps qu'elle
+  // s'exécute. Même idiome que le spinner de scan de facture (Loader2 + animate-spin,
+  // voir invoice-scan-dialog.tsx) plutôt qu'un écran blanc.
+  if (loggedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
