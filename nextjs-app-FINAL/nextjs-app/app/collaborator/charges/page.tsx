@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ScanLine } from "lucide-react";
+import { Plus, ScanLine, Receipt } from "lucide-react";
+import { StatCard } from "@/components/stat-card";
+import { StatusBadge } from "@/components/status-badge";
 import {
   Select,
   SelectContent,
@@ -37,14 +39,6 @@ import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
 import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 
 const ROLE = "collaborator" as const;
-
-function paymentStatusVariant(style?: string | null): "default" | "secondary" | "destructive" | "outline" {
-  const s = (style ?? "").toLowerCase();
-  if (s.includes("success") || s.includes("primary")) return "default";
-  if (s.includes("danger") || s.includes("destructive")) return "destructive";
-  if (s.includes("warning") || s.includes("info")) return "secondary";
-  return "outline";
-}
 
 export default function ChargesPage() {
   const ready = useRequireRole(ROLE);
@@ -111,11 +105,9 @@ export default function ChargesPage() {
       header: "Paiement",
       render: (c) =>
         c.payment?.paymentStatus ? (
-          <Badge variant={paymentStatusVariant(c.payment.paymentStatus.style)}>
-            {c.payment.paymentStatus.label}
-          </Badge>
+          <StatusBadge status={c.payment.paymentStatus} />
         ) : (
-          <Badge variant="secondary">Non payée</Badge>
+          <Badge variant="warning">Non payée</Badge>
         ),
     },
   ];
@@ -123,26 +115,25 @@ export default function ChargesPage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       {totalsByProperty.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Charges par propriété</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {totalsByProperty.map((entry) => (
-                <div key={entry.name} className="rounded-md border p-3">
-                  <p className="text-sm font-medium truncate">{entry.name}</p>
-                  <p className="text-lg font-semibold">{entry.total.toFixed(2)} MAD</p>
-                  <p className="text-xs text-muted-foreground">
-                    {entry.count} charge{entry.count > 1 ? "s" : ""}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Charges par propriété
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {totalsByProperty.map((entry) => (
+              <StatCard
+                key={entry.name}
+                label={entry.name}
+                value={`${entry.total.toFixed(2)} MAD`}
+                icon={Receipt}
+                iconTone="warning"
+                hint={`${entry.count} charge${entry.count > 1 ? "s" : ""}`}
+              />
+            ))}
+          </div>
+        </div>
       )}
 
       <Card>

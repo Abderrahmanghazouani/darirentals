@@ -15,6 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, TrendingUp, TrendingDown, Wallet, Receipt, Scale } from "lucide-react";
+import { StatCard } from "@/components/stat-card";
+import { StatusBadge } from "@/components/status-badge";
 import { useRequireRole } from "@/lib/use-require-role";
 import { getEntityClients } from "@/lib/api";
 import { PropertyDto } from "@/lib/types/Property";
@@ -112,7 +114,7 @@ export default function PropertyRentabilitePage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => router.push("/admin/property")}>
           <ArrowLeft className="size-4" />
@@ -143,53 +145,31 @@ export default function PropertyRentabilitePage() {
       </div>
 
       {/* Cartes de synthèse */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Revenus</p>
-                <p className="text-3xl font-bold text-success">
-                  {loading ? "…" : formatMoney(totalRevenue)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  MAD · {matchedReservations.length} réservation{matchedReservations.length > 1 ? "s" : ""}
-                </p>
-              </div>
-              <TrendingUp className="size-8 text-success/60" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Charges</p>
-                <p className="text-3xl font-bold text-destructive">{loading ? "…" : formatMoney(totalCharges)}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  MAD · {matchedCharges.length} charge{matchedCharges.length > 1 ? "s" : ""}
-                </p>
-              </div>
-              <TrendingDown className="size-8 text-destructive/60" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Bénéfice net</p>
-                <p className={`text-3xl font-bold ${netProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                  {loading ? "…" : formatMoney(netProfit)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">MAD</p>
-              </div>
-              <Scale className={`size-8 ${netProfit >= 0 ? "text-success/60" : "text-destructive/60"}`} />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          label="Revenus"
+          value={loading ? "…" : formatMoney(totalRevenue)}
+          icon={TrendingUp}
+          iconTone="success"
+          valueTone="success"
+          hint={`MAD · ${matchedReservations.length} réservation${matchedReservations.length > 1 ? "s" : ""}`}
+        />
+        <StatCard
+          label="Charges"
+          value={loading ? "…" : formatMoney(totalCharges)}
+          icon={TrendingDown}
+          iconTone="destructive"
+          valueTone="destructive"
+          hint={`MAD · ${matchedCharges.length} charge${matchedCharges.length > 1 ? "s" : ""}`}
+        />
+        <StatCard
+          label="Bénéfice net"
+          value={loading ? "…" : formatMoney(netProfit)}
+          icon={Scale}
+          iconTone={netProfit >= 0 ? "success" : "destructive"}
+          valueTone={netProfit >= 0 ? "success" : "destructive"}
+          hint="MAD"
+        />
       </div>
 
       {/* Détail réservations */}
@@ -226,7 +206,7 @@ export default function PropertyRentabilitePage() {
                     <TableCell>{r.checkInDate ?? "—"}</TableCell>
                     <TableCell>{r.checkOutDate ?? "—"}</TableCell>
                     <TableCell>
-                      {r.reservationStatus ? <Badge>{r.reservationStatus.label}</Badge> : "—"}
+                      <StatusBadge status={r.reservationStatus} />
                     </TableCell>
                     <TableCell className="text-right">
                       {r.amount != null ? formatMoney(r.amount) : "—"}

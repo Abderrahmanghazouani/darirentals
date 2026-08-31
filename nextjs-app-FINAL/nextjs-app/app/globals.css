@@ -5,37 +5,32 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.5rem;
-  /* Fond neutre chaud très clair (palette DariRentals) - remplace le blanc pur d'origine. */
-  --background: oklch(0.985 0.006 75);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* Bleu profond #185FA5 - couleur primaire de la marque. */
-  --primary: #185fa5;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  /* Rouge doux #E24B4A - négatif/destructif de la marque. */
-  --destructive: #e24b4a;
-  --destructive-foreground: oklch(0.985 0 0);
-  /* Teal #0F9B8E - accent positif de la marque (pas de token shadcn par défaut pour ça,
-     ajouté ici et exposé via --color-success dans @theme inline ci-dessous). */
-  --success: #0f9b8e;
-  --success-foreground: oklch(0.985 0 0);
-  /* Ambre doux #D97706 - niveaux intermédiaires (pas de token shadcn par défaut non plus,
-     même principe que --success, exposé via --color-warning). */
-  --warning: #d97706;
-  --warning-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: #185fa5;
+  --radius: 0.65rem;
+  --background: #f6f4f1;
+  --foreground: #242127;
+  --card: #ffffff;
+  --card-foreground: #242127;
+  --popover: #ffffff;
+  --popover-foreground: #242127;
+  --primary: #5a3b5d;
+  --primary-foreground: #ffffff;
+  --secondary: #f2eff4;
+  --secondary-foreground: #5a3b5d;
+  --muted: #f3f1ee;
+  --muted-foreground: #817d84;
+  --accent: #ede6ef;
+  --accent-foreground: #5a3b5d;
+  --destructive: #c75c59;
+  --destructive-foreground: #ffffff;
+  --border: #e7e3df;
+  --input: #e1ddd9;
+  --ring: #96759a;
+  --success: #4f8b72;
+  --success-foreground: #ffffff;
+  --warning: #c4924d;
+  --warning-foreground: #242127;
+  --info: #6584a2;
+  --info-foreground: #ffffff;
 }
 
 .dark {
@@ -47,42 +42,46 @@
   --popover-foreground: oklch(0.985 0 0);
   /* Tokens de marque adaptés au fond sombre (voir NOTES-mode-sombre.md) - jamais de simple
      copie des valeurs claires. Toutes les valeurs ci-dessous ont été vérifiées par calcul de
-     ratio de contraste réel (formule WCAG relative luminance), pas seulement à l'oeil.
+     ratio de contraste réel (formule WCAG relative luminance), pas seulement à l'oeil, en
+     tenant compte de l'usage réel de chaque token (badge.tsx/stat-card.tsx : seuls --primary
+     et --destructive servent de fond plein avec texte blanc/foncé - --success/--warning/--info
+     sont uniquement des badges pastel bg-x/15 text-x ou des accents texte/icône, jamais de
+     fond plein - confirmé par recherche dans le code avant de choisir).
 
-     --primary (bleu) et --destructive (rouge) servent aussi de fond plein pour des boutons
-     texte blanc (bg-primary/bg-destructive text-white, voir button.tsx/badge.tsx) :
-     - --primary est éclairci (bleu-600 #2563eb, ratio 5.17:1 avec du blanc, contre le bleu
-       marine ~#185fa5 du mode clair) - conforme au réflexe "plus clair sur fond sombre" ET
-       ça améliore le contraste texte, les deux vont dans le même sens ici.
-     - --destructive fait EXCEPTION à "plus clair" : pour un rouge déjà relativement clair
-       comme celui de la marque (#e24b4a, ratio ~3.9:1 avec du blanc - déjà limite en mode
-       clair), l'éclaircir encore réduit mécaniquement le contraste avec le texte blanc
-       (mesuré : 3.4-3.1:1 selon les variantes testées, pire qu'en mode clair). Assombrir et
-       resaturer légèrement fonctionne mieux ici (#d33f3e, ratio 4.62:1) - c'est aussi le choix
-       fait par shadcn/ui lui-même pour son thème --destructive par défaut en mode sombre.
+     --primary : valeur déjà choisie et conservée telle quelle (mauve clair #96759a + texte
+     PRESQUE NOIR plutôt que blanc - choix cohérent, ce mauve clair contraste mieux avec du
+     texte foncé qu'avec du blanc).
 
-     --success (teal) et --warning (ambre) ne sont JAMAIS utilisés en fond plein dans ce projet
-     (uniquement en badge teinté bg-x/10 ou en texte/icône, vérifié par recherche dans le code) -
-     éclaircis plus franchement (teal-400/amber-400) pour bien ressortir comme accent sur fond
-     sombre, sans la contrainte du texte blanc superposé (ratio texte-sur-carte-sombre mesuré
-     >11:1 pour les deux, largement au-dessus du seuil AA). */
-  --primary: #2563eb;
-  --primary-foreground: oklch(0.985 0 0);
+     --destructive fait EXCEPTION au réflexe "plus clair sur fond sombre" : le rouge/terracotta
+     de la marque (#c75c59) a déjà seulement ~4.1:1 avec du blanc en mode clair. L'éclaircir
+     encore réduit mécaniquement ce contraste (mesuré 3.2-2.7:1 sur les variantes testées, pire
+     qu'en clair). Assombrir/resaturer légèrement fonctionne mieux (#b34e4b, 5.11:1 avec blanc) -
+     même logique que pour l'ancienne palette bleu/teal, et même choix que shadcn/ui lui-même
+     pour son --destructive par défaut en mode sombre.
+
+     --success/--warning/--info éclaircis franchement (sans la contrainte du texte blanc
+     superposé), en gardant le caractère mat/pastel de la palette d'Anas plutôt que de sauter
+     vers des teintes saturées façon Tailwind - juste des variantes plus claires des mêmes
+     teintes muettes. */
+  --primary: #96759a;
+  --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: #d33f3e;
+  --destructive: #b34e4b;
   --destructive-foreground: oklch(0.985 0 0);
-  --success: #2dd4bf;
-  --success-foreground: oklch(0.985 0 0);
-  --warning: #fbbf24;
-  --warning-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: #2563eb;
+  --ring: #96759a;
+  --success: #6fb595;
+  --success-foreground: oklch(0.145 0 0);
+  --warning: #dcae6b;
+  --warning-foreground: oklch(0.145 0 0);
+  --info: #87a3bf;
+  --info-foreground: oklch(0.145 0 0);
 }
 
 @theme inline {
@@ -111,12 +110,14 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-dm-mono);
 }
 
 @layer base {
@@ -125,5 +126,23 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Zone de contenu des pages /admin/** et /collaborator/** - largeur max centrée,
+     cohérente avec la maquette de référence. */
+  .page-content {
+    width: 100%;
+    max-width: 1370px;
+    margin-inline: auto;
+    padding: 1.5rem;
+  }
+
+  /* Carte de statistique : chiffre en gros, mono, badge d'icône en haut à droite. */
+  .stat-card-value {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 }

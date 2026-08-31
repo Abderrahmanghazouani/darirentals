@@ -3,23 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Building2,
-  CalendarCheck,
+  AlertTriangle,
   CalendarDays,
-  Coins,
-  FileBarChart,
-  Grid3x3,
-  Receipt,
-  Users,
+  ChevronDown,
+  ChevronRight,
+  Home,
+  ScanLine,
   Wallet,
-  ListTodo,
+  ClipboardList,
+  ArrowUpRight,
 } from "lucide-react";
 import { useRequireRole } from "@/lib/use-require-role";
 import { getEntityClients } from "@/lib/api";
-import { entityRegistry, entityKeys } from "@/lib/entity-registry";
 
 import { PropertyDto } from "@/lib/types/Property";
 import { ReservationDto } from "@/lib/types/Reservation";
@@ -29,8 +26,8 @@ import { TaskDto } from "@/lib/types/Task";
 import { ReservationRequestDto } from "@/lib/types/ReservationRequest";
 import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 import { computeHealthScore } from "@/lib/dashboard/health-score";
+import { isDueTodayOrOverdue, isOverdue } from "@/lib/tasks/is-overdue";
 import { HealthScoreCard } from "@/components/dashboard/health-score-card";
-import { PremiumHeader } from "@/components/dashboard/premium-header";
 import { RevenueIntelligenceCard } from "@/components/dashboard/revenue-intelligence-card";
 import { PropertyPerformanceCard } from "@/components/dashboard/property-performance-card";
 import { ActionCenterCard } from "@/components/dashboard/action-center-card";
@@ -39,7 +36,11 @@ import { PortfolioChatCard } from "@/components/dashboard/portfolio-chat-card";
 import { buildAssistantFacts } from "@/lib/dashboard/ai-facts";
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 import { useLanguage } from "@/lib/i18n/language-context";
-import { Dict } from "@/lib/i18n/translations";
+import { Locale } from "@/lib/i18n/translations";
+import { StatCard } from "@/components/stat-card";
+import { StatusBadge } from "@/components/status-badge";
+import { ReservationCalendar } from "@/components/reservations/reservation-calendar";
+import { getCurrentUser, CurrentUser } from "@/lib/auth";
 
 const ROLE = "admin" as const;
 
@@ -50,21 +51,27 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Animation d'apparition discrète, partagée par toutes les sections du dashboard - une
-// seule fois au montage, jamais rejouée au re-render (pas de dépendance à un état togglé).
-const ENTRANCE = "animate-in fade-in slide-in-from-bottom-2 duration-200 fill-mode-both";
-
-function toolsFor(dict: Dict) {
-  return [
-    { href: "/admin/property", label: dict.tools.properties, icon: Building2 },
-    { href: "/admin/reservations", label: dict.tools.reservationsCalendar, icon: CalendarDays },
-    { href: "/admin/charges", label: dict.tools.charges, icon: Receipt },
-    { href: "/admin/payments", label: dict.tools.payments, icon: Wallet },
-    { href: "/admin/tasks", label: dict.tools.tasks, icon: ListTodo },
-    { href: "/admin/exchange-rates", label: dict.tools.exchangeRates, icon: Coins },
-    { href: "/admin/financial-reports", label: dict.tools.financialReports, icon: FileBarChart },
-  ];
+// La date reste au format long propre à la langue choisie (voir premium-header.tsx) : "long"
+// veut dire "vendredi 30 août 2026" / "Friday, August 30, 2026", pas un libellé fixe traduit.
+function localeTag(locale: Locale) {
+  return locale === "en" ? "en-US" : "fr-FR";
 }
+
+function longDateToday(locale: Locale): string {
+  return new Date().toLocaleDateString(localeTag(locale), {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function currentMonthLabel(month: Date, locale: Locale): string {
+  return month.toLocaleDateString(localeTag(locale), { month: "long", year: "numeric" });
+}
+
+// Animation d'apparition discrète, partagée par toutes les sections du dashboard.
+const ENTRANCE = "animate-in fade-in slide-in-from-bottom-2 duration-200 fill-mode-both";
 
 export default function AdminHome() {
   const ready = useRequireRole(ROLE);
@@ -79,8 +86,7 @@ export default function AdminHome() {
 
 function AdminDashboard() {
   const { format } = useCurrency();
-  const { dict } = useLanguage();
-  const tools = useMemo(() => toolsFor(dict), [dict]);
+  const { dict, locale } = useLanguage();
 
   const [properties, setProperties] = useState<PropertyDto[] | null>(null);
   const [reservations, setReservations] = useState<ReservationDto[] | null>(null);
@@ -88,9 +94,11 @@ function AdminDashboard() {
   const [charges, setCharges] = useState<ChargeDto[] | null>(null);
   const [tasks, setTasks] = useState<TaskDto[] | null>(null);
   const [reservationRequests, setReservationRequests] = useState<ReservationRequestDto[] | null>(null);
-  const [showAllModules, setShowAllModules] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
   useEffect(() => {
+    setUser(getCurrentUser());
     const clients_ = getEntityClients(ROLE);
     clients_.property.findAll().then((d) => setProperties(d ?? [])).catch(() => setProperties([]));
     clients_.reservation.findAll().then((d) => setReservations(d ?? [])).catch(() => setReservations([]));
@@ -106,6 +114,7 @@ function AdminDashboard() {
   const stats = useMemo(() => {
     const props = properties ?? [];
     const resas = reservations ?? [];
+    const chs = charges ?? [];
     const today = todayIso();
 
     const activeCount = props.filter((p) => p.propertyStatus?.code === "Active").length;
@@ -120,22 +129,38 @@ function AdminDashboard() {
       .filter((r) => r.reservationStatus?.code !== CANCELLED_STATUS_CODE)
       .reduce((sum, r) => sum + (r.amount ?? 0), 0);
 
+    // Revenu net = revenus - charges, même logique que la page de rentabilité par propriété
+    // (app/admin/property/[id]/rentabilite/page.tsx), agrégée ici sur toutes les propriétés à
+    // partir des mêmes données déjà chargées.
+    const totalCharges = chs.reduce((sum, c) => sum + (c.amount ?? 0), 0);
+    const netRevenue = totalRevenue - totalCharges;
+
+    const recent = [...resas]
+      .sort((a, b) => (b.checkInDate ?? "").localeCompare(a.checkInDate ?? ""))
+      .slice(0, 6);
+
     return {
       totalProperties: props.length,
       activeProperties: activeCount,
       totalReservations: resas.length,
       upcomingReservations: upcoming,
       totalRevenue,
+      netRevenue,
       totalClients: (clients ?? []).length,
+      recentReservations: recent,
     };
-  }, [properties, reservations, clients]);
+  }, [properties, reservations, clients, charges]);
+
+  const todoTasks = useMemo(() => {
+    return (tasks ?? [])
+      .filter(isDueTodayOrOverdue)
+      .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
+  }, [tasks]);
 
   const healthScore = useMemo(() => {
     return computeHealthScore(properties ?? [], reservations ?? [], charges ?? [], tasks ?? []);
   }, [properties, reservations, charges, tasks]);
 
-  // AI Property Assistant : paquet de faits déjà calculés (mêmes fonctions que les cartes
-  // ci-dessous) - voir NOTES-ai-assistant.md. Gemini ne reçoit jamais que ce JSON.
   const assistantFacts = useMemo(() => {
     return buildAssistantFacts(
       properties ?? [],
@@ -154,109 +179,227 @@ function AdminDashboard() {
     tasks === null ||
     reservationRequests === null;
 
+  const firstName = user?.firstName?.trim();
+
   return (
-    // min-w-0 : <body> (app/layout.tsx) est flex-col, donc cette racine de page est un enfant
-    // flex qui, sans ça, ne rétrécit jamais sous la largeur de son contenu le plus large -
-    // c'était la vraie source du débordement horizontal mobile (le graphique/tableau les plus
-    // larges remontaient jusqu'ici). Les fixs sur Card/CardContent restent utiles pour les
-    // futures cartes imbriquées dans un autre flex-col, mais celui-ci était le verrou manquant.
-    <div className="w-full min-w-0 p-6 max-w-6xl mx-auto space-y-6">
-      <PremiumHeader activeProperties={stats.activeProperties} loading={loading} />
-
-      {loading ? (
-        <p className={`text-sm text-muted-foreground text-center py-8 ${ENTRANCE}`}>{dict.common.loading}</p>
-      ) : (
-        <div className={`space-y-4 ${ENTRANCE}`}>
-          <MorningInsightsCard facts={assistantFacts} role={ROLE} />
-          <HealthScoreCard score={healthScore} />
-          <PortfolioChatCard facts={assistantFacts} role={ROLE} />
+    <div className="w-full min-w-0 space-y-6">
+      {/* En-tête */}
+      <div className={`flex flex-wrap items-start justify-between gap-4 ${ENTRANCE}`}>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {longDateToday(locale)}
+          </p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            {dict.dashboardHome.greeting}{firstName ? ` ${firstName}` : ""},{" "}
+            <span className="font-normal text-muted-foreground">
+              {dict.dashboardHome.greetingReturning}
+            </span>
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{dict.dashboardHome.subtitle}</p>
         </div>
-      )}
 
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${ENTRANCE}`}>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{dict.dashboardStats.properties}</p>
-                <p className="text-3xl font-bold">
-                  {loading ? "…" : stats.totalProperties}
+        <div className="flex items-center gap-2">
+          {/* Sélecteur de mois (visuel) */}
+          <span className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm capitalize">
+            <CalendarDays className="size-4 text-muted-foreground" />
+            {currentMonthLabel(new Date(), locale)}
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          </span>
+          <Button asChild>
+            <Link href="/admin/charges">
+              <ScanLine className="size-4" /> {dict.dashboardHome.scanInvoice}
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Cartes de stats */}
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 ${ENTRANCE}`}>
+        <StatCard
+          label={dict.dashboardHome.statRevenue}
+          value={loading ? "…" : format(stats.totalRevenue)}
+          icon={Wallet}
+          iconTone="primary"
+          hint={dict.dashboardHome.statRevenueHint}
+        />
+        <StatCard
+          label={dict.dashboardHome.statOccupancy}
+          // TODO: aucun calcul de taux d'occupation n'existe encore côté client
+          // (il faudrait le total de nuits réservées / nuits disponibles sur la période).
+          value="—"
+          icon={Home}
+          iconTone="success"
+        />
+        <StatCard
+          label={dict.dashboardHome.statReservations}
+          value={loading ? "…" : stats.totalReservations}
+          icon={ClipboardList}
+          iconTone="warning"
+          hint={
+            loading
+              ? undefined
+              : `${stats.upcomingReservations.length} ${dict.dashboardHome.upcomingSuffix}`
+          }
+        />
+        <StatCard
+          label={dict.dashboardHome.statNetRevenue}
+          value={loading ? "…" : format(stats.netRevenue)}
+          icon={Wallet}
+          iconTone="info"
+          valueTone={loading ? "default" : stats.netRevenue >= 0 ? "success" : "destructive"}
+          hint={dict.dashboardHome.statNetRevenueHint}
+        />
+      </div>
+
+      {/* Graphique + à faire aujourd'hui */}
+      <div className={`grid grid-cols-1 gap-4 lg:grid-cols-3 ${ENTRANCE}`}>
+        <div className="lg:col-span-2">
+          {loading ? (
+            <Card>
+              <CardContent>
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  {dict.common.loading}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {loading ? "" : `${stats.activeProperties} ${dict.dashboardStats.active}`}
-                </p>
-              </div>
-              <Building2 className="size-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <RevenueIntelligenceCard
+              reservations={reservations ?? []}
+              charges={charges ?? []}
+              formatValue={format}
+            />
+          )}
+        </div>
 
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{dict.dashboardStats.reservations}</p>
-                <p className="text-3xl font-bold">
-                  {loading ? "…" : stats.totalReservations}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {loading ? "" : `${stats.upcomingReservations.length} ${dict.dashboardStats.upcoming}`}
-                </p>
-              </div>
-              <CalendarCheck className="size-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{dict.dashboardStats.clients}</p>
-                <p className="text-3xl font-bold">
-                  {loading ? "…" : stats.totalClients}
-                </p>
-              </div>
-              <Users className="size-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{dict.dashboardStats.revenue}</p>
-                <p className="text-3xl font-bold">
-                  {loading ? "…" : format(stats.totalRevenue)}
-                </p>
-              </div>
-              <Wallet className="size-8 text-muted-foreground" />
-            </div>
+          <CardHeader>
+            <CardTitle className="text-base">{dict.dashboardHome.todoTitle}</CardTitle>
+            <p className="text-sm text-muted-foreground">{dict.dashboardHome.todoSubtitle}</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
+            ) : todoTasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{dict.dashboardHome.todoEmpty}</p>
+            ) : (
+              todoTasks.slice(0, 5).map((t) => (
+                <Link
+                  key={t.id}
+                  href="/admin/tasks"
+                  className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-sm transition-colors hover:bg-accent/60"
+                >
+                  <AlertTriangle
+                    className={`size-4 shrink-0 ${isOverdue(t) ? "text-destructive" : "text-warning"}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{t.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {t.property?.name ?? t.taskType?.label ?? dict.dashboardHome.taskFallback}
+                      {t.dueDate ? ` · ${t.dueDate}` : ""}
+                    </p>
+                  </div>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </Link>
+              ))
+            )}
+            <Link
+              href="/admin/tasks"
+              className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-primary hover:underline"
+            >
+              {dict.dashboardHome.seeAllTasks} <ArrowUpRight className="size-3.5" />
+            </Link>
           </CardContent>
         </Card>
       </div>
 
-      {loading ? (
-        <Card className={ENTRANCE}>
+      {/* Réservations récentes + calendrier */}
+      <div className={`grid grid-cols-1 gap-4 lg:grid-cols-2 ${ENTRANCE}`}>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">
+                  {dict.dashboardHome.recentReservationsTitle}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {dict.dashboardHome.recentReservationsSubtitle}
+                </p>
+              </div>
+              <Link
+                href="/admin/reservations"
+                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+              >
+                {dict.dashboardHome.seeAll} <ArrowUpRight className="size-3.5" />
+              </Link>
+            </div>
+          </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground text-center py-12">{dict.common.loading}</p>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
+            ) : stats.recentReservations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{dict.dashboardHome.noReservations}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colProperty}</th>
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colClient}</th>
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colDates}</th>
+                      <th className="pb-2 text-right font-medium">{dict.dashboardHome.colAmount}</th>
+                      <th className="pb-2 text-right font-medium">{dict.dashboardHome.colStatus}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.recentReservations.map((r) => (
+                      <tr key={r.id} className="border-b border-border last:border-0">
+                        <td className="py-2.5 font-medium">{r.property?.name ?? "—"}</td>
+                        <td className="py-2.5 text-muted-foreground">{r.client?.fullName ?? "—"}</td>
+                        <td className="py-2.5 text-muted-foreground">
+                          {r.checkInDate ?? "—"}
+                          {r.checkOutDate ? ` — ${r.checkOutDate}` : ""}
+                        </td>
+                        <td className="py-2.5 text-right font-mono">
+                          {r.amount != null ? format(r.amount) : "—"}
+                        </td>
+                        <td className="py-2.5 text-right">
+                          <StatusBadge status={r.reservationStatus} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
-      ) : (
-        <div className={ENTRANCE}>
-          <RevenueIntelligenceCard reservations={reservations ?? []} charges={charges ?? []} formatValue={format} />
-        </div>
-      )}
 
-      {loading ? (
-        <Card className={ENTRANCE}>
-          <CardContent>
-            <p className="text-sm text-muted-foreground text-center py-12">{dict.common.loading}</p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{dict.dashboardHome.calendarTitle}</CardTitle>
+            <p className="text-sm text-muted-foreground">{dict.dashboardHome.calendarSubtitle}</p>
+          </CardHeader>
+          <CardContent className="text-xs">
+            <ReservationCalendar
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              reservations={reservations ?? []}
+              onReservationClick={() => {}}
+              loading={loading}
+            />
           </CardContent>
         </Card>
-      ) : (
-        <div className={ENTRANCE}>
+      </div>
+
+      {/* Analyses & assistant (fonctionnalités existantes) */}
+      {!loading && (
+        <div className={`space-y-4 ${ENTRANCE}`}>
+          <MorningInsightsCard facts={assistantFacts} role={ROLE} />
+          <HealthScoreCard score={healthScore} />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <ActionCenterCard tasks={tasks ?? []} reservationRequests={reservationRequests ?? []} />
+            <PortfolioChatCard facts={assistantFacts} role={ROLE} />
+          </div>
           <PropertyPerformanceCard
             properties={properties ?? []}
             reservations={reservations ?? []}
@@ -265,99 +408,6 @@ function AdminDashboard() {
           />
         </div>
       )}
-
-      <Card className={ENTRANCE}>
-        <CardHeader>
-          <CardTitle>{dict.tools.title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {tools.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className="flex items-center gap-2 rounded-md border-2 border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium hover:bg-primary/10 transition-colors"
-              >
-                <Icon className="size-4" />
-                {label}
-              </Link>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 ${ENTRANCE}`}>
-        <Card>
-          <CardHeader>
-            <CardTitle>{dict.upcomingArrivals.title}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
-            ) : stats.upcomingReservations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{dict.upcomingArrivals.none}</p>
-            ) : (
-              <div className="space-y-2">
-                {stats.upcomingReservations.slice(0, 5).map((r) => (
-                  <div
-                    key={r.id}
-                    className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {r.property?.name ?? dict.upcomingArrivals.unknownProperty}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {r.client?.fullName ?? dict.upcomingArrivals.unknownClient} —{" "}
-                        {dict.upcomingArrivals.arrivingOn} {r.checkInDate}
-                      </p>
-                    </div>
-                    {r.reservationStatus && <Badge>{r.reservationStatus.label}</Badge>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {loading ? (
-          <Card>
-            <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-12">{dict.common.loading}</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <ActionCenterCard tasks={tasks ?? []} reservationRequests={reservationRequests ?? []} />
-        )}
-      </div>
-
-      <Card className={ENTRANCE}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Grid3x3 className="size-5" /> {dict.allModules.title}
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => setShowAllModules((v) => !v)}>
-              {showAllModules ? dict.allModules.hide : dict.allModules.show}
-            </Button>
-          </div>
-        </CardHeader>
-        {showAllModules && (
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {entityKeys.map((key) => (
-                <Link
-                  key={key}
-                  href={`/admin/${key}`}
-                  className="rounded-md border px-3 py-2 text-sm hover:bg-accent transition-colors"
-                >
-                  {entityRegistry[key].label}
-                </Link>
-              ))}
-            </div>
-          </CardContent>
-        )}
-      </Card>
     </div>
   );
 }

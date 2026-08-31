@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import {
   Select,
@@ -44,16 +43,9 @@ import { ServiceProviderDto } from "@/lib/types/ServiceProvider";
 import { PaymentStatusDto } from "@/lib/types/PaymentStatus";
 import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
 import { filterByEnterprise } from "@/lib/filter-by-enterprise";
+import { StatusBadge } from "@/components/status-badge";
 
 const ROLE: Role = "collaborator";
-
-function statusVariant(style?: string | null): "default" | "secondary" | "destructive" | "outline" {
-  const s = (style ?? "").toLowerCase();
-  if (s.includes("success") || s.includes("primary")) return "default";
-  if (s.includes("danger") || s.includes("destructive")) return "destructive";
-  if (s.includes("warning") || s.includes("info")) return "secondary";
-  return "outline";
-}
 
 export default function PaymentsPage() {
   const ready = useRequireRole(ROLE);
@@ -215,7 +207,7 @@ export default function PaymentsPage() {
   if (!ready) return null;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Paiements aux prestataires</CardTitle>
@@ -279,11 +271,7 @@ export default function PaymentsPage() {
                     <TableCell>{p.serviceProvider?.name ?? "—"}</TableCell>
                     <TableCell>{p.paymentType?.label ?? "—"}</TableCell>
                     <TableCell>
-                      {p.paymentStatus ? (
-                        <Badge variant={statusVariant(p.paymentStatus.style)}>{p.paymentStatus.label}</Badge>
-                      ) : (
-                        "—"
-                      )}
+                      <StatusBadge status={p.paymentStatus} />
                     </TableCell>
                     <TableCell>{p.amount != null ? `${p.amount} MAD` : "—"}</TableCell>
                     <TableCell>{chargeCountByPayment.get(p.id as number) ?? 0}</TableCell>

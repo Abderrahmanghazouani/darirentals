@@ -97,7 +97,9 @@ export default function SelectEnterprisePage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {m.collaboratorRole && <Badge>{m.collaboratorRole.label}</Badge>}
+                  {m.collaboratorRole && (
+                    <Badge variant="secondary">{m.collaboratorRole.label}</Badge>
+                  )}
                   <ChevronRight className="size-4 text-muted-foreground" />
                 </div>
               </CardContent>
