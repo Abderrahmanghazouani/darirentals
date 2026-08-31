@@ -130,4 +130,69 @@ relative), pas seulement à l'œil, en tenant compte de l'usage réel de chaque 
 
 ## Étape 4 — Vérification exhaustive de tous les écrans
 
-À venir.
+Écrans passés en revue en sombre : Dashboard admin + collaborateur (bar chart Revenus/Charges
+inclus), `/login`, `/reserver` (+ son dialog de demande), `/select-enterprise`, CRUD (Biens &
+logements + formulaire de création, Tâches, Demandes de réservation + son Select), Rapports
+financiers, Taux de change, Rentabilité.
+
+**Détour méthodologique** : à un moment, le dashboard collaborateur s'est affiché vide, erreur
+console `Unknown word HEAD` / `Merge conflict marker encountered` dans `globals.css`/
+`layout.tsx`. Fichiers sur disque vérifiés propres (zéro marqueur) - c'était le cache Turbopack
+du serveur dev, qui tournait depuis avant le merge et n'avait jamais invalidé son build après
+la résolution des conflits. Résolu en coupant le process, supprimant `.next`, et relançant.
+
+**Bugs trouvés et corrigés** :
+
+1. **`ThemeToggle` absent sur `/login` et `/reserver`** (seul `LanguageToggle` y était) - point 3
+   du cahier des charges initial, resté en suspens à cause de l'interruption du merge. Ajouté au
+   même emplacement que `LanguageToggle` dans les deux fichiers (mobile header + desktop
+   top-right pour `/login` ; ligne unique top-right pour `/reserver`). Testé en desktop et mobile.
+
+2. **`text-destructive` en texte nu : contraste insuffisant en sombre, résolu par un second
+   token** - voir section dédiée ci-dessous, c'est le morceau le plus substantiel de cette étape.
+
+**Point observé, non traité en bug** : sur les popovers Radix (Dialog de création, Select de
+filtre), mes captures d'écran automatisées montraient un fond clair/transparent alors que
+`getComputedStyle()` confirmait systématiquement un fond `--background`/`--popover` sombre
+correct (ancêtre `.dark` présent, aucun style ni overlay parasite, composant source identique
+partout). Signalé à abdo pour vérification manuelle dans un vrai navigateur - probable
+limite de rendu de l'outil de capture automatisée sur les portails Radix, pas un bug réel.
+**Résultat de la vérification manuelle : à compléter par abdo.**
+
+### `--destructive` vs `--destructive-text` : pourquoi deux tokens
+
+En creusant le contraste de `text-destructive` utilisé en texte nu (messages d'erreur, icônes,
+valeurs "Charges" en rouge sur Rentabilité), calcul précis via rendu canvas (plus fiable que lire
+la chaîne `lab(...)` de `getComputedStyle`, qui avait faussé une première mesure à 4.07:1 au lieu
+de la vraie valeur 3.51:1) : **aucune valeur unique de `--destructive` ne peut satisfaire à la
+fois** le contraste "texte blanc sur fond plein" (bouton "Refuser", badge `variant="destructive"`)
+**et** "texte coloré sur carte sombre" (erreurs, valeurs négatives) à 4.5:1 (seuil AA texte
+normal). Preuve : contre blanc il faut une luminance relative ≤0.183 ; contre `--card` sombre
+(mesuré `rgb(23,23,23)` par canvas, pas approximé) il en faut une ≥0.214 - les deux plages ne se
+recoupent jamais. Vérifié par balayage exhaustif teinte 0-30°/saturation 30-80%/luminosité
+25-60% : zéro combinaison satisfaisant les deux à la fois.
+
+**Décision (validée avec abdo)** : deuxième token plutôt qu'un compromis sous le seuil.
+
+- `--destructive` : **inchangé** (`#b34e4b` en sombre), reste réservé aux fonds pleins
+  (`bg-destructive`, badge `variant="destructive"`) - 5.11:1 sur blanc, toujours valide.
+- `--destructive-text` (nouveau) : même teinte/saturation que `--destructive`, juste éclairci -
+  `#c75c59` en clair (identique à `--destructive`, le clair n'avait pas besoin de changer),
+  **`#bf6966` en sombre** - 4.63:1 sur `--card`, 5.12:1 sur `--background`, marge confortable
+  au-dessus du seuil AA dans les deux cas.
+- Tous les usages `text-destructive` nus basculés vers `text-destructive-text` : **65
+  occurrences dans 42 fichiers**, remplacement automatisé (script Node, regex avec exclusion de
+  `-text` pour éviter tout double-suffixe) puis vérifié par grep qu'aucun `text-destructive` nu
+  ne subsiste. `bg-destructive`/`border-destructive`/le badge `variant="destructive"` ne
+  contiennent pas la sous-chaîne concernée, non affectés.
+
+### Vérification finale (calcul + visuel)
+
+- `text-destructive-text` mesuré en direct sur `/login` (message "Échec de la connexion") et sur
+  Rentabilité (valeur "700,00" de la carte Charges) : `rgb(191, 105, 102)` dans les deux cas,
+  4.63:1 sur `--card` / 5.12:1 sur `--background` - conforme AA avec marge.
+- Badge `variant="destructive"` (fond plein) revérifié inchangé : `rgb(179, 78, 75)` sur blanc,
+  5.11:1 - non affecté par le changement.
+- Mode clair revérifié inchangé : `text-destructive-text` = `rgb(199, 92, 89)` = `#c75c59`,
+  valeur `--destructive` d'origine, aucune régression.
+- `npm run build` : passe (24 routes générées, TypeScript propre).

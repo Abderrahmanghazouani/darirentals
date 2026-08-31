@@ -169,7 +169,7 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
         <Label htmlFor="name">Nom complet</Label>
         <Input id="name" {...form.register("name")} />
         {form.formState.errors.name && (
-          <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+          <p className="text-sm text-destructive-text">{form.formState.errors.name.message}</p>
         )}
       </div>
 
@@ -178,7 +178,7 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" {...form.register("email")} />
           {form.formState.errors.email && (
-            <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+            <p className="text-sm text-destructive-text">{form.formState.errors.email.message}</p>
           )}
         </div>
         <div className="space-y-2">
@@ -192,7 +192,7 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
           <Label htmlFor="username">Nom d&apos;utilisateur</Label>
           <Input id="username" {...form.register("username")} />
           {form.formState.errors.username && (
-            <p className="text-sm text-destructive">{form.formState.errors.username.message}</p>
+            <p className="text-sm text-destructive-text">{form.formState.errors.username.message}</p>
           )}
         </div>
         <div className="space-y-2">

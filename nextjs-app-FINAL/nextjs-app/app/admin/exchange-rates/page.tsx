@@ -245,11 +245,11 @@ export default function ExchangeRatesPage() {
       </div>
 
       {syncMessage && (
-        <p className={`text-sm ${syncMessage.ok ? "text-success" : "text-destructive"}`}>
+        <p className={`text-sm ${syncMessage.ok ? "text-success" : "text-destructive-text"}`}>
           {syncMessage.text}
         </p>
       )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive-text">{error}</p>}
 
       <Card>
         <CardHeader>
@@ -287,7 +287,7 @@ export default function ExchangeRatesPage() {
                         <Pencil className="size-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(r)}>
-                        <Trash2 className="size-4 text-destructive" />
+                        <Trash2 className="size-4 text-destructive-text" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -346,7 +346,7 @@ export default function ExchangeRatesPage() {
                 placeholder="ex: Saisie manuelle, Bank Al-Maghrib..."
               />
             </div>
-            {formError && <p className="text-sm text-destructive">{formError}</p>}
+            {formError && <p className="text-sm text-destructive-text">{formError}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>

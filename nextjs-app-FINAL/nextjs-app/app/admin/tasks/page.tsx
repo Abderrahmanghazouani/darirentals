@@ -94,7 +94,7 @@ export default function TasksPage() {
       header: "Titre",
       render: (t) => (
         <span className="flex items-center gap-1.5">
-          {isOverdue(t) && <AlertTriangle className="size-3.5 text-destructive shrink-0" />}
+          {isOverdue(t) && <AlertTriangle className="size-3.5 text-destructive-text shrink-0" />}
           {t.title}
         </span>
       ),
@@ -104,7 +104,7 @@ export default function TasksPage() {
       header: "Échéance",
       render: (t) =>
         t.dueDate ? (
-          <span className={isOverdue(t) ? "text-destructive font-medium" : ""}>{t.dueDate}</span>
+          <span className={isOverdue(t) ? "text-destructive-text font-medium" : ""}>{t.dueDate}</span>
         ) : (
           "—"
         ),
@@ -209,7 +209,7 @@ export default function TasksPage() {
             </Button>
           </div>
 
-          {crud.error && <p className="text-destructive text-sm">{crud.error}</p>}
+          {crud.error && <p className="text-destructive-text text-sm">{crud.error}</p>}
 
           <EntityTable<TaskDto>
             items={filteredItems}

@@ -208,7 +208,7 @@ export function ReservationForm({
               ))}
             </SelectContent>
           </Select>
-          {errors.client && <p className="text-sm text-destructive">{errors.client}</p>}
+          {errors.client && <p className="text-sm text-destructive-text">{errors.client}</p>}
         </div>
 
         <div className="space-y-2">
@@ -235,7 +235,7 @@ export function ReservationForm({
               ))}
             </SelectContent>
           </Select>
-          {errors.property && <p className="text-sm text-destructive">{errors.property}</p>}
+          {errors.property && <p className="text-sm text-destructive-text">{errors.property}</p>}
         </div>
       </div>
 
@@ -248,7 +248,7 @@ export function ReservationForm({
             value={values.checkInDate ?? ""}
             onChange={(e) => handleDateChange("checkInDate", e.target.value)}
           />
-          {errors.checkInDate && <p className="text-sm text-destructive">{errors.checkInDate}</p>}
+          {errors.checkInDate && <p className="text-sm text-destructive-text">{errors.checkInDate}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="checkOutDate">Check-out</Label>
@@ -258,7 +258,7 @@ export function ReservationForm({
             value={values.checkOutDate ?? ""}
             onChange={(e) => handleDateChange("checkOutDate", e.target.value)}
           />
-          {errors.checkOutDate && <p className="text-sm text-destructive">{errors.checkOutDate}</p>}
+          {errors.checkOutDate && <p className="text-sm text-destructive-text">{errors.checkOutDate}</p>}
         </div>
       </div>
 

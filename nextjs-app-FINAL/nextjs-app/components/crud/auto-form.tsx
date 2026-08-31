@@ -138,7 +138,7 @@ export function AutoForm({
               }
             />
           )}
-          {errors[f.name] && <p className="text-sm text-destructive">{errors[f.name]}</p>}
+          {errors[f.name] && <p className="text-sm text-destructive-text">{errors[f.name]}</p>}
         </div>
       ))}
 

@@ -24,6 +24,7 @@ import {
 import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
 import { CurrencySelector } from "@/components/currency/currency-selector";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 const CONTACT_PHONE = "+212 6 XX XX XX XX";
@@ -130,7 +131,8 @@ function ReserverContent() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <ThemeToggle />
         <LanguageToggle />
       </div>
 
@@ -237,7 +239,7 @@ function ReserverContent() {
                 <Label>{dict.reserver.messageOptional}</Label>
                 <Input value={message} onChange={(e) => setMessage(e.target.value)} />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && <p className="text-sm text-destructive-text">{error}</p>}
               <DialogFooter>
                 <Button variant="outline" onClick={() => setSelected(null)}>
                   {dict.common.cancel}

@@ -150,7 +150,7 @@ export default function CollaboratorPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {(crud.error || formError) && (
-            <p className="text-destructive text-sm">{crud.error || formError}</p>
+            <p className="text-destructive-text text-sm">{crud.error || formError}</p>
           )}
 
           <EntityTable<CollaboratorDto>

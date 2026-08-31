@@ -112,7 +112,7 @@ export function PropertyForm({ initial, saving, role, onSubmit, onCancel }: Prop
         <Label htmlFor="name">Nom de la propriété</Label>
         <Input id="name" {...form.register("name")} />
         {form.formState.errors.name && (
-          <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+          <p className="text-sm text-destructive-text">{form.formState.errors.name.message}</p>
         )}
       </div>
 

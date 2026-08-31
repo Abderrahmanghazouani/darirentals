@@ -217,8 +217,8 @@ export function InvoiceScanDialog({
         {step === "error" && (
           <div className="space-y-4">
             <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
-              <AlertTriangle className="size-4 text-destructive shrink-0 mt-0.5" />
-              <p className="text-sm text-destructive">{errorMessage}</p>
+              <AlertTriangle className="size-4 text-destructive-text shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive-text">{errorMessage}</p>
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setStep("upload")}>

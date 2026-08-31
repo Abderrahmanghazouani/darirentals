@@ -16,7 +16,7 @@ const KIND_ICON: Record<ActionItem["kind"], typeof AlertTriangle> = {
 };
 
 const KIND_ICON_CLASS: Record<ActionItem["kind"], string> = {
-  "overdue-task": "text-destructive",
+  "overdue-task": "text-destructive-text",
   "pending-request": "text-warning",
 };
 

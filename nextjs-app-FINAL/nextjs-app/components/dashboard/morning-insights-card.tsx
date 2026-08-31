@@ -66,7 +66,7 @@ export function MorningInsightsCard({ facts, role }: MorningInsightsCardProps) {
               <p className="text-sm text-muted-foreground">{dict.assistant.insightsLoading}</p>
             ) : error ? (
               <div className="space-y-2">
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive-text">{error}</p>
                 <Button type="button" variant="outline" size="sm" onClick={load}>
                   <RefreshCw className="size-3.5" /> {dict.assistant.retry}
                 </Button>

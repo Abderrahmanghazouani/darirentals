@@ -228,7 +228,7 @@ export default function PaymentsPage() {
             </Select>
           </div>
 
-          {error && <p className="text-destructive text-sm">{error}</p>}
+          {error && <p className="text-destructive-text text-sm">{error}</p>}
 
           {loading ? (
             <p className="text-muted-foreground text-sm py-8 text-center">Chargement...</p>
@@ -263,7 +263,7 @@ export default function PaymentsPage() {
                         <Pencil className="size-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(p)}>
-                        <Trash2 className="size-4 text-destructive" />
+                        <Trash2 className="size-4 text-destructive-text" />
                       </Button>
                     </TableCell>
                   </TableRow>

@@ -113,7 +113,7 @@ export function TaskForm({
         <Label htmlFor="title">Titre (ex: Ménage avant arrivée client)</Label>
         <Input id="title" {...form.register("title")} />
         {form.formState.errors.title && (
-          <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
+          <p className="text-sm text-destructive-text">{form.formState.errors.title.message}</p>
         )}
       </div>
 

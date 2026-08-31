@@ -243,7 +243,7 @@ export default function FinancialReportsPage() {
         </p>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive-text">{error}</p>}
 
       <Card>
         <CardHeader>
@@ -372,7 +372,7 @@ export default function FinancialReportsPage() {
             )}
           </div>
 
-          {generateError && <p className="text-sm text-destructive">{generateError}</p>}
+          {generateError && <p className="text-sm text-destructive-text">{generateError}</p>}
           {generateSuccess && <p className="text-sm text-green-600">{generateSuccess}</p>}
 
           <Button onClick={handleGenerate} disabled={generating}>
@@ -387,7 +387,7 @@ export default function FinancialReportsPage() {
           <CardTitle>Historique des rapports</CardTitle>
         </CardHeader>
         <CardContent>
-          {exportError && <p className="text-sm text-destructive mb-3">{exportError}</p>}
+          {exportError && <p className="text-sm text-destructive-text mb-3">{exportError}</p>}
           {loading ? (
             <p className="text-sm text-muted-foreground py-6 text-center">Chargement...</p>
           ) : reports.length === 0 ? (

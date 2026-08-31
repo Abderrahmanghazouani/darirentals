@@ -77,7 +77,7 @@ export default function SelectEnterprisePage() {
           </p>
         </div>
 
-        {error && <p className="text-sm text-destructive text-center">{error}</p>}
+        {error && <p className="text-sm text-destructive-text text-center">{error}</p>}
 
         <div className="space-y-3">
           {memberships === null && !error && (

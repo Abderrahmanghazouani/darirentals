@@ -227,7 +227,7 @@ export function AppShell({ role, sections, children }: AppShellProps) {
             type="button"
             onClick={handleLogout}
             aria-label="Déconnexion"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-destructive-text"
           >
             <LogOut className="size-4" />
           </button>

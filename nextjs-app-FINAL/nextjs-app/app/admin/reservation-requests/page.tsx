@@ -92,7 +92,7 @@ export default function ReservationRequestsPage() {
           </Select>
         </CardHeader>
         <CardContent>
-          {crud.error && <p className="text-destructive text-sm mb-4">{crud.error}</p>}
+          {crud.error && <p className="text-destructive-text text-sm mb-4">{crud.error}</p>}
           {crud.loading ? (
             <p className="text-muted-foreground text-sm py-8 text-center">Chargement...</p>
           ) : filteredItems.length === 0 ? (

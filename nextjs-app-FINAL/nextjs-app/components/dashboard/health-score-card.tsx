@@ -22,7 +22,7 @@ const LEVEL_BADGE_CLASS: Record<HealthScoreLevel, string> = {
   excellent: "bg-success/10 text-success",
   good: "bg-warning/10 text-warning",
   watch: "bg-warning/20 text-warning",
-  critical: "bg-destructive/10 text-destructive",
+  critical: "bg-destructive/10 text-destructive-text",
 };
 
 function componentColor(score: number): string {

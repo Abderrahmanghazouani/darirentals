@@ -129,7 +129,7 @@ export default function PropertyRentabilitePage() {
         </div>
       </div>
 
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {error && <p className="text-destructive-text text-sm">{error}</p>}
 
       {/* Sélecteur de période */}
       <div className="flex gap-2">

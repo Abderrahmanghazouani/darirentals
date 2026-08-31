@@ -247,7 +247,7 @@ export default function ReservationsPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {error && <p className="text-destructive text-sm">{error}</p>}
+          {error && <p className="text-destructive-text text-sm">{error}</p>}
 
           {/* Filtres */}
           <div className="flex flex-wrap items-end gap-3 pb-2 border-b">
@@ -393,7 +393,7 @@ export default function ReservationsPage() {
                         <Pencil className="size-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(r)}>
-                        <Trash2 className="size-4 text-destructive" />
+                        <Trash2 className="size-4 text-destructive-text" />
                       </Button>
                     </TableCell>
                   </TableRow>
