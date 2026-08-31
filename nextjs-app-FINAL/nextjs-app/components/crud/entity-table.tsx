@@ -64,7 +64,7 @@ export function EntityTable<TDto extends { id: number | null }>({
                 <Pencil className="size-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => onDelete(item)}>
-                <Trash2 className="size-4 text-destructive" />
+                <Trash2 className="size-4 text-destructive-text" />
               </Button>
             </TableCell>
           </TableRow>

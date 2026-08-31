@@ -17,6 +17,8 @@ import { logout, getCurrentUser, CurrentUser } from "@/lib/auth";
 import { getEntityClients } from "@/lib/api";
 import { getSelectedEnterpriseId } from "@/lib/enterprise-context";
 import type { Role } from "@/lib/api-client";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { LanguageToggle } from "@/components/i18n/language-toggle";
 
 export interface NavItem {
   label: string;
@@ -146,7 +148,7 @@ export function AppShell({ role, sections, children }: AppShellProps) {
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-border bg-[#faf8f6] px-3 py-4 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-border bg-background px-3 py-4 lg:flex">
         <Link href={`/${role}`} className="flex items-center gap-2.5 px-2">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Building2 className="size-4.5" />
@@ -225,7 +227,7 @@ export function AppShell({ role, sections, children }: AppShellProps) {
             type="button"
             onClick={handleLogout}
             aria-label="Déconnexion"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-destructive-text"
           >
             <LogOut className="size-4" />
           </button>
@@ -248,6 +250,8 @@ export function AppShell({ role, sections, children }: AppShellProps) {
               <span>Rechercher</span>
               <kbd className="rounded border border-border bg-muted px-1 text-[10px]">⌘K</kbd>
             </div>
+            <ThemeToggle />
+            <LanguageToggle />
             <button
               type="button"
               aria-label="Notifications"

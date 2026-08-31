@@ -85,7 +85,7 @@ export function ClientForm({ initial, saving, role, onSubmit, onCancel }: Client
         <Label htmlFor="fullName">Nom complet</Label>
         <Input id="fullName" {...form.register("fullName")} />
         {form.formState.errors.fullName && (
-          <p className="text-sm text-destructive">{form.formState.errors.fullName.message}</p>
+          <p className="text-sm text-destructive-text">{form.formState.errors.fullName.message}</p>
         )}
       </div>
 
@@ -94,7 +94,7 @@ export function ClientForm({ initial, saving, role, onSubmit, onCancel }: Client
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" {...form.register("email")} />
           {form.formState.errors.email && (
-            <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+            <p className="text-sm text-destructive-text">{form.formState.errors.email.message}</p>
           )}
         </div>
         <div className="space-y-2">
@@ -133,7 +133,7 @@ export function ClientForm({ initial, saving, role, onSubmit, onCancel }: Client
           <Label htmlFor="username">Nom d&apos;utilisateur</Label>
           <Input id="username" {...form.register("username")} />
           {form.formState.errors.username && (
-            <p className="text-sm text-destructive">{form.formState.errors.username.message}</p>
+            <p className="text-sm text-destructive-text">{form.formState.errors.username.message}</p>
           )}
         </div>
         <div className="space-y-2">

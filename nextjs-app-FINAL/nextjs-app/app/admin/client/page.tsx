@@ -85,7 +85,7 @@ export default function ClientPage() {
             />
           </div>
 
-          {crud.error && <p className="text-destructive text-sm">{crud.error}</p>}
+          {crud.error && <p className="text-destructive-text text-sm">{crud.error}</p>}
 
           <EntityTable<ClientDto>
             items={filteredItems}

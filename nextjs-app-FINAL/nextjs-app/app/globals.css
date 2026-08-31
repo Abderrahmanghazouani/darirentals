@@ -22,6 +22,10 @@
   --accent-foreground: #5a3b5d;
   --destructive: #c75c59;
   --destructive-foreground: #ffffff;
+  /* Texte destructif nu (messages d'erreur, valeurs "Charges" en rouge) sur fond clair :
+     identique à --destructive, déjà suffisamment contrasté sur fond blanc/carte clairs -
+     seul le mode sombre a besoin d'une valeur distincte (voir .dark ci-dessous). */
+  --destructive-text: #c75c59;
   --border: #e7e3df;
   --input: #e1ddd9;
   --ring: #96759a;
@@ -40,6 +44,47 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
+  /* Tokens de marque adaptés au fond sombre (voir NOTES-mode-sombre.md) - jamais de simple
+     copie des valeurs claires. Toutes les valeurs ci-dessous ont été vérifiées par calcul de
+     ratio de contraste réel (formule WCAG relative luminance), pas seulement à l'oeil, en
+     tenant compte de l'usage réel de chaque token (badge.tsx/stat-card.tsx : seuls --primary
+     et --destructive servent de fond plein avec texte blanc/foncé - --success/--warning/--info
+     sont uniquement des badges pastel bg-x/15 text-x ou des accents texte/icône, jamais de
+     fond plein - confirmé par recherche dans le code avant de choisir).
+
+     --primary : valeur déjà choisie et conservée telle quelle (mauve clair #96759a + texte
+     PRESQUE NOIR plutôt que blanc - choix cohérent, ce mauve clair contraste mieux avec du
+     texte foncé qu'avec du blanc).
+
+     --destructive fait EXCEPTION au réflexe "plus clair sur fond sombre" : le rouge/terracotta
+     de la marque (#c75c59) a déjà seulement ~4.1:1 avec du blanc en mode clair. L'éclaircir
+     encore réduit mécaniquement ce contraste (mesuré 3.2-2.7:1 sur les variantes testées, pire
+     qu'en clair). Assombrir/resaturer légèrement fonctionne mieux (#b34e4b, 5.11:1 avec blanc) -
+     même logique que pour l'ancienne palette bleu/teal, et même choix que shadcn/ui lui-même
+     pour son --destructive par défaut en mode sombre.
+
+     --success/--warning/--info éclaircis franchement (sans la contrainte du texte blanc
+     superposé), en gardant le caractère mat/pastel de la palette d'Anas plutôt que de sauter
+     vers des teintes saturées façon Tailwind - juste des variantes plus claires des mêmes
+     teintes muettes.
+
+     --destructive-text : DEUXIÈME token distinct de --destructive, ajouté après avoir prouvé
+     par le calcul qu'AUCUNE valeur unique ne peut satisfaire à la fois le contraste "texte
+     blanc sur fond plein" (bouton/badge) ET "texte coloré sur carte sombre" (messages
+     d'erreur, valeurs "Charges" en rouge) : contre blanc il faut une luminance relative
+     <=0.183, contre --card sombre (mesuré rgb(23,23,23) par rendu canvas réel, pas la
+     sérialisation lab() approximative) il en faut une >=0.214 - les deux plages ne se
+     recoupent jamais, quelle que soit la teinte (vérifié par balayage exhaustif teinte
+     0-30°/saturation 30-80%/luminosité 25-60%, zéro combinaison valide). --destructive reste
+     donc inchangé pour les fonds pleins (bouton "Refuser", badge destructive : 5.11:1 sur
+     blanc, toujours valide). --destructive-text est un éclaircissement de LA MÊME teinte/
+     saturation que --destructive (même rouge-terracotta, juste plus clair) calibré pour
+     4.63:1 sur --card et 5.12:1 sur --background - marge confortable au-dessus du seuil AA
+     4.5:1 pour texte normal, dans les deux cas. Tous les usages `text-destructive` nus
+     (messages d'erreur, icônes, valeurs négatives) ont été basculés vers `text-destructive-
+     text` (~65 occurrences, 42 fichiers) - `bg-destructive`/`border-destructive` et le badge
+     `variant="destructive"` (bg-destructive text-white) restent sur --destructive, non
+     concernés par ce changement. */
   --primary: #96759a;
   --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
@@ -48,17 +93,18 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: #c75c59;
+  --destructive: #b34e4b;
   --destructive-foreground: oklch(0.985 0 0);
+  --destructive-text: #bf6966;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: #96759a;
-  --success: #4f8b72;
-  --success-foreground: oklch(0.985 0 0);
-  --warning: #c4924d;
-  --warning-foreground: oklch(0.985 0 0);
-  --info: #6584a2;
-  --info-foreground: oklch(0.985 0 0);
+  --success: #6fb595;
+  --success-foreground: oklch(0.145 0 0);
+  --warning: #dcae6b;
+  --warning-foreground: oklch(0.145 0 0);
+  --info: #87a3bf;
+  --info-foreground: oklch(0.145 0 0);
 }
 
 @theme inline {
@@ -83,6 +129,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-text: var(--destructive-text);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);

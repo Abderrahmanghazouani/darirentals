@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import { LanguageProvider } from "@/lib/i18n/language-context";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -28,9 +29,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <LanguageProvider>{children}</LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>{children}</LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -52,7 +52,7 @@ export default function AdminEntityPage({
           </Button>
         </CardHeader>
         <CardContent>
-          {crud.error && <p className="text-destructive text-sm mb-4">{crud.error}</p>}
+          {crud.error && <p className="text-destructive-text text-sm mb-4">{crud.error}</p>}
 
           <EntityTable<GenericDto>
             items={crud.items}

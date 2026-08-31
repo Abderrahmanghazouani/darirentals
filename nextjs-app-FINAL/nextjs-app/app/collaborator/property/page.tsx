@@ -174,7 +174,7 @@ const filteredItems = useMemo(() => {
             </Select>
           </div>
 
-          {crud.error && <p className="text-destructive text-sm">{crud.error}</p>}
+          {crud.error && <p className="text-destructive-text text-sm">{crud.error}</p>}
 
           <EntityTable<PropertyDto>
             items={filteredItems}

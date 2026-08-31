@@ -28,7 +28,7 @@ import { useLanguage } from "@/lib/i18n/language-context";
 const TREND_BADGE_CLASS: Record<RevenueTrend, string> = {
   up: "bg-success/10 text-success",
   new: "bg-success/10 text-success",
-  down: "bg-destructive/10 text-destructive",
+  down: "bg-destructive/10 text-destructive-text",
   stable: "bg-muted text-muted-foreground",
 };
 

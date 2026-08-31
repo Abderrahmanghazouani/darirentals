@@ -109,7 +109,7 @@ export function ChargeForm({
         <Label htmlFor="label">Libellé (ex: Électricité août)</Label>
         <Input id="label" {...form.register("label")} />
         {form.formState.errors.label && (
-          <p className="text-sm text-destructive">{form.formState.errors.label.message}</p>
+          <p className="text-sm text-destructive-text">{form.formState.errors.label.message}</p>
         )}
       </div>
 

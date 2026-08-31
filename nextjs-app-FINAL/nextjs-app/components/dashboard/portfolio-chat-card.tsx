@@ -89,7 +89,7 @@ export function PortfolioChatCard({ facts, role }: PortfolioChatCardProps) {
               <div key={i} className="space-y-1 border-b pb-3 last:border-0 last:pb-0">
                 <p className="text-sm font-medium">{ex.question}</p>
                 {ex.serverError || ex.hasGenericError ? (
-                  <p className="text-sm text-destructive">
+                  <p className="text-sm text-destructive-text">
                     {ex.serverError ?? dict.assistant.chatError}
                   </p>
                 ) : (

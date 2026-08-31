@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login, LoginError } from "@/lib/auth";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 export default function LoginPage() {
@@ -196,12 +197,18 @@ export default function LoginPage() {
               </span>
             </a>
 
-            <LanguageToggle />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageToggle />
+            </div>
           </div>
 
           {/* Desktop top-right — langue + retour */}
           <div className="absolute right-8 top-8 hidden items-center gap-4 lg:flex">
-            <LanguageToggle />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageToggle />
+            </div>
 
             <a
               href="/"
@@ -312,7 +319,7 @@ export default function LoginPage() {
                     role="alert"
                     className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3"
                   >
-                    <p className="text-sm font-medium text-destructive">
+                    <p className="text-sm font-medium text-destructive-text">
                       {error}
                     </p>
                   </div>

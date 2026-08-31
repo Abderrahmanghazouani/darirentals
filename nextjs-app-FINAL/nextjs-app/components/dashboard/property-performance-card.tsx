@@ -122,7 +122,7 @@ export function PropertyPerformanceCard({
                     <TableCell className="text-right whitespace-nowrap">{formatValue(r.revenue)}</TableCell>
                     <TableCell className="text-right whitespace-nowrap">{formatValue(r.charges)}</TableCell>
                     <TableCell
-                      className={`text-right whitespace-nowrap font-semibold ${r.netProfit < 0 ? "text-destructive" : ""}`}
+                      className={`text-right whitespace-nowrap font-semibold ${r.netProfit < 0 ? "text-destructive-text" : ""}`}
                     >
                       {formatValue(r.netProfit)}
                     </TableCell>

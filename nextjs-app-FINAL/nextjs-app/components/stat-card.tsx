@@ -10,7 +10,7 @@ const iconToneClass: Record<IconTone, string> = {
   success: "bg-success/15 text-success",
   warning: "bg-warning/15 text-warning",
   info: "bg-info/15 text-info",
-  destructive: "bg-destructive/15 text-destructive",
+  destructive: "bg-destructive/15 text-destructive-text",
 };
 
 export interface StatCardChange {
@@ -63,7 +63,7 @@ export function StatCard({
           className={cn(
             "stat-card-value mt-2 text-3xl",
             valueTone === "success" && "text-success",
-            valueTone === "destructive" && "text-destructive"
+            valueTone === "destructive" && "text-destructive-text"
           )}
         >
           {value}
@@ -73,7 +73,7 @@ export function StatCard({
             <span
               className={cn(
                 "flex items-center gap-0.5 font-medium",
-                change.positive ? "text-success" : "text-destructive"
+                change.positive ? "text-success" : "text-destructive-text"
               )}
             >
               {change.positive ? (
