@@ -158,5 +158,45 @@ demande de réservation publique), `client.cycle.test`.
   des données entre sociétés est justement un argument de vente du projet).
 - **`kacm`** : pas de marqueur "test" dans le nom, comportement ambigu - à clarifier avec toi.
 
-**Aucune suppression effectuée.** Le script d'audit (`db-audit.js`) reste dans le scratchpad de
-session, pas commité - si utile pour une prochaine passe, dis-le-moi.
+### Actions exécutées (validées par abdo)
+
+Transaction unique (tout ou rien), FK vérifiées avant exécution (`information_schema.KEY_COLUMN_USAGE`
++ recherche explicite de toute ligne référençant les ids concernés dans chaque table dépendante) :
+
+1. **Supprimé** : le compte `ali` (id 13, collaborateur orphelin, zéro rôle/société/référence
+   ailleurs) et les 6 comptes `guest_*` (clients génériques créés par le formulaire public
+   `/reserver`) - avec leurs 6 `reservation_request` associées (obligatoire : ces demandes
+   référençaient les clients supprimés) et leurs 7 lignes `role_app_user_app`.
+   `client.cycle.test` et le compte `client` (seed) **conservés**, non concernés par la décision.
+2. **Renommé** propriété id 1 : `gh` → **`Riad Zahra`**.
+3. **Renommé** sociétés : id 3 `Societe A (test perms)` → **`Dar Atlas Hospitality`**, id 4
+   `Societe B (test perms)` → **`Bleu Ourika Collection`**.
+4. **`kacm`, `Societe Test Devise`, `Societe Test Cycle`** : non touchées, décision en attente.
+
+**Vérifié après coup** : ré-audit SQL complet (relations `enterprise_membership` toujours
+correctes après renommage, y compris `retest_multi_subadmin` qui appartient aux deux sociétés
+renommées à la fois), et test en direct dans l'app (connecté en admin) : Dashboard, Biens &
+logements (`Riad Zahra` apparaît, statut/prix/capacité intacts), Demandes de réservation ("Aucune
+demande." - état vide propre, pas de crash), Collaborateurs (`ali` absent, tous les autres
+listés sans erreur). Zéro nouvelle erreur console liée au nettoyage.
+
+### Point resté en suspens : incohérence de noms à régler
+
+Les propriétés **"Riad Societe A"** et **"Villa Societe B"** (dans les sociétés désormais
+appelées Dar Atlas Hospitality / Bleu Ourika Collection) gardent leur ancien nom faisant
+référence à "Societe A"/"Societe B" - ça va détonner en soutenance à côté des nouveaux noms de
+sociétés. Pas renommées : non demandé explicitement, et je préfère confirmer plutôt que d'inventer
+des noms de propriétés à ta place.
+
+### `kacm` — ce que j'ai trouvé (en attente de ta décision)
+
+- 2 collaborateurs : **anas** (`admin1`, ton propre compte, sans rôle explicite dessus) et
+  **mohammed** (rôle "Gestionnaire", même domaine email `emsi-edu.ma` que toi).
+- **0 propriété** rattachée.
+- Une devise configurée (`currency` non nulle, contrairement à toutes les autres sociétés y
+  compris "abdo").
+- Aucune colonne de date de création sur `enterprise` - impossible de dater sa création par
+  requête. Le nom "kacm" ne correspond à aucune convention "test" visible ailleurs dans la base.
+
+Je ne peux pas déterminer son origine/but au-delà de ces faits bruts - à toi de me dire si tu la
+reconnais.
