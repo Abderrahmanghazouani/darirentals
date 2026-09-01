@@ -14,6 +14,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { AppShell, type NavSection } from "@/components/app-shell";
+import { CurrencyProvider } from "@/lib/currency/currency-context";
+import { getEntityClients } from "@/lib/api";
 
 // Groupes + libellés définis dans NOTES-sidebar-premium.md - chaque route vérifiée existante
 // avant d'être ajoutée ici (app/admin/**/page.tsx). "Demandes de réservation" ajoutée en plus
@@ -51,10 +53,18 @@ const sections: NavSection[] = [
   },
 ];
 
+// CurrencyProvider posé ici (niveau layout) plutôt que dans admin/page.tsx (comme avant) - pour
+// que le CurrencySelector de la topbar (app-shell.tsx, ancêtre commun à toutes les pages admin)
+// puisse le consommer. Voir NOTES-nettoyage.md, point 1.
+const fetchCurrencies = () => getEntityClients("admin").currency.findAll();
+const fetchRates = () => getEntityClients("admin").exchangeRate.findAll();
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AppShell role="admin" sections={sections} modulesHref="/admin/modules">
-      {children}
-    </AppShell>
+    <CurrencyProvider fetchCurrencies={fetchCurrencies} fetchRates={fetchRates}>
+      <AppShell role="admin" sections={sections} modulesHref="/admin/modules">
+        {children}
+      </AppShell>
+    </CurrencyProvider>
   );
 }

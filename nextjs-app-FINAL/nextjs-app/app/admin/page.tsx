@@ -34,7 +34,7 @@ import { ActionCenterCard } from "@/components/dashboard/action-center-card";
 import { MorningInsightsCard } from "@/components/dashboard/morning-insights-card";
 import { PortfolioChatCard } from "@/components/dashboard/portfolio-chat-card";
 import { buildAssistantFacts } from "@/lib/dashboard/ai-facts";
-import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
+import { useCurrency } from "@/lib/currency/currency-context";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { Locale } from "@/lib/i18n/translations";
 import { StatCard } from "@/components/stat-card";
@@ -43,9 +43,6 @@ import { ReservationCalendar } from "@/components/reservations/reservation-calen
 import { getCurrentUser, CurrentUser } from "@/lib/auth";
 
 const ROLE = "admin" as const;
-
-const fetchCurrencies = () => getEntityClients(ROLE).currency.findAll();
-const fetchRates = () => getEntityClients(ROLE).exchangeRate.findAll();
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -77,11 +74,10 @@ export default function AdminHome() {
   const ready = useRequireRole(ROLE);
   if (!ready) return null;
 
-  return (
-    <CurrencyProvider fetchCurrencies={fetchCurrencies} fetchRates={fetchRates}>
-      <AdminDashboard />
-    </CurrencyProvider>
-  );
+  // CurrencyProvider posé au niveau du layout (app/admin/layout.tsx) depuis le chantier
+  // nettoyage-finitions - plus besoin ici, useCurrency() dans AdminDashboard le trouve via
+  // l'ancêtre. Voir NOTES-nettoyage.md, point 1.
+  return <AdminDashboard />;
 }
 
 function AdminDashboard() {
@@ -253,7 +249,12 @@ function AdminDashboard() {
 
       {/* Graphique + à faire aujourd'hui */}
       <div className={`grid grid-cols-1 gap-4 lg:grid-cols-3 ${ENTRANCE}`}>
-        <div className="lg:col-span-2">
+        {/* min-w-0 : un item de grille CSS a par défaut min-width:auto (taille min basée sur
+            son contenu), pas 0 - même sur grid-cols-1 en mobile. Le min-w-0 déjà présent DANS
+            RevenueIntelligenceCard (autour de MonthlyChart) ne suffit pas seul : sans celui-ci
+            sur l'item de grille lui-même, le graphique recharts forçait toute la page à déborder
+            horizontalement sur mobile (voir NOTES-nettoyage.md, point 2). */}
+        <div className="lg:col-span-2 min-w-0">
           {loading ? (
             <Card>
               <CardContent>
