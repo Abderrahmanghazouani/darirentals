@@ -25,7 +25,7 @@ import { ChargeDto } from "@/lib/types/Charge";
 import { TaskDto } from "@/lib/types/Task";
 import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 import { isDueTodayOrOverdue, isOverdue } from "@/lib/tasks/is-overdue";
-import { CurrencyProvider, useCurrency } from "@/lib/currency/currency-context";
+import { useCurrency } from "@/lib/currency/currency-context";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { ReservationCalendar } from "@/components/reservations/reservation-calendar";
@@ -37,9 +37,6 @@ import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 import { entityRegistry, entityKeys } from "@/lib/entity-registry";
 
 const ROLE = "collaborator" as const;
-
-const fetchCurrencies = () => getEntityClients(ROLE).currency.findAll();
-const fetchRates = () => getEntityClients(ROLE).exchangeRate.findAll();
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -65,11 +62,10 @@ export default function CollaboratorHome() {
   const ready = useRequireRole(ROLE);
   if (!ready) return null;
 
-  return (
-    <CurrencyProvider fetchCurrencies={fetchCurrencies} fetchRates={fetchRates}>
-      <CollaboratorDashboard />
-    </CurrencyProvider>
-  );
+  // CurrencyProvider posé au niveau du layout (app/collaborator/layout.tsx) depuis le chantier
+  // nettoyage-finitions - plus besoin ici, useCurrency() dans CollaboratorDashboard le trouve
+  // via l'ancêtre. Voir NOTES-nettoyage.md, point 1.
+  return <CollaboratorDashboard />;
 }
 
 function CollaboratorDashboard() {
@@ -256,7 +252,12 @@ function CollaboratorDashboard() {
 
       {/* Graphique + à faire aujourd'hui */}
       <div className={`grid grid-cols-1 gap-4 lg:grid-cols-3 ${ENTRANCE}`}>
-        <div className="lg:col-span-2">
+        {/* min-w-0 : un item de grille CSS a par défaut min-width:auto (taille min basée sur
+            son contenu), pas 0 - même sur grid-cols-1 en mobile. Le min-w-0 déjà présent DANS
+            RevenueIntelligenceCard (autour de MonthlyChart) ne suffit pas seul : sans celui-ci
+            sur l'item de grille lui-même, le graphique recharts forçait toute la page à déborder
+            horizontalement sur mobile (voir NOTES-nettoyage.md, point 2). */}
+        <div className="lg:col-span-2 min-w-0">
           {loading ? (
             <Card>
               <CardContent>

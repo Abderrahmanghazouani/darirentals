@@ -22,6 +22,7 @@ import { getSelectedEnterpriseId } from "@/lib/enterprise-context";
 import type { Role } from "@/lib/api-client";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
+import { CurrencySelector } from "@/components/currency/currency-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
@@ -485,6 +486,10 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
               <span>Rechercher</span>
               <kbd className="rounded border border-border bg-muted px-1 text-[10px]">⌘K</kbd>
             </div>
+            {/* Masqué sous sm (640px), même seuil que la barre de recherche ci-dessus - à 375px
+                la topbar (hamburger + libellé + ce cluster) débordait horizontalement avec le
+                sélecteur de devise en plus (voir NOTES-nettoyage.md, point 2). */}
+            <CurrencySelector className="hidden w-[76px] sm:flex" />
             <LanguageToggle />
             <button
               type="button"

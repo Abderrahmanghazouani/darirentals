@@ -110,10 +110,12 @@ export function PropertyPerformanceCard({
                     onClick={() => router.push(`/admin/property/${r.propertyId}/rentabilite`)}
                   >
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {r.propertyName}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="max-w-[160px] truncate sm:max-w-[240px]" title={r.propertyName}>
+                          {r.propertyName}
+                        </span>
                         {r.propertyStatusCode !== ACTIVE_STATUS_CODE && (
-                          <Badge variant="outline" className="text-xs font-normal">
+                          <Badge variant="outline" className="shrink-0 text-xs font-normal">
                             {r.propertyStatusLabel ?? dict.propertyPerformance.unknownStatus}
                           </Badge>
                         )}
