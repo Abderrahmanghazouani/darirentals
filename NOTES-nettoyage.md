@@ -200,3 +200,35 @@ des noms de propriétés à ta place.
 
 Je ne peux pas déterminer son origine/but au-delà de ces faits bruts - à toi de me dire si tu la
 reconnais.
+
+### Décisions finales exécutées
+
+1. **Propriétés renommées** : `Riad Societe A` (id 2) → **`Riad Kasbah`**, `Villa Societe B`
+   (id 3) → **`Villa Sahara`**. Cohérent maintenant avec Dar Atlas Hospitality / Bleu Ourika
+   Collection.
+2. **`kacm` supprimée**. Vérifié avant suppression (comme demandé) :
+   - Aucune donnée rattachée directement à `kacm` dans `ai_quota`, `ai_usage_log`, `client`,
+     `financial_report`, `service_provider`, `property` (0 partout) - seule
+     `enterprise_membership` la référençait (2 lignes : `anas` en SubAdmin, `mohammed` en
+     Gestionnaire).
+   - **`anas`** a une autre société valide (`abdo`) - aucun impact, reste pleinement
+     fonctionnel.
+   - **`mohammed`** n'avait `kacm` comme UNIQUE société. Conformément à l'instruction ("supprime
+     juste ce rattachement précis, pas les comptes"), son compte collaborateur est conservé
+     intact, mais **il se retrouve avec zéro société rattachée** après cette suppression - même
+     situation que `ali` avant qu'on le supprime, sauf que là le compte reste. Signalé
+     explicitement : son compte peut toujours se connecter (rôle applicatif toujours en base),
+     mais `app/select-enterprise/page.tsx` redirige automatiquement un collaborateur à 0 société
+     vers `/collaborator` (pas d'écran cassé, pas de boucle) - vérifié par lecture du code, PAS
+     par connexion réelle (mot de passe de `mohammed` inconnu, jamais utilisé pendant ce
+     chantier). Si ce compte doit un jour redevenir utile, il faudra soit le rattacher à une
+     autre société, soit le supprimer comme `ali`.
+   - Suppression faite en transaction unique : les 2 lignes `enterprise_membership` puis
+     l'entreprise elle-même.
+
+**Testé après coup** : connecté en admin - Biens & logements (`Riad Kasbah`/`Villa Sahara`
+visibles, statuts/prix intacts), Réservations en vue Liste (`RES-B-1`→Villa Sahara,
+`RES-A2-1`→Riad Kasbah, référencement correct), Collaborateurs (`anas` et `mohammed` toujours
+listés sans erreur), zéro erreur console. Sociétés restantes : `abdo`, `Dar Atlas Hospitality`,
+`Bleu Ourika Collection`, `Societe Test Devise`, `Societe Test Cycle` (ces deux dernières non
+concernées par les décisions de ce chantier, toujours en place).
