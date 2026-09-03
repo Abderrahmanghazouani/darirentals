@@ -9,10 +9,7 @@ import {
   CalendarDays,
   ChevronDown,
   ChevronRight,
-  Home,
   ScanLine,
-  Wallet,
-  ClipboardList,
   ArrowUpRight,
 } from "lucide-react";
 import { useRequireRole } from "@/lib/use-require-role";
@@ -24,7 +21,6 @@ import { ClientDto } from "@/lib/types/Client";
 import { ChargeDto } from "@/lib/types/Charge";
 import { TaskDto } from "@/lib/types/Task";
 import { ReservationRequestDto } from "@/lib/types/ReservationRequest";
-import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 import { computeHealthScore } from "@/lib/dashboard/health-score";
 import { isDueTodayOrOverdue, isOverdue } from "@/lib/tasks/is-overdue";
 import { HealthScoreCard } from "@/components/dashboard/health-score-card";
@@ -37,16 +33,13 @@ import { buildAssistantFacts } from "@/lib/dashboard/ai-facts";
 import { useCurrency } from "@/lib/currency/currency-context";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { Locale } from "@/lib/i18n/translations";
-import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
+import { PropertyMapCard } from "@/components/dashboard/property-map-card";
+import { DayTimelineCard } from "@/components/dashboard/day-timeline-card";
 import { ReservationCalendar } from "@/components/reservations/reservation-calendar";
 import { getCurrentUser, CurrentUser } from "@/lib/auth";
 
 const ROLE = "admin" as const;
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 // La date reste au format long propre à la langue choisie (voir premium-header.tsx) : "long"
 // veut dire "vendredi 30 août 2026" / "Friday, August 30, 2026", pas un libellé fixe traduit.
@@ -107,45 +100,14 @@ function AdminDashboard() {
       .catch(() => setReservationRequests([]));
   }, []);
 
-  const stats = useMemo(() => {
-    const props = properties ?? [];
-    const resas = reservations ?? [];
-    const chs = charges ?? [];
-    const today = todayIso();
-
-    const activeCount = props.filter((p) => p.propertyStatus?.code === "Active").length;
-
-    const upcoming = resas
-      .filter((r) => r.checkInDate && r.checkInDate >= today)
-      .sort((a, b) => (a.checkInDate ?? "").localeCompare(b.checkInDate ?? ""));
-
-    // Une réservation annulée n'est pas un revenu réel - voir aussi computeMonthlyFinancials,
-    // qui applique le même filtre pour le graphique.
-    const totalRevenue = resas
-      .filter((r) => r.reservationStatus?.code !== CANCELLED_STATUS_CODE)
-      .reduce((sum, r) => sum + (r.amount ?? 0), 0);
-
-    // Revenu net = revenus - charges, même logique que la page de rentabilité par propriété
-    // (app/admin/property/[id]/rentabilite/page.tsx), agrégée ici sur toutes les propriétés à
-    // partir des mêmes données déjà chargées.
-    const totalCharges = chs.reduce((sum, c) => sum + (c.amount ?? 0), 0);
-    const netRevenue = totalRevenue - totalCharges;
-
-    const recent = [...resas]
+  // Le calcul de revenu/occupation/clients qui alimentait les 4 cartes de stats a été retiré
+  // avec elles (voir NOTES-dashboard-carte-timeline.md) - seule la liste "Réservations
+  // récentes" plus bas dans la page utilise encore des données agrégées ici.
+  const recentReservations = useMemo(() => {
+    return [...(reservations ?? [])]
       .sort((a, b) => (b.checkInDate ?? "").localeCompare(a.checkInDate ?? ""))
       .slice(0, 6);
-
-    return {
-      totalProperties: props.length,
-      activeProperties: activeCount,
-      totalReservations: resas.length,
-      upcomingReservations: upcoming,
-      totalRevenue,
-      netRevenue,
-      totalClients: (clients ?? []).length,
-      recentReservations: recent,
-    };
-  }, [properties, reservations, clients, charges]);
+  }, [reservations]);
 
   const todoTasks = useMemo(() => {
     return (tasks ?? [])
@@ -209,42 +171,27 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* Cartes de stats */}
-      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 ${ENTRANCE}`}>
-        <StatCard
-          label={dict.dashboardHome.statRevenue}
-          value={loading ? "…" : format(stats.totalRevenue)}
-          icon={Wallet}
-          iconTone="primary"
-          hint={dict.dashboardHome.statRevenueHint}
-        />
-        <StatCard
-          label={dict.dashboardHome.statOccupancy}
-          // TODO: aucun calcul de taux d'occupation n'existe encore côté client
-          // (il faudrait le total de nuits réservées / nuits disponibles sur la période).
-          value="—"
-          icon={Home}
-          iconTone="success"
-        />
-        <StatCard
-          label={dict.dashboardHome.statReservations}
-          value={loading ? "…" : stats.totalReservations}
-          icon={ClipboardList}
-          iconTone="warning"
-          hint={
-            loading
-              ? undefined
-              : `${stats.upcomingReservations.length} ${dict.dashboardHome.upcomingSuffix}`
-          }
-        />
-        <StatCard
-          label={dict.dashboardHome.statNetRevenue}
-          value={loading ? "…" : format(stats.netRevenue)}
-          icon={Wallet}
-          iconTone="info"
-          valueTone={loading ? "default" : stats.netRevenue >= 0 ? "success" : "destructive"}
-          hint={dict.dashboardHome.statNetRevenueHint}
-        />
+      {/* Carte des propriétés + Timeline du jour - remplace les 4 cartes de stats (même largeur
+          totale de section, 2 blocs au lieu de 4). Voir NOTES-dashboard-carte-timeline.md. */}
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${ENTRANCE}`}>
+        {loading ? (
+          <Card>
+            <CardContent>
+              <p className="py-12 text-center text-sm text-muted-foreground">{dict.common.loading}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <PropertyMapCard properties={properties ?? []} reservations={reservations ?? []} />
+        )}
+        {loading ? (
+          <Card>
+            <CardContent>
+              <p className="py-12 text-center text-sm text-muted-foreground">{dict.common.loading}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <DayTimelineCard reservations={reservations ?? []} tasks={tasks ?? []} />
+        )}
       </div>
 
       {/* Graphique + à faire aujourd'hui */}
@@ -337,7 +284,7 @@ function AdminDashboard() {
           <CardContent>
             {loading ? (
               <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
-            ) : stats.recentReservations.length === 0 ? (
+            ) : recentReservations.length === 0 ? (
               <p className="text-sm text-muted-foreground">{dict.dashboardHome.noReservations}</p>
             ) : (
               <div className="overflow-x-auto">
@@ -352,7 +299,7 @@ function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.recentReservations.map((r) => (
+                    {recentReservations.map((r) => (
                       <tr key={r.id} className="border-b border-border last:border-0">
                         <td className="py-2.5 font-medium">{r.property?.name ?? "—"}</td>
                         <td className="py-2.5 text-muted-foreground">{r.client?.fullName ?? "—"}</td>
