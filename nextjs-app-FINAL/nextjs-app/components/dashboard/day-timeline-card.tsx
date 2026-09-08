@@ -32,13 +32,17 @@ const TYPE_ICON_CLASS: Record<TimelineEventType, string> = {
 interface DayTimelineCardProps {
   reservations: ReservationDto[];
   tasks: TaskDto[];
+  role?: "admin" | "collaborator";
 }
 
-export function DayTimelineCard({ reservations, tasks }: DayTimelineCardProps) {
+export function DayTimelineCard({ reservations, tasks, role = "admin" }: DayTimelineCardProps) {
   const router = useRouter();
   const { dict } = useLanguage();
 
-  const events = useMemo(() => computeDayTimeline(reservations, tasks), [reservations, tasks]);
+  const events = useMemo(
+    () => computeDayTimeline(reservations, tasks, role),
+    [reservations, tasks, role]
+  );
 
   const typeLabel: Record<TimelineEventType, string> = {
     arrival: dict.dayTimeline.arrivalLabel,
@@ -47,7 +51,9 @@ export function DayTimelineCard({ reservations, tasks }: DayTimelineCardProps) {
   };
 
   return (
-    <Card className="h-full">
+    // min-w-0 : voir le commentaire équivalent dans property-map-card.tsx - même item de grille,
+    // même contrainte.
+    <Card className="h-full min-w-0">
       <CardContent>
         {events.length === 0 ? (
           <div className="flex h-[220px] flex-col items-center justify-center gap-2 text-center">

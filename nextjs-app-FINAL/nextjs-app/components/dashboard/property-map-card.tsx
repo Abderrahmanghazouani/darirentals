@@ -20,15 +20,23 @@ const STATUS_COLOR: Record<PropertyMapStatus, string> = {
 interface PropertyMapCardProps {
   properties: PropertyDto[];
   reservations: ReservationDto[];
+  role?: "admin" | "collaborator";
 }
 
-export function PropertyMapCard({ properties, reservations }: PropertyMapCardProps) {
+export function PropertyMapCard({ properties, reservations, role = "admin" }: PropertyMapCardProps) {
   const { dict } = useLanguage();
 
   const points = useMemo(
     () => computePropertyMapPoints(properties, reservations),
     [properties, reservations]
   );
+
+  // Pas de fiche de rentabilité par propriété côté collaborateur (aucune route
+  // /collaborator/property/[id]/rentabilite - vérifié avant d'écrire ce lien) - on renvoie vers
+  // la liste des propriétés à la place, avec un libellé qui ne promet pas la rentabilité.
+  const linkHref = (id: number) =>
+    role === "admin" ? `/admin/property/${id}/rentabilite` : "/collaborator/property";
+  const linkLabel = role === "admin" ? dict.propertyMap.viewProfitability : dict.propertyMap.viewProperty;
 
   const markers = useMemo<LocationMapMarker[]>(
     () =>
@@ -47,19 +55,25 @@ export function PropertyMapCard({ properties, reservations }: PropertyMapCardPro
           wrapper.appendChild(title);
 
           const link = document.createElement("a");
-          link.href = `/admin/property/${p.id}/rentabilite`;
+          link.href = linkHref(p.id);
           link.className = "text-primary hover:underline text-xs font-medium";
-          link.textContent = dict.propertyMap.viewProfitability;
+          link.textContent = linkLabel;
           wrapper.appendChild(link);
 
           return wrapper;
         },
       })),
-    [points, dict]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [points, dict, role]
   );
 
   return (
-    <Card className="h-full">
+    // min-w-0 : item direct de la grille 2 colonnes du dashboard - un item de grille CSS a
+    // min-width:auto par défaut (taille basée sur son contenu), pas 0, même en grid-cols-1 sur
+    // mobile. Sans ça, la carte Leaflet (comme le graphique recharts avant elle, voir
+    // NOTES-nettoyage.md point 2) forçait la page à déborder horizontalement à 375px - trouvé et
+    // corrigé pendant les tests mobile de ce chantier, voir NOTES-dashboard-carte-timeline.md.
+    <Card className="h-full min-w-0">
       <CardContent className="space-y-3">
         {points.length === 0 ? (
           <div className="flex h-[220px] flex-col items-center justify-center gap-1 rounded-md border border-dashed text-center">

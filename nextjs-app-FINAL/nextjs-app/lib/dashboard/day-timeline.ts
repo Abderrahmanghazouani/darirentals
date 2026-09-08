@@ -31,9 +31,15 @@ function todayIso(): string {
  * horaire en base (Reservation.checkInDate/checkOutDate et Task.dueDate sont des dates seules,
  * type LocalDate côté backend) - voir NOTES-dashboard-carte-timeline.md.
  */
-export function computeDayTimeline(reservations: ReservationDto[], tasks: TaskDto[]): TimelineEvent[] {
+export function computeDayTimeline(
+  reservations: ReservationDto[],
+  tasks: TaskDto[],
+  role: "admin" | "collaborator" = "admin"
+): TimelineEvent[] {
   const today = todayIso();
   const events: TimelineEvent[] = [];
+  const reservationsHref = `/${role}/reservations`;
+  const tasksHref = `/${role}/tasks`;
 
   reservations
     .filter((r) => r.checkInDate === today && r.reservationStatus?.code !== CANCELLED_STATUS_CODE)
@@ -43,7 +49,7 @@ export function computeDayTimeline(reservations: ReservationDto[], tasks: TaskDt
         type: "arrival",
         propertyName: r.property?.name ?? "—",
         title: r.reference || `Réservation #${r.id}`,
-        href: "/admin/reservations",
+        href: reservationsHref,
       });
     });
 
@@ -55,7 +61,7 @@ export function computeDayTimeline(reservations: ReservationDto[], tasks: TaskDt
         type: "departure",
         propertyName: r.property?.name ?? "—",
         title: r.reference || `Réservation #${r.id}`,
-        href: "/admin/reservations",
+        href: reservationsHref,
       });
     });
 
@@ -67,7 +73,7 @@ export function computeDayTimeline(reservations: ReservationDto[], tasks: TaskDt
         type: "task",
         propertyName: t.property?.name ?? "—",
         title: t.title || `Tâche #${t.id}`,
-        href: "/admin/tasks",
+        href: tasksHref,
       });
     });
 
