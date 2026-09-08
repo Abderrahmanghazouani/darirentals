@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 
+export type { LocationMapMarker } from "./location-map";
+
 export const LocationMap = dynamic(
   () => import("./location-map").then((m) => m.LocationMap),
   {

@@ -9,10 +9,7 @@ import {
   CalendarDays,
   ChevronDown,
   ChevronRight,
-  Home,
   ScanLine,
-  Wallet,
-  ClipboardList,
   ArrowUpRight,
 } from "lucide-react";
 import { useRequireRole } from "@/lib/use-require-role";
@@ -23,13 +20,13 @@ import { ReservationDto } from "@/lib/types/Reservation";
 import { ClientDto } from "@/lib/types/Client";
 import { ChargeDto } from "@/lib/types/Charge";
 import { TaskDto } from "@/lib/types/Task";
-import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
 import { isDueTodayOrOverdue, isOverdue } from "@/lib/tasks/is-overdue";
 import { useCurrency } from "@/lib/currency/currency-context";
-import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { ReservationCalendar } from "@/components/reservations/reservation-calendar";
 import { RevenueIntelligenceCard } from "@/components/dashboard/revenue-intelligence-card";
+import { PropertyMapCard } from "@/components/dashboard/property-map-card";
+import { DayTimelineCard } from "@/components/dashboard/day-timeline-card";
 import { getCurrentUser, CurrentUser } from "@/lib/auth";
 import { getSelectedEnterpriseId } from "@/lib/enterprise-context";
 import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
@@ -37,10 +34,6 @@ import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 import { entityRegistry, entityKeys } from "@/lib/entity-registry";
 
 const ROLE = "collaborator" as const;
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function longDateToday(): string {
   return new Date().toLocaleDateString("fr-FR", {
@@ -118,10 +111,6 @@ function CollaboratorDashboard() {
     () => filterByEnterprise(reservations ?? [], enterpriseId),
     [reservations, enterpriseId]
   );
-  const scopedClients = useMemo(
-    () => filterByEnterprise(clients ?? [], enterpriseId),
-    [clients, enterpriseId]
-  );
   const scopedCharges = useMemo(
     () => filterByEnterprise(charges ?? [], enterpriseId),
     [charges, enterpriseId]
@@ -131,39 +120,14 @@ function CollaboratorDashboard() {
     [tasks, enterpriseId]
   );
 
-  const stats = useMemo(() => {
-    const props = scopedProperties;
-    const resas = scopedReservations;
-    const chs = scopedCharges;
-    const today = todayIso();
-
-    const upcoming = resas
-      .filter((r) => r.checkInDate && r.checkInDate >= today)
-      .sort((a, b) => (a.checkInDate ?? "").localeCompare(b.checkInDate ?? ""));
-
-    // Une réservation annulée n'est pas un revenu réel - même filtre que le graphique.
-    const totalRevenue = resas
-      .filter((r) => r.reservationStatus?.code !== CANCELLED_STATUS_CODE)
-      .reduce((sum, r) => sum + (r.amount ?? 0), 0);
-
-    // Revenu net = revenus - charges, agrégé sur les données de la société active.
-    const totalCharges = chs.reduce((sum, c) => sum + (c.amount ?? 0), 0);
-    const netRevenue = totalRevenue - totalCharges;
-
-    const recent = [...resas]
+  // Le calcul de revenu/occupation/clients qui alimentait les 4 cartes de stats a été retiré
+  // avec elles (voir NOTES-dashboard-carte-timeline.md) - seule la liste "Réservations
+  // récentes" plus bas dans la page utilise encore des données agrégées ici.
+  const recentReservations = useMemo(() => {
+    return [...scopedReservations]
       .sort((a, b) => (b.checkInDate ?? "").localeCompare(a.checkInDate ?? ""))
       .slice(0, 6);
-
-    return {
-      totalProperties: props.length,
-      totalReservations: resas.length,
-      upcomingReservations: upcoming,
-      totalRevenue,
-      netRevenue,
-      totalClients: scopedClients.length,
-      recentReservations: recent,
-    };
-  }, [scopedProperties, scopedReservations, scopedClients, scopedCharges]);
+  }, [scopedReservations]);
 
   const todoTasks = useMemo(() => {
     return scopedTasks
@@ -216,38 +180,33 @@ function CollaboratorDashboard() {
         </div>
       </div>
 
-      {/* Cartes de stats - calculées uniquement sur la société active */}
-      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 ${ENTRANCE}`}>
-        <StatCard
-          label="Chiffre d'affaires"
-          value={loading ? "…" : format(stats.totalRevenue)}
-          icon={Wallet}
-          iconTone="primary"
-          hint="Hors réservations annulées"
-        />
-        <StatCard
-          label="Taux d'occupation"
-          // TODO: aucun calcul de taux d'occupation n'existe encore côté client
-          // (il faudrait le total de nuits réservées / nuits disponibles sur la période).
-          value="—"
-          icon={Home}
-          iconTone="success"
-        />
-        <StatCard
-          label="Réservations"
-          value={loading ? "…" : stats.totalReservations}
-          icon={ClipboardList}
-          iconTone="warning"
-          hint={loading ? undefined : `${stats.upcomingReservations.length} à venir`}
-        />
-        <StatCard
-          label="Revenu net"
-          value={loading ? "…" : format(stats.netRevenue)}
-          icon={Wallet}
-          iconTone="info"
-          valueTone={loading ? "default" : stats.netRevenue >= 0 ? "success" : "destructive"}
-          hint="Revenus − charges"
-        />
+      {/* Carte des propriétés + Timeline du jour - remplace les 4 cartes de stats, calculées
+          uniquement sur la société active (scopedProperties/scopedReservations/scopedTasks,
+          déjà filtrées par filterByEnterprise plus haut - même cloisonnement que le reste du
+          dashboard collaborateur). Voir NOTES-dashboard-carte-timeline.md. */}
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${ENTRANCE}`}>
+        {loading ? (
+          <Card>
+            <CardContent>
+              <p className="py-12 text-center text-sm text-muted-foreground">Chargement...</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <PropertyMapCard
+            properties={scopedProperties}
+            reservations={scopedReservations}
+            role="collaborator"
+          />
+        )}
+        {loading ? (
+          <Card>
+            <CardContent>
+              <p className="py-12 text-center text-sm text-muted-foreground">Chargement...</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <DayTimelineCard reservations={scopedReservations} tasks={scopedTasks} role="collaborator" />
+        )}
       </div>
 
       {/* Graphique + à faire aujourd'hui */}
@@ -334,7 +293,7 @@ function CollaboratorDashboard() {
           <CardContent>
             {loading ? (
               <p className="text-sm text-muted-foreground">Chargement...</p>
-            ) : stats.recentReservations.length === 0 ? (
+            ) : recentReservations.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aucune réservation.</p>
             ) : (
               <div className="overflow-x-auto">
@@ -349,7 +308,7 @@ function CollaboratorDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.recentReservations.map((r) => (
+                    {recentReservations.map((r) => (
                       <tr key={r.id} className="border-b border-border last:border-0">
                         <td className="py-2.5 font-medium">{r.property?.name ?? "—"}</td>
                         <td className="py-2.5 text-muted-foreground">{r.client?.fullName ?? "—"}</td>
