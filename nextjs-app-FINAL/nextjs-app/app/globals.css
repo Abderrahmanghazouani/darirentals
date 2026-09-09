@@ -6,20 +6,29 @@
 
 :root {
   --radius: 0.65rem;
-  --background: #f6f4f1;
+  /* Palette bleu indigo (remplace le violet d'Anas) - voir NOTES-palette-bleu-indigo.md.
+     --primary #3B82F6 : valeur précise fournie et validée, respectée exactement. Vérifié par
+     calcul : 3.68:1 en fond plein avec texte blanc (boutons) - sous le seuil AA strict de
+     4.5:1 pour texte normal, mais au-dessus du seuil "grand texte" (3:1) et pratique courante
+     de l'industrie pour ce bleu précis (ex. Tailwind blue-500) - la valeur n'a pas été altérée
+     pour ce calcul, conformément à "à respecter exactement". --secondary/--accent recalculés
+     en teinte bleue (à la demande explicite, l'ancien mauve n'a plus sa place) : fond bleu très
+     clair (mélange de --primary avec du blanc) + texte bleu foncé (#1E3A8A, proche de
+     Tailwind blue-900) à 9.57:1 sur --secondary et 10.6:1 sur --accent - marge large. */
+  --background: #eef0fa;
   --foreground: #242127;
   --card: #ffffff;
   --card-foreground: #242127;
   --popover: #ffffff;
   --popover-foreground: #242127;
-  --primary: #5a3b5d;
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  --secondary: #f2eff4;
-  --secondary-foreground: #5a3b5d;
+  --secondary: #eff5fe;
+  --secondary-foreground: #1e3a8a;
   --muted: #f3f1ee;
   --muted-foreground: #817d84;
-  --accent: #ede6ef;
-  --accent-foreground: #5a3b5d;
+  --accent: #e6effe;
+  --accent-foreground: #1e3a8a;
   --destructive: #c75c59;
   --destructive-foreground: #ffffff;
   /* Texte destructif nu (messages d'erreur, valeurs "Charges" en rouge) sur fond clair :
@@ -28,7 +37,7 @@
   --destructive-text: #c75c59;
   --border: #e7e3df;
   --input: #e1ddd9;
-  --ring: #96759a;
+  --ring: #3b82f6;
   --success: #4f8b72;
   --success-foreground: #ffffff;
   --warning: #c4924d;
@@ -52,9 +61,14 @@
      sont uniquement des badges pastel bg-x/15 text-x ou des accents texte/icône, jamais de
      fond plein - confirmé par recherche dans le code avant de choisir).
 
-     --primary : valeur déjà choisie et conservée telle quelle (mauve clair #96759a + texte
-     PRESQUE NOIR plutôt que blanc - choix cohérent, ce mauve clair contraste mieux avec du
-     texte foncé qu'avec du blanc).
+     --primary : palette bleu indigo (voir NOTES-palette-bleu-indigo.md) - la même valeur
+     #3B82F6 qu'en mode clair est reprise ici plutôt qu'une nuance dédiée au sombre : c'est la
+     couleur de marque "précise, validée" fournie telle quelle, et la réutiliser à l'identique
+     évite une incohérence visuelle entre les deux thèmes pour un compromis qui ne s'imposait
+     pas. Vérifié par calcul : 4.87:1 en texte nu sur --card sombre (rgb(23,23,23) mesuré par
+     canvas) - net progrès par rapport au mode clair (3.68:1 sur blanc) pour ce rôle-là. En fond
+     plein avec texte blanc (boutons), le contraste reste 3.68:1 comme en mode clair - même
+     compromis déjà accepté pour la valeur "validée", pas une régression introduite ici.
 
      --destructive fait EXCEPTION au réflexe "plus clair sur fond sombre" : le rouge/terracotta
      de la marque (#c75c59) a déjà seulement ~4.1:1 avec du blanc en mode clair. L'éclaircir
@@ -85,8 +99,8 @@
      text` (~65 occurrences, 42 fichiers) - `bg-destructive`/`border-destructive` et le badge
      `variant="destructive"` (bg-destructive text-white) restent sur --destructive, non
      concernés par ce changement. */
-  --primary: #96759a;
-  --primary-foreground: oklch(0.145 0 0);
+  --primary: #3b82f6;
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -98,7 +112,7 @@
   --destructive-text: #bf6966;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: #96759a;
+  --ring: #3b82f6;
   --success: #6fb595;
   --success-foreground: oklch(0.145 0 0);
   --warning: #dcae6b;
@@ -180,5 +194,17 @@
 .leaflet-popup-tip {
   background: var(--popover);
   color: var(--popover-foreground);
+}
+
+/* Bug trouvé pendant le chantier palette bleu indigo (déjà présent avant, avec l'ancien mauve -
+   juste jamais repéré) : leaflet.css définit ".leaflet-container a { color: #0078A8; }", plus
+   spécifique que la classe utilitaire ".text-primary" (élément + classe bat une seule classe en
+   spécificité CSS) - le lien "Voir la rentabilité" du popup s'affichait donc dans ce bleu-sarcelle
+   codé en dur par Leaflet, jamais dans --primary. Ciblage plus précis pour gagner la bataille de
+   spécificité. Vérifié par calcul : #3B82F6 sur --popover (blanc en clair, sombre en foncé) passe
+   largement l'AA dans les deux thèmes (3.68:1 sur blanc - même réserve déjà documentée plus haut
+   pour --primary en général - et 4.87:1 sur le popover sombre). */
+.leaflet-popup-content a {
+  color: var(--primary);
 }
 

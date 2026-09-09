@@ -27,8 +27,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCurrentRole } from "@/lib/auth";
 
+// Ombre teintée bleu (palette bleu indigo, voir NOTES-palette-bleu-indigo.md) - RGB de
+// --primary (#3B82F6), même opacité qu'avant.
 const CARD_SHADOW =
-  "shadow-[0_8px_30px_rgba(90,59,93,0.06)]";
+  "shadow-[0_8px_30px_rgba(59,130,246,0.06)]";
 
 const steps: {
   icon: LucideIcon;

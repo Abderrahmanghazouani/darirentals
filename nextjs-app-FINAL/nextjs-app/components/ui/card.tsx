@@ -7,7 +7,10 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-[0_2px_12px_rgba(90,59,93,0.06)]",
+        // Ombre teintée bleu (palette bleu indigo, voir NOTES-palette-bleu-indigo.md) - reprend
+        // le RGB de --primary (#3B82F6 = rgb(59,130,246)), même opacité qu'avant (l'ombre
+        // mauve d'Anas ne visait qu'une teinte de marque discrète, pas mauve spécifiquement).
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-[0_2px_12px_rgba(59,130,246,0.06)]",
         className
       )}
       {...props}

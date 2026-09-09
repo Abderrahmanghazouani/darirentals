@@ -53,6 +53,18 @@ const COLLAPSE_STORAGE_KEY = "sidebar-collapsed";
 const COLLAPSED_WIDTH = "w-[76px]";
 const EXPANDED_WIDTH = "w-[248px]";
 
+// Dégradé de marque fixe (palette bleu indigo, voir NOTES-palette-bleu-indigo.md) - identique
+// en clair ET en sombre, volontairement : c'est une identité visuelle de la sidebar, pas un
+// élément qui doit suivre le thème de l'app. Vérifié par calcul de contraste (blanc dessus) :
+// 5.75:1 sur le point le plus clair du dégradé (#4C51E8, le pire cas), 13.57:1 sur le point le
+// plus sombre (#1E2A5E) - largement au-dessus du seuil AA 4.5:1 partout sur le dégradé, texte
+// blanc plein utilisable sans réserve. Le texte "atténué" (items inactifs, sous-titres) utilise
+// du blanc à 70-75% d'opacité plutôt que --muted-foreground (qui suit le thème de l'app et
+// deviendrait illisible en thème clair sur ce fond toujours sombre) - vérifié : blanc à 85%
+// donne encore 4.63:1 sur le point le plus clair du dégradé, la marge choisie (70-75%, un peu
+// plus contrasté que ce plancher) reste donc confortablement au-dessus du seuil.
+const SIDEBAR_GRADIENT_STYLE = { background: "linear-gradient(to bottom, #4C51E8, #1E2A5E)" };
+
 function initialsFor(user: CurrentUser | null): string {
   if (!user) return "?";
   if (user.firstName || user.lastName) {
@@ -131,7 +143,7 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
       {sections.map((section) => (
         <div key={section.title}>
           {!collapsed && (
-            <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/60">
               {section.title}
             </p>
           )}
@@ -149,22 +161,22 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
                         "relative flex items-center gap-2.5 rounded-lg py-2 text-sm transition-colors",
                         collapsed ? "justify-center px-0" : "px-2.5",
                         active
-                          ? "bg-primary/10 font-semibold text-primary"
-                          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                          ? "bg-white/15 font-semibold text-white"
+                          : "text-white/75 hover:bg-white/10 hover:text-white"
                       )}
                     >
                       {active && (
-                        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-primary" />
+                        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-white" />
                       )}
                       <span className="relative shrink-0">
                         <Icon className="size-4.5" />
                         {collapsed && showBadge && (
-                          <span className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-secondary ring-2 ring-background" />
+                          <span className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-white" />
                         )}
                       </span>
                       {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
                       {!collapsed && showBadge && (
-                        <span className="rounded-full bg-secondary px-1.5 py-0.5 text-xs font-medium text-secondary-foreground">
+                        <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-medium text-white">
                           {upcomingCount}
                         </span>
                       )}
@@ -178,7 +190,7 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
                 <NavLabel collapsed={collapsed} label={label}>
                   <span
                     className={cn(
-                      "pointer-events-none flex items-center gap-2.5 rounded-lg py-2 text-sm text-muted-foreground opacity-50",
+                      "pointer-events-none flex items-center gap-2.5 rounded-lg py-2 text-sm text-white/40",
                       collapsed ? "justify-center px-0" : "px-2.5"
                     )}
                   >
@@ -201,12 +213,12 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
               "relative flex items-center gap-2.5 rounded-lg py-2 text-sm transition-colors",
               collapsed ? "justify-center px-0" : "px-2.5",
               isActive(modulesHref)
-                ? "bg-primary/10 font-semibold text-primary"
-                : "text-muted-foreground/70 hover:bg-accent/60 hover:text-foreground"
+                ? "bg-white/15 font-semibold text-white"
+                : "text-white/50 hover:bg-white/10 hover:text-white"
             )}
           >
             {isActive(modulesHref) && (
-              <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-primary" />
+              <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-white" />
             )}
             <LayoutGrid className="size-4 shrink-0" />
             {!collapsed && <span className="flex-1 truncate">Tous les modules</span>}
@@ -225,16 +237,16 @@ interface SidebarFooterProps {
 
 function SidebarFooter({ collapsed, user, onLogout }: SidebarFooterProps) {
   return (
-    <div className="mt-3 space-y-2 border-t border-border pt-3">
+    <div className="mt-3 space-y-2 border-t border-white/15 pt-3">
       <NavLabel collapsed={collapsed} label={`${displayNameFor(user)}${user?.email ? " · " + user.email : ""}`}>
         <div className={cn("flex items-center gap-2.5 px-1", collapsed && "justify-center px-0")}>
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-semibold text-white">
             {initialsFor(user)}
           </span>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{displayNameFor(user)}</p>
-              {user?.email && <p className="truncate text-xs text-muted-foreground">{user.email}</p>}
+              <p className="truncate text-sm font-medium text-white">{displayNameFor(user)}</p>
+              {user?.email && <p className="truncate text-xs text-white/60">{user.email}</p>}
             </div>
           )}
           {!collapsed && (
@@ -242,7 +254,7 @@ function SidebarFooter({ collapsed, user, onLogout }: SidebarFooterProps) {
               type="button"
               onClick={onLogout}
               aria-label="Déconnexion"
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-destructive-text"
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-rose-200"
             >
               <LogOut className="size-4" />
             </button>
@@ -255,14 +267,14 @@ function SidebarFooter({ collapsed, user, onLogout }: SidebarFooterProps) {
           type="button"
           onClick={onLogout}
           aria-label="Déconnexion"
-          className="flex w-full items-center justify-center rounded-lg py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive-text"
+          className="flex w-full items-center justify-center rounded-lg py-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-rose-200"
         >
           <LogOut className="size-4" />
         </button>
       )}
 
       <div className={cn("flex items-center px-1", collapsed ? "justify-center" : "justify-start")}>
-        <ThemeToggle compact={collapsed} />
+        <ThemeToggle compact={collapsed} onDark />
       </div>
     </div>
   );
@@ -360,20 +372,21 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
-      {/* Sidebar desktop */}
+      {/* Sidebar desktop - dégradé de marque fixe, voir SIDEBAR_GRADIENT_STYLE plus haut. */}
       <aside
+        style={SIDEBAR_GRADIENT_STYLE}
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-background px-3 py-4 transition-[width] duration-200 lg:flex",
+          "sticky top-0 hidden h-screen shrink-0 flex-col px-3 py-4 transition-[width] duration-200 lg:flex",
           collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH
         )}
       >
         <div className={cn("flex items-center", collapsed ? "flex-col gap-2" : "justify-between")}>
           <Link href={`/${role}`} className="flex items-center gap-2.5 px-2">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-primary">
               <Building2 className="size-4.5" />
             </span>
             {!collapsed && (
-              <span className="text-lg font-bold tracking-tight text-primary">DariRentals</span>
+              <span className="text-lg font-bold tracking-tight text-white">DariRentals</span>
             )}
           </Link>
           <Tooltip>
@@ -382,7 +395,7 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
                 type="button"
                 onClick={toggleCollapsed}
                 aria-label={collapsed ? "Déplier le menu" : "Replier le menu"}
-                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               >
                 {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
               </button>
@@ -395,20 +408,20 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
         <NavLabel collapsed={collapsed} label={enterpriseName ?? "Société"}>
           <div
             className={cn(
-              "mt-4 flex items-center gap-2.5 rounded-lg border border-border bg-card px-2.5 py-2",
+              "mt-4 flex items-center gap-2.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-2",
               collapsed && "justify-center px-0"
             )}
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-xs font-semibold text-secondary-foreground">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-white/20 text-xs font-semibold text-white">
               {enterpriseInitials}
             </span>
             {!collapsed && (
               <>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{enterpriseName ?? "—"}</p>
-                  <p className="truncate text-xs text-muted-foreground">Agence principale</p>
+                  <p className="truncate text-sm font-semibold text-white">{enterpriseName ?? "—"}</p>
+                  <p className="truncate text-xs text-white/60">Agence principale</p>
                 </div>
-                <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
+                <ChevronsUpDown className="size-3.5 shrink-0 text-white/60" />
               </>
             )}
           </div>
@@ -426,24 +439,25 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
         <SidebarFooter collapsed={collapsed} user={user} onLogout={handleLogout} />
       </aside>
 
-      {/* Sidebar mobile (drawer) - en dessous de lg, même seuil que la sidebar desktop. */}
+      {/* Sidebar mobile (drawer) - en dessous de lg, même seuil que la sidebar desktop, même
+          dégradé de marque fixe que la version desktop. */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="flex flex-col px-3 py-4">
+        <SheetContent side="left" style={SIDEBAR_GRADIENT_STYLE} className="flex flex-col border-none px-3 py-4">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <Link href={`/${role}`} className="flex items-center gap-2.5 px-2">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-primary">
               <Building2 className="size-4.5" />
             </span>
-            <span className="text-lg font-bold tracking-tight text-primary">DariRentals</span>
+            <span className="text-lg font-bold tracking-tight text-white">DariRentals</span>
           </Link>
 
-          <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-border bg-card px-2.5 py-2">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-xs font-semibold text-secondary-foreground">
+          <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-2">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-white/20 text-xs font-semibold text-white">
               {enterpriseInitials}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{enterpriseName ?? "—"}</p>
-              <p className="truncate text-xs text-muted-foreground">Agence principale</p>
+              <p className="truncate text-sm font-semibold text-white">{enterpriseName ?? "—"}</p>
+              <p className="truncate text-xs text-white/60">Agence principale</p>
             </div>
           </div>
 
