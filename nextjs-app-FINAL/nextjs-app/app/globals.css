@@ -29,30 +29,39 @@
   --muted-foreground: #817d84;
   --accent: #e6effe;
   --accent-foreground: #1e3a8a;
-  /* Harmonisation avec le bleu indigo (voir NOTES-harmonisation-couleurs.md) : --success,
-     --warning et --destructive recolorés en teintes plus froides/désaturées ("Set B - teal/
-     corail" validé par abdo), sans changer leur sens sémantique (positif/attention/négatif).
-     Chaque valeur vérifiée par calcul de contraste réel (formule WCAG), pas à l'œil :
-     --success (teal H177°) 4.67:1 sur blanc, --warning (ambre mat H42°) 4.51:1 sur blanc,
-     --destructive (rosé-corail H350°) 4.51:1 sur blanc - les 3 passent l'AA texte normal sur
-     --card, alors qu'AUCUNE des 3 anciennes valeurs mauve/chaude n'y arrivait (--success
-     3.99:1, --warning 2.78:1 : régressions préexistantes, corrigées ici au passage). */
-  --destructive: #c25164;
+  /* Statut mono-bleu (voir NOTES-statut-mono-bleu.md) : nouvelle direction, plus radicale que
+     l'harmonisation précédente (Set B teal/corail, abandonné - jugé encore "à part" du bleu
+     dominant à l'usage). --success et --warning dérivent maintenant directement du bleu
+     primaire lui-même ; seul --destructive reste une vraie couleur distincte (rouge), pour
+     rester instantanément reconnaissable comme "danger/erreur".
+     --success #1E40AF (H226° S71% L40%, un bleu nettement plus foncé/saturé que --primary) :
+     8.72:1 sur blanc, 7.68:1 sur lavande - large marge.
+     --warning #3B82F6 : reprend --primary À L'IDENTIQUE (pas une nouvelle valeur) - 3.68:1 sur
+     blanc, le même compromis déjà accepté et documenté pour --primary lui-même, étendu ici tel
+     quel plutôt qu'inventer un nouveau problème. Une valeur plus proche de l'idée initiale
+     "bleu très clair" (ex. #93C5FD) ne donnerait que 1.80:1 sur blanc - illisible en texte de
+     badge ("En attente"), écarté pour cette raison.
+     Distinguabilité --success/--warning (les deux étant maintenant dans la même famille bleue,
+     point de vigilance explicite de ce chantier) : écart de 20 points de luminosité HSL
+     (L40 vs L60), contraste mutuel 2.37:1 - net à l'œil malgré un chiffre WCAG modeste (cette
+     formule mesure la luminance, pas la teinte). Vérifié visuellement sur badges/graphique/
+     Health Score avant validation.
+     --destructive #DC2626 : rouge franc, 4.83:1 sur blanc - proche du terracotta/rosé-corail
+     précédent mais plus saturé, aucune dérive vers le bleu (seule couleur qui doit trancher). */
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   /* Texte destructif nu (messages d'erreur, valeurs "Charges" en rouge) sur fond clair :
-     identique à --destructive, suffisamment contrasté sur fond blanc/carte clairs (4.51:1) -
+     identique à --destructive, suffisamment contrasté sur fond blanc/carte clairs (4.83:1) -
      seul le mode sombre a besoin d'une valeur distincte (voir .dark ci-dessous). */
-  --destructive-text: #c25164;
+  --destructive-text: #dc2626;
   --border: #e7e3df;
   --input: #e1ddd9;
   --ring: #3b82f6;
-  --success: #397f7c;
+  --success: #1e40af;
   --success-foreground: #ffffff;
-  /* --warning-foreground repassé au blanc (était #242127, du temps où --warning était plus
-     clair/doré à L54%) : la nouvelle valeur, plus foncée (L40%), ne donne plus que 3.52:1 avec
-     du texte foncé contre 4.51:1 avec du blanc - jamais consommé directement par un composant
-     aujourd'hui (recherché dans le code), mais gardé cohérent pour un usage futur en fond plein. */
-  --warning: #8a7442;
+  /* --warning-foreground reste blanc : --warning (= --primary) est un bleu assez soutenu
+     (L60%) pour que du texte blanc dessus reste net (même logique que --primary-foreground). */
+  --warning: #3b82f6;
   --warning-foreground: #ffffff;
   --info: #6584a2;
   --info-foreground: #ffffff;
@@ -83,17 +92,31 @@
      compromis déjà accepté pour la valeur "validée", pas une régression introduite ici.
 
      --destructive fait EXCEPTION au réflexe "plus clair sur fond sombre" : même en repartant
-     de la nouvelle teinte rosé-corail (voir NOTES-harmonisation-couleurs.md), l'éclaircir
+     du rouge franc de la direction mono-bleu (voir NOTES-statut-mono-bleu.md), l'éclaircir
      réduit mécaniquement son contraste avec le blanc (texte des boutons/badges pleins).
-     Assombrir/resaturer légèrement fonctionne mieux (#aa3c4e, 6.06:1 avec blanc) - même
-     logique que pour l'ancienne teinte terracotta, et même choix que shadcn/ui lui-même pour
-     son --destructive par défaut en mode sombre.
+     Assombrir/resaturer légèrement fonctionne mieux (#c52020, 5.83:1 avec blanc) - même
+     logique que pour les teintes précédentes, et même choix que shadcn/ui lui-même pour son
+     --destructive par défaut en mode sombre.
 
-     --success/--warning/--info éclaircis franchement (sans la contrainte du texte blanc
-     superposé), en gardant le caractère mat/pastel de la palette plutôt que de sauter vers des
-     teintes saturées façon Tailwind - juste des variantes plus claires des mêmes teintes
-     muettes (--success/--warning recolorés au chantier harmonisation-couleurs, --info inchangé
-     et hors périmètre de ce chantier).
+     --success/--info éclaircis franchement (sans la contrainte du texte blanc superposé), en
+     gardant le caractère mat/pastel de la palette plutôt que de sauter vers des teintes
+     saturées façon Tailwind - juste des variantes plus claires des mêmes teintes muettes
+     (--info inchangé et hors périmètre de ce chantier). --warning reste --primary à l'identique
+     (voir plus bas), pas de variante sombre dédiée.
+
+     Chantier statut-mono-bleu : --success et --warning dérivent maintenant du bleu primaire
+     (--destructive reste seul distinct, en rouge). En sombre, la distinction ne peut plus
+     passer par la luminosité comme en clair (L40 vs L60) : les DEUX doivent rester assez clairs
+     pour se lire sur une carte presque noire, ce qui les rapproche mécaniquement en luminance.
+     Différenciation choisie PAR LA TEINTE plutôt que par la clarté : --warning reprend
+     --primary à l'identique (#3B82F6, sky-blue H217°, déjà 4.87:1 sur --card sombre mesuré
+     rgb(23,23,23) - établi de longue date) ; --success reprend l'indigo déjà utilisé pour le
+     dégradé de la sidebar (voir NOTES-palette-bleu-indigo.md), éclairci à #8A8DF0 (H238°,
+     6.10:1 sur --card sombre) - un violet-bleu clairement différent au premier coup d'œil,
+     bien que le contraste WCAG *entre les deux couleurs* reste mathématiquement modeste
+     (~1.25:1, cette formule ne mesurant que la luminance, pas la teinte) - compromis assumé et
+     validé par abdo après aperçu visuel, plutôt que de présenter un chiffre flatteur mais
+     trompeur.
 
      --destructive-text : DEUXIÈME token distinct de --destructive, ajouté au chantier
      mode-sombre après avoir prouvé par le calcul qu'AUCUNE valeur unique ne peut satisfaire à
@@ -102,11 +125,11 @@
      luminance relative <=0.183, contre --card sombre (mesuré rgb(23,23,23) par rendu canvas
      réel, pas la sérialisation lab() approximative) il en faut une >=0.214 - les deux plages
      ne se recoupent jamais, quelle que soit la teinte - la même preuve continue de s'appliquer
-     à la nouvelle teinte rosé-corail, la séparation reste donc nécessaire. --destructive reste
-     inchangé pour les fonds pleins (bouton "Refuser", badge destructive : 6.06:1 sur blanc,
-     toujours valide). --destructive-text est un éclaircissement de LA MÊME teinte/saturation
-     que --destructive (même rosé-corail, juste plus clair) recalibré pour 4.56:1 sur --card -
-     marge confortable au-dessus du seuil AA 4.5:1 pour texte normal. Tous les usages
+     au rouge franc actuel, la séparation reste donc nécessaire. --destructive reste inchangé
+     pour les fonds pleins (bouton "Refuser", badge destructive : 5.83:1 sur blanc, toujours
+     valide). --destructive-text est un éclaircissement de LA MÊME teinte/saturation que
+     --destructive (même rouge, juste plus clair) recalibré pour 4.56:1 sur --card - marge
+     confortable au-dessus du seuil AA 4.5:1 pour texte normal. Tous les usages
      `text-destructive` nus (messages d'erreur, icônes, valeurs négatives) restent sur
      `text-destructive-text` (~65 occurrences, 42 fichiers, basculées au chantier mode-sombre)
      - `bg-destructive`/`border-destructive` et le badge `variant="destructive"`
@@ -119,16 +142,16 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: #aa3c4e;
+  --destructive: #c52020;
   --destructive-foreground: oklch(0.985 0 0);
-  --destructive-text: #c76072;
+  --destructive-text: #e24b4b;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: #3b82f6;
-  --success: #72c0bd;
+  --success: #8a8df0;
   --success-foreground: oklch(0.145 0 0);
-  --warning: #bda775;
-  --warning-foreground: oklch(0.145 0 0);
+  --warning: #3b82f6;
+  --warning-foreground: oklch(0.985 0 0);
   --info: #87a3bf;
   --info-foreground: oklch(0.145 0 0);
 }
