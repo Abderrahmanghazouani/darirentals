@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sun, Moon, Monitor } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * Sélecteur de thème Clair/Sombre/Système — même style (groupe de boutons) et même
@@ -18,13 +19,22 @@ import { Sun, Moon, Monitor } from "lucide-react";
  * `compact` : variante un seul bouton + menu déroulant, pour la sidebar repliée en mode
  * icônes seules (pas la place pour un groupe de 3 boutons sur ~72px de large). Voir
  * NOTES-sidebar-premium.md.
+ *
+ * `onDark` : la sidebar a désormais un dégradé bleu indigo fixe, indépendant du thème clair/
+ * sombre de l'app (voir NOTES-palette-bleu-indigo.md) - les boutons "ghost" (inactifs) n'ont
+ * pas de couleur de texte propre par défaut (button.tsx) et hériteraient sinon de
+ * --foreground/--accent-foreground, qui suivent le thème de l'app et peuvent devenir illisibles
+ * sur ce fond toujours sombre (ex. --foreground presque noir en thème clair). `onDark` force
+ * des classes blanches explicites, y compris au survol, plutôt que de compter sur l'héritage.
  */
 export function ThemeToggle({
   className,
   compact = false,
+  onDark = false,
 }: {
   className?: string;
   compact?: boolean;
+  onDark?: boolean;
 }) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   // next-themes ne connaît le thème réel qu'après le montage côté client (le serveur ne sait
@@ -44,7 +54,7 @@ export function ThemeToggle({
             type="button"
             variant="ghost"
             size="icon"
-            className={className}
+            className={cn(onDark && "text-white/70 hover:bg-white/15 hover:text-white", className)}
             aria-label="Thème"
             title="Thème"
           >
@@ -66,13 +76,16 @@ export function ThemeToggle({
     );
   }
 
+  const ghostOnDark = onDark ? "text-white/70 hover:bg-white/15 hover:text-white" : "";
+  const borderOnDark = onDark ? "border-white/20" : "";
+
   return (
-    <div className={`flex items-center rounded-md border overflow-hidden ${className ?? ""}`}>
+    <div className={cn("flex items-center rounded-md border overflow-hidden", borderOnDark, className)}>
       <Button
         type="button"
         variant={current === "light" ? "default" : "ghost"}
         size="sm"
-        className="rounded-none px-2"
+        className={cn("rounded-none px-2", current !== "light" && ghostOnDark)}
         title="Clair"
         onClick={() => setTheme("light")}
       >
@@ -82,7 +95,7 @@ export function ThemeToggle({
         type="button"
         variant={current === "dark" ? "default" : "ghost"}
         size="sm"
-        className="rounded-none px-2"
+        className={cn("rounded-none px-2", current !== "dark" && ghostOnDark)}
         title="Sombre"
         onClick={() => setTheme("dark")}
       >
@@ -92,7 +105,7 @@ export function ThemeToggle({
         type="button"
         variant={current === "system" ? "default" : "ghost"}
         size="sm"
-        className="rounded-none px-2"
+        className={cn("rounded-none px-2", current !== "system" && ghostOnDark)}
         title="Système"
         onClick={() => setTheme("system")}
       >
