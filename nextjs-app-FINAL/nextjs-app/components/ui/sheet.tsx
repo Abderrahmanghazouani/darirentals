@@ -75,6 +75,36 @@ function SheetContent({
   );
 }
 
+function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-header"
+      className={cn("flex flex-col gap-1.5 border-b px-6 py-4", className)}
+      {...props}
+    />
+  );
+}
+
+/**
+ * Pied de panneau "sticky" (formulaires premium - voir NOTES-formulaires-premium.md) :
+ * contrairement à DialogFooter (simple flex sans traitement visuel), celui-ci reste visible en
+ * bas du Sheet même quand la zone de champs défile - `shrink-0` l'empêche de rétrécir dans le
+ * conteneur flex-col du formulaire, `border-t` + fond le détachent visuellement du contenu qui
+ * défile derrière lui.
+ */
+function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-footer"
+      className={cn(
+        "shrink-0 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
 function SheetTitle({
   className,
   ...props
@@ -107,6 +137,8 @@ export {
   SheetPortal,
   SheetOverlay,
   SheetContent,
+  SheetHeader,
+  SheetFooter,
   SheetTitle,
   SheetDescription,
 };

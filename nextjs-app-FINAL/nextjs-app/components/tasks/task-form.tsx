@@ -8,7 +8,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DialogFooter } from "@/components/ui/dialog";
+import { SheetFooter } from "@/components/ui/sheet";
+import { FormSection } from "@/components/crud/form-section";
 import {
   Select,
   SelectContent,
@@ -108,129 +109,137 @@ export function TaskForm({
   }
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-      <div className="space-y-2">
-        <Label htmlFor="title">Titre (ex: Ménage avant arrivée client)</Label>
-        <Input id="title" {...form.register("title")} />
-        {form.formState.errors.title && (
-          <p className="text-sm text-destructive-text">{form.formState.errors.title.message}</p>
-        )}
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <FormSection title="Informations">
+          <div className="space-y-2">
+            <Label htmlFor="title">Titre (ex: Ménage avant arrivée client)</Label>
+            <Input id="title" {...form.register("title")} />
+            {form.formState.errors.title && (
+              <p className="text-sm text-destructive-text">{form.formState.errors.title.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Input id="description" {...form.register("description")} />
+          </div>
+        </FormSection>
+
+        <FormSection title="Planification">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Date d&apos;échéance</Label>
+              <Input id="dueDate" type="date" {...form.register("dueDate")} />
+            </div>
+            <div className="space-y-2">
+              <Label>Propriété</Label>
+              <Select
+                value={propertyId != null ? String(propertyId) : undefined}
+                onValueChange={(v) => setPropertyId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scopedProperties.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name || `#${p.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Assignée à</Label>
+            <Select
+              value={assignedToId != null ? String(assignedToId) : undefined}
+              onValueChange={(v) => setAssignedToId(Number(v))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="— Choisir un collaborateur —" />
+              </SelectTrigger>
+              <SelectContent>
+                {collaborators.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name || `#${c.id}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </FormSection>
+
+        <FormSection title="Classification">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select
+                value={typeId != null ? String(typeId) : undefined}
+                onValueChange={(v) => setTypeId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {types.map((t) => (
+                    <SelectItem key={t.id} value={String(t.id)}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Priorité</Label>
+              <Select
+                value={priorityId != null ? String(priorityId) : undefined}
+                onValueChange={(v) => setPriorityId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorities.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Statut</Label>
+              <Select
+                value={statusId != null ? String(statusId) : undefined}
+                onValueChange={(v) => setStatusId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </FormSection>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Input id="description" {...form.register("description")} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="dueDate">Date d&apos;échéance</Label>
-          <Input id="dueDate" type="date" {...form.register("dueDate")} />
-        </div>
-        <div className="space-y-2">
-          <Label>Propriété</Label>
-          <Select
-            value={propertyId != null ? String(propertyId) : undefined}
-            onValueChange={(v) => setPropertyId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {scopedProperties.map((p) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.name || `#${p.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Assignée à</Label>
-        <Select
-          value={assignedToId != null ? String(assignedToId) : undefined}
-          onValueChange={(v) => setAssignedToId(Number(v))}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="— Choisir un collaborateur —" />
-          </SelectTrigger>
-          <SelectContent>
-            {collaborators.map((c) => (
-              <SelectItem key={c.id} value={String(c.id)}>
-                {c.name || `#${c.id}`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label>Type</Label>
-          <Select
-            value={typeId != null ? String(typeId) : undefined}
-            onValueChange={(v) => setTypeId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {types.map((t) => (
-                <SelectItem key={t.id} value={String(t.id)}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Priorité</Label>
-          <Select
-            value={priorityId != null ? String(priorityId) : undefined}
-            onValueChange={(v) => setPriorityId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {priorities.map((p) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Statut</Label>
-          <Select
-            value={statusId != null ? String(statusId) : undefined}
-            onValueChange={(v) => setStatusId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {statuses.map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <DialogFooter>
+      <SheetFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
         <Button type="submit" disabled={saving}>
           {saving ? "Enregistrement..." : "Enregistrer"}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   );
 }

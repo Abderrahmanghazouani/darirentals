@@ -169,6 +169,7 @@ export default function CollaboratorPage() {
         title={crud.editingItem ? "Modifier le collaborateur" : "Nouveau collaborateur"}
       >
         <CollaboratorForm
+          key={crud.formSession}
           initial={crud.editingItem}
           saving={saving}
           role={ROLE}

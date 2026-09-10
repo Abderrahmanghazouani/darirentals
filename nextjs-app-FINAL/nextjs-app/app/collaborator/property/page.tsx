@@ -192,6 +192,7 @@ const filteredItems = useMemo(() => {
         title={crud.editingItem ? "Modifier la propriété" : "Nouvelle propriété"}
       >
         <PropertyForm
+          key={crud.formSession}
           initial={crud.editingItem}
           saving={crud.saving}
           role={ROLE}

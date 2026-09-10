@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DialogFooter } from "@/components/ui/dialog";
+import { SheetFooter } from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -102,7 +102,8 @@ export function AutoForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+    <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
       {descriptor.scalars.map((f) => (
         <div key={f.name} className="space-y-2">
           <Label htmlFor={f.name}>{humanizeField(f.name)}</Label>
@@ -170,14 +171,16 @@ export function AutoForm({
         );
       })}
 
-      <DialogFooter>
+      </div>
+
+      <SheetFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
         <Button type="submit" disabled={saving}>
           {saving ? "Enregistrement..." : "Enregistrer"}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   );
 }

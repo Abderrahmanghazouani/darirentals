@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DialogFooter } from "@/components/ui/dialog";
+import { SheetFooter } from "@/components/ui/sheet";
+import { FormSection } from "@/components/crud/form-section";
 import {
   Select,
   SelectContent,
@@ -177,169 +178,177 @@ export function ReservationForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-      <div className="space-y-2">
-        <Label htmlFor="reference">Référence</Label>
-        <Input
-          id="reference"
-          value={values.reference ?? ""}
-          onChange={(e) => setField("reference", e.target.value)}
-        />
+    <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <FormSection title="Client & logement">
+          <div className="space-y-2">
+            <Label htmlFor="reference">Référence</Label>
+            <Input
+              id="reference"
+              value={values.reference ?? ""}
+              onChange={(e) => setField("reference", e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Client</Label>
+              <Select
+                value={values.client?.id != null ? String(values.client.id) : undefined}
+                onValueChange={(val) => {
+                  const found = clients.find((c) => String(c.id) === val) ?? null;
+                  setField("client", found);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.fullName || c.email || `#${c.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.client && <p className="text-sm text-destructive-text">{errors.client}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Propriété</Label>
+              <Select
+                value={values.property?.id != null ? String(values.property.id) : undefined}
+                onValueChange={(val) => {
+                  const found = scopedProperties.find((p) => String(p.id) === val) ?? null;
+                  setValues((prev) => ({
+                    ...prev,
+                    property: found,
+                    pricePerNight: prev.pricePerNight ?? found?.pricePerNight ?? null,
+                  }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scopedProperties.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name || `#${p.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.property && <p className="text-sm text-destructive-text">{errors.property}</p>}
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection title="Séjour">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="checkInDate">Check-in</Label>
+              <Input
+                id="checkInDate"
+                type="date"
+                value={values.checkInDate ?? ""}
+                onChange={(e) => handleDateChange("checkInDate", e.target.value)}
+              />
+              {errors.checkInDate && <p className="text-sm text-destructive-text">{errors.checkInDate}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkOutDate">Check-out</Label>
+              <Input
+                id="checkOutDate"
+                type="date"
+                value={values.checkOutDate ?? ""}
+                onChange={(e) => handleDateChange("checkOutDate", e.target.value)}
+              />
+              {errors.checkOutDate && <p className="text-sm text-destructive-text">{errors.checkOutDate}</p>}
+            </div>
+          </div>
+
+          {nights > 0 && (
+            <p className="text-sm text-muted-foreground">{nights} nuit{nights > 1 ? "s" : ""}</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="pricePerNight">Prix / nuit</Label>
+              <Input
+                id="pricePerNight"
+                type="number"
+                step="0.01"
+                value={values.pricePerNight ?? ""}
+                onChange={(e) =>
+                  handlePricePerNightChange(e.target.value === "" ? null : Number(e.target.value))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Montant total</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                value={values.amount ?? ""}
+                onChange={(e) =>
+                  setField("amount", e.target.value === "" ? null : Number(e.target.value))
+                }
+              />
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection title="Canal">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Plateforme</Label>
+              <Select
+                value={values.reservationPlatform?.id != null ? String(values.reservationPlatform.id) : undefined}
+                onValueChange={(val) => {
+                  const found = platforms.find((p) => String(p.id) === val) ?? null;
+                  setField("reservationPlatform", found);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {platforms.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.label || `#${p.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Statut</Label>
+              <Select
+                value={values.reservationStatus?.id != null ? String(values.reservationStatus.id) : undefined}
+                onValueChange={(val) => {
+                  const found = statuses.find((s) => String(s.id) === val) ?? null;
+                  setField("reservationStatus", found);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.label || `#${s.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </FormSection>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Client</Label>
-          <Select
-            value={values.client?.id != null ? String(values.client.id) : undefined}
-            onValueChange={(val) => {
-              const found = clients.find((c) => String(c.id) === val) ?? null;
-              setField("client", found);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {clients.map((c) => (
-                <SelectItem key={c.id} value={String(c.id)}>
-                  {c.fullName || c.email || `#${c.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.client && <p className="text-sm text-destructive-text">{errors.client}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label>Propriété</Label>
-          <Select
-            value={values.property?.id != null ? String(values.property.id) : undefined}
-            onValueChange={(val) => {
-              const found = scopedProperties.find((p) => String(p.id) === val) ?? null;
-              setValues((prev) => ({
-                ...prev,
-                property: found,
-                pricePerNight: prev.pricePerNight ?? found?.pricePerNight ?? null,
-              }));
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {scopedProperties.map((p) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.name || `#${p.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.property && <p className="text-sm text-destructive-text">{errors.property}</p>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="checkInDate">Check-in</Label>
-          <Input
-            id="checkInDate"
-            type="date"
-            value={values.checkInDate ?? ""}
-            onChange={(e) => handleDateChange("checkInDate", e.target.value)}
-          />
-          {errors.checkInDate && <p className="text-sm text-destructive-text">{errors.checkInDate}</p>}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="checkOutDate">Check-out</Label>
-          <Input
-            id="checkOutDate"
-            type="date"
-            value={values.checkOutDate ?? ""}
-            onChange={(e) => handleDateChange("checkOutDate", e.target.value)}
-          />
-          {errors.checkOutDate && <p className="text-sm text-destructive-text">{errors.checkOutDate}</p>}
-        </div>
-      </div>
-
-      {nights > 0 && (
-        <p className="text-sm text-muted-foreground">{nights} nuit{nights > 1 ? "s" : ""}</p>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="pricePerNight">Prix / nuit</Label>
-          <Input
-            id="pricePerNight"
-            type="number"
-            step="0.01"
-            value={values.pricePerNight ?? ""}
-            onChange={(e) =>
-              handlePricePerNightChange(e.target.value === "" ? null : Number(e.target.value))
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="amount">Montant total</Label>
-          <Input
-            id="amount"
-            type="number"
-            step="0.01"
-            value={values.amount ?? ""}
-            onChange={(e) =>
-              setField("amount", e.target.value === "" ? null : Number(e.target.value))
-            }
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Plateforme</Label>
-          <Select
-            value={values.reservationPlatform?.id != null ? String(values.reservationPlatform.id) : undefined}
-            onValueChange={(val) => {
-              const found = platforms.find((p) => String(p.id) === val) ?? null;
-              setField("reservationPlatform", found);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {platforms.map((p) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.label || `#${p.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Statut</Label>
-          <Select
-            value={values.reservationStatus?.id != null ? String(values.reservationStatus.id) : undefined}
-            onValueChange={(val) => {
-              const found = statuses.find((s) => String(s.id) === val) ?? null;
-              setField("reservationStatus", found);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {statuses.map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>
-                  {s.label || `#${s.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <DialogFooter>
+      <SheetFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
@@ -350,7 +359,7 @@ export function ReservationForm({
               ? "Enregistrement..."
               : "Enregistrer"}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   );
 }

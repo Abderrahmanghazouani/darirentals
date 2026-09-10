@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DialogFooter } from "@/components/ui/dialog";
+import { SheetFooter } from "@/components/ui/sheet";
+import { FormSection } from "@/components/crud/form-section";
 import {
   Select,
   SelectContent,
@@ -113,110 +114,115 @@ export function PaymentForm({ initial, saving, role, onSubmit, onCancel }: Payme
     .reduce((sum, c) => sum + (c.amount ?? 0), 0);
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Prestataire</Label>
-          <Select
-            value={providerId != null ? String(providerId) : undefined}
-            onValueChange={(v) => setProviderId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {scopedProviders.map((p) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.name}
-                </SelectItem>
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <FormSection title="Informations">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Prestataire</Label>
+              <Select
+                value={providerId != null ? String(providerId) : undefined}
+                onValueChange={(v) => setProviderId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scopedProviders.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Type de paiement</Label>
+              <Select
+                value={typeId != null ? String(typeId) : undefined}
+                onValueChange={(v) => setTypeId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {types.map((t) => (
+                    <SelectItem key={t.id} value={String(t.id)}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Statut</Label>
+              <Select
+                value={statusId != null ? String(statusId) : undefined}
+                onValueChange={(v) => setStatusId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Payé / Partiel / En attente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Montant versé</Label>
+              <Input id="amount" type="number" step="0.01" {...form.register("amount")} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Input id="notes" {...form.register("notes")} />
+          </div>
+        </FormSection>
+
+        <FormSection title="Charges couvertes">
+          <div className="space-y-2">
+            <div className="border rounded-md max-h-48 overflow-y-auto divide-y">
+              {selectableCharges.length === 0 && (
+                <p className="text-sm text-muted-foreground p-3">Aucune charge non payée disponible.</p>
+              )}
+              {selectableCharges.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 p-2 text-sm hover:bg-accent cursor-pointer">
+                  <Checkbox
+                    checked={selectedChargeIds.includes(c.id as number)}
+                    onCheckedChange={(checked) => toggleCharge(c.id as number, checked === true)}
+                  />
+                  <span className="flex-1">
+                    {c.label} — {c.property?.name ?? "?"}
+                  </span>
+                  <span className="text-muted-foreground">{c.amount != null ? `${c.amount} MAD` : "—"}</span>
+                </label>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Type de paiement</Label>
-          <Select
-            value={typeId != null ? String(typeId) : undefined}
-            onValueChange={(v) => setTypeId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {types.map((t) => (
-                <SelectItem key={t.id} value={String(t.id)}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            </div>
+            {selectedChargeIds.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Total des charges sélectionnées : {selectedTotal.toFixed(2)} MAD
+              </p>
+            )}
+          </div>
+        </FormSection>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Statut</Label>
-          <Select
-            value={statusId != null ? String(statusId) : undefined}
-            onValueChange={(v) => setStatusId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Payé / Partiel / En attente..." />
-            </SelectTrigger>
-            <SelectContent>
-              {statuses.map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="amount">Montant versé</Label>
-          <Input id="amount" type="number" step="0.01" {...form.register("amount")} />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Input id="notes" {...form.register("notes")} />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Charges couvertes par ce paiement</Label>
-        <div className="border rounded-md max-h-48 overflow-y-auto divide-y">
-          {selectableCharges.length === 0 && (
-            <p className="text-sm text-muted-foreground p-3">Aucune charge non payée disponible.</p>
-          )}
-          {selectableCharges.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 p-2 text-sm hover:bg-accent cursor-pointer">
-              <Checkbox
-                checked={selectedChargeIds.includes(c.id as number)}
-                onCheckedChange={(checked) => toggleCharge(c.id as number, checked === true)}
-              />
-              <span className="flex-1">
-                {c.label} — {c.property?.name ?? "?"}
-              </span>
-              <span className="text-muted-foreground">{c.amount != null ? `${c.amount} MAD` : "—"}</span>
-            </label>
-          ))}
-        </div>
-        {selectedChargeIds.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Total des charges sélectionnées : {selectedTotal.toFixed(2)} MAD
-          </p>
-        )}
-      </div>
-
-      <DialogFooter>
+      <SheetFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
         <Button type="submit" disabled={saving}>
           {saving ? "Enregistrement..." : "Enregistrer"}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   );
 }
