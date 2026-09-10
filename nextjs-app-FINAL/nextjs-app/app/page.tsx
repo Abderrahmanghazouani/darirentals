@@ -11,7 +11,6 @@ import {
   ChevronRight,
   FileText,
   ListTodo,
-  Loader2,
   Receipt,
   ScanLine,
   ShieldCheck,
@@ -135,12 +134,34 @@ export default function Home() {
 
   // Utilisateur déjà connecté : la redirection ci-dessus part au prochain effet, quasi
   // instantanée - mais un `return null` laisse un flash d'écran vide le temps qu'elle
-  // s'exécute. Même idiome que le spinner de scan de facture (Loader2 + animate-spin,
-  // voir invoice-scan-dialog.tsx) plutôt qu'un écran blanc.
+  // s'exécute. Écran de transition (< 1 s) repris au même niveau de finition que la landing :
+  // le monogramme DariRentals (badge --primary, comme le logo du header) posé sur le fond
+  // bleu-lavande de l'app, entouré d'un anneau qui tourne doucement et d'un halo qui respire -
+  // volontairement sobre, ce n'est pas un écran qu'on regarde. Voir NOTES-loading-login-premium.md.
   if (loggedIn) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background">
+        <div className="relative flex size-16 items-center justify-center">
+          <span
+            aria-hidden="true"
+            className="absolute size-20 rounded-full bg-primary/15 blur-2xl animate-pulse"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute size-16 rounded-full border-2 border-primary/15 border-t-primary animate-spin [animation-duration:1.1s]"
+          />
+          <span className="relative flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+            <Building2 className="size-5" />
+          </span>
+        </div>
+
+        <div
+          role="status"
+          className="flex flex-col items-center gap-1 animate-in fade-in duration-500 fill-mode-both"
+        >
+          <span className="text-sm font-bold tracking-tight text-primary">DariRentals</span>
+          <span className="text-xs text-muted-foreground">Ouverture de votre espace…</span>
+        </div>
       </div>
     );
   }

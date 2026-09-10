@@ -22,6 +22,12 @@ import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useLanguage } from "@/lib/i18n/language-context";
 
+// Apparition douce des éléments au chargement, reprise de l'idiome déjà utilisé sur les
+// dashboards (constante ENTRANCE dans app/admin/page.tsx) - montée + fondu, `fill-mode-both`
+// pour que l'état initial soit bien l'état "avant animation" (sinon flash). Le décalage se
+// fait via une classe `delay-*` ajoutée au cas par cas. Voir NOTES-loading-login-premium.md.
+const ENTER = "animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both";
+
 export default function LoginPage() {
   const router = useRouter();
   const { dict } = useLanguage();
@@ -125,8 +131,8 @@ export default function LoginPage() {
 
           {/* Logo */}
           <div className="relative z-10 px-10 pt-10 xl:px-14 xl:pt-12">
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/10 text-primary-foreground ring-1 ring-primary-foreground/10">
+            <div className={`flex items-center gap-3 ${ENTER}`}>
+              <span className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/10 text-primary-foreground ring-1 ring-primary-foreground/15 shadow-sm">
                 <Building2 className="size-5" />
               </span>
 
@@ -139,12 +145,14 @@ export default function LoginPage() {
           {/* Main message */}
           <div className="relative z-10 px-10 xl:px-14">
 
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3.5 py-2 text-xs font-medium text-primary-foreground/90 ring-1 ring-primary-foreground/10">
-              <Sparkles className="size-3.5" />
+            <div className={`mb-6 inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 py-1.5 pl-1.5 pr-3.5 text-xs font-medium text-primary-foreground/90 ring-1 ring-primary-foreground/15 ${ENTER} delay-75`}>
+              <span className="flex size-5 items-center justify-center rounded-full bg-primary-foreground/15">
+                <Sparkles className="size-3 text-primary-foreground" />
+              </span>
               {dict.login.brandBadge}
             </div>
 
-            <h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight text-primary-foreground xl:text-5xl">
+            <h1 className={`max-w-xl text-4xl font-bold leading-[1.08] tracking-tight text-primary-foreground xl:text-5xl ${ENTER} delay-100`}>
               {dict.login.brandTitleLine1}
               <br />
               <span className="text-primary-foreground/65">
@@ -152,12 +160,12 @@ export default function LoginPage() {
               </span>
             </h1>
 
-            <p className="mt-6 max-w-lg text-base leading-7 text-primary-foreground/70 xl:text-lg">
+            <p className={`mt-6 max-w-lg text-base leading-7 text-primary-foreground/70 xl:text-lg ${ENTER} delay-150`}>
               {dict.login.brandSubtitle}
             </p>
 
             {/* Benefits */}
-            <div className="mt-9 space-y-4">
+            <div className={`mt-9 space-y-4 ${ENTER} delay-200`}>
               <LoginBenefit text={dict.login.benefitMultiCompany} />
               <LoginBenefit text={dict.login.benefitIsolation} />
               <LoginBenefit text={dict.login.benefitRealtime} />
@@ -166,8 +174,10 @@ export default function LoginPage() {
 
           {/* Bottom */}
           <div className="relative z-10 px-10 pb-10 xl:px-14 xl:pb-12">
-            <div className="flex items-center gap-3 border-t border-primary-foreground/10 pt-6">
-              <ShieldCheck className="size-5 text-primary-foreground/60" />
+            <div className={`flex items-center gap-3 border-t border-primary-foreground/10 pt-6 ${ENTER} delay-300`}>
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/10 ring-1 ring-primary-foreground/10">
+                <ShieldCheck className="size-4 text-primary-foreground/70" />
+              </span>
 
               <p className="text-xs leading-5 text-primary-foreground/60">
                 {dict.login.brandFooter}
@@ -180,10 +190,17 @@ export default function LoginPage() {
             RIGHT — LOGIN
         ===================================================== */}
 
-        <section className="relative flex min-h-screen flex-col">
+        <section className="relative flex min-h-screen flex-col overflow-hidden">
+
+          {/* Décor discret, cohérent avec le hero de la landing (halos --primary floutés) -
+              donne un peu de profondeur au panneau de droite sans distraire du formulaire. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            <div className="absolute -right-24 top-[-10%] size-80 rounded-full bg-primary/5 blur-3xl" />
+            <div className="absolute -left-16 bottom-[-8%] size-72 rounded-full bg-secondary/40 blur-3xl" />
+          </div>
 
           {/* Mobile header */}
-          <div className="flex items-center justify-between p-5 sm:p-7 lg:hidden">
+          <div className="relative z-10 flex items-center justify-between p-5 sm:p-7 lg:hidden">
             <a
               href="/"
               className="flex items-center gap-2.5"
@@ -204,7 +221,7 @@ export default function LoginPage() {
           </div>
 
           {/* Desktop top-right — langue + retour */}
-          <div className="absolute right-8 top-8 hidden items-center gap-4 lg:flex">
+          <div className="absolute right-8 top-8 z-10 hidden items-center gap-4 lg:flex">
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <LanguageToggle />
@@ -220,12 +237,12 @@ export default function LoginPage() {
           </div>
 
           {/* Form container */}
-          <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
+          <div className="relative z-10 flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
             <div className="w-full max-w-[420px]">
 
               {/* Heading */}
-              <div className="mb-9">
-                <div className="mb-5 flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+              <div className={`mb-9 ${ENTER}`}>
+                <div className="mb-5 flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground shadow-sm ring-1 ring-primary/10">
                   <LockKeyhole className="size-5" />
                 </div>
 
@@ -241,7 +258,7 @@ export default function LoginPage() {
               {/* Form */}
               <form
                 onSubmit={handleSubmit}
-                className="space-y-5"
+                className={`space-y-5 ${ENTER} delay-100`}
               >
                 {/* Username */}
                 <div className="space-y-2">
@@ -346,8 +363,10 @@ export default function LoginPage() {
               </form>
 
               {/* Security message */}
-              <div className="mt-8 flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-4">
-                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+              <div className={`mt-8 flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-4 ${ENTER} delay-200`}>
+                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <ShieldCheck className="size-4" />
+                </span>
 
                 <p className="text-xs leading-5 text-muted-foreground">
                   {dict.login.securityNote}
@@ -355,7 +374,7 @@ export default function LoginPage() {
               </div>
 
               {/* Footer */}
-              <p className="mt-8 text-center text-xs text-muted-foreground">
+              <p className={`mt-8 text-center text-xs text-muted-foreground ${ENTER} delay-300`}>
                 © {new Date().getFullYear()} DariRentals
               </p>
             </div>
