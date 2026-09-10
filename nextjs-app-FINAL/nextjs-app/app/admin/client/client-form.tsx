@@ -8,7 +8,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DialogFooter } from "@/components/ui/dialog";
+import { SheetFooter } from "@/components/ui/sheet";
+import { FormSection } from "@/components/crud/form-section";
 import {
   Select,
   SelectContent,
@@ -80,78 +81,83 @@ export function ClientForm({ initial, saving, role, onSubmit, onCancel }: Client
   }
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-      <div className="space-y-2">
-        <Label htmlFor="fullName">Nom complet</Label>
-        <Input id="fullName" {...form.register("fullName")} />
-        {form.formState.errors.fullName && (
-          <p className="text-sm text-destructive-text">{form.formState.errors.fullName.message}</p>
-        )}
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <FormSection title="Identité">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Nom complet</Label>
+            <Input id="fullName" {...form.register("fullName")} />
+            {form.formState.errors.fullName && (
+              <p className="text-sm text-destructive-text">{form.formState.errors.fullName.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" {...form.register("email")} />
+              {form.formState.errors.email && (
+                <p className="text-sm text-destructive-text">{form.formState.errors.email.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Téléphone</Label>
+              <Input id="phone" {...form.register("phone")} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="nationality">Nationalité</Label>
+            <Input id="nationality" {...form.register("nationality")} />
+          </div>
+        </FormSection>
+
+        <FormSection title="Rattachement & accès">
+          <div className="space-y-2">
+            <Label>Société (entreprise)</Label>
+            <Select
+              value={enterpriseId != null ? String(enterpriseId) : undefined}
+              onValueChange={(v) => setEnterpriseId(Number(v))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="— Choisir —" />
+              </SelectTrigger>
+              <SelectContent>
+                {enterprises.map((e) => (
+                  <SelectItem key={e.id} value={String(e.id)}>
+                    {e.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Nom d&apos;utilisateur</Label>
+              <Input id="username" {...form.register("username")} />
+              {form.formState.errors.username && (
+                <p className="text-sm text-destructive-text">{form.formState.errors.username.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Mot de passe {isEditing && <span className="text-muted-foreground">(laisser vide pour ne pas changer)</span>}
+              </Label>
+              <Input id="password" type="password" {...form.register("password")} />
+            </div>
+          </div>
+        </FormSection>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" {...form.register("email")} />
-          {form.formState.errors.email && (
-            <p className="text-sm text-destructive-text">{form.formState.errors.email.message}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">Téléphone</Label>
-          <Input id="phone" {...form.register("phone")} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="nationality">Nationalité</Label>
-          <Input id="nationality" {...form.register("nationality")} />
-        </div>
-        <div className="space-y-2">
-          <Label>Société (entreprise)</Label>
-          <Select
-            value={enterpriseId != null ? String(enterpriseId) : undefined}
-            onValueChange={(v) => setEnterpriseId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {enterprises.map((e) => (
-                <SelectItem key={e.id} value={String(e.id)}>
-                  {e.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="username">Nom d&apos;utilisateur</Label>
-          <Input id="username" {...form.register("username")} />
-          {form.formState.errors.username && (
-            <p className="text-sm text-destructive-text">{form.formState.errors.username.message}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">
-            Mot de passe {isEditing && <span className="text-muted-foreground">(laisser vide pour ne pas changer)</span>}
-          </Label>
-          <Input id="password" type="password" {...form.register("password")} />
-        </div>
-      </div>
-
-      <DialogFooter>
+      <SheetFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
         <Button type="submit" disabled={saving}>
           {saving ? "Enregistrement..." : "Enregistrer"}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   );
 }

@@ -8,7 +8,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DialogFooter } from "@/components/ui/dialog";
+import { SheetFooter } from "@/components/ui/sheet";
+import { FormSection } from "@/components/crud/form-section";
 import {
   Select,
   SelectContent,
@@ -104,96 +105,104 @@ export function ChargeForm({
   }
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-      <div className="space-y-2">
-        <Label htmlFor="label">Libellé (ex: Électricité août)</Label>
-        <Input id="label" {...form.register("label")} />
-        {form.formState.errors.label && (
-          <p className="text-sm text-destructive-text">{form.formState.errors.label.message}</p>
-        )}
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <FormSection title="Informations">
+          <div className="space-y-2">
+            <Label htmlFor="label">Libellé (ex: Électricité août)</Label>
+            <Input id="label" {...form.register("label")} />
+            {form.formState.errors.label && (
+              <p className="text-sm text-destructive-text">{form.formState.errors.label.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Propriété</Label>
+              <Select
+                value={propertyId != null ? String(propertyId) : undefined}
+                onValueChange={(v) => setPropertyId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scopedProperties.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name || `#${p.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Type de charge</Label>
+              <Select
+                value={chargeTypeId != null ? String(chargeTypeId) : undefined}
+                onValueChange={(v) => setChargeTypeId(Number(v))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Choisir —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {chargeTypes.map((t) => (
+                    <SelectItem key={t.id} value={String(t.id)}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection title="Montant">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Montant</Label>
+              <Input id="amount" type="number" step="0.01" {...form.register("amount")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="chargeDate">Date de la charge</Label>
+              <Input id="chargeDate" type="date" {...form.register("chargeDate")} />
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection title="Paiement associé">
+          <div className="space-y-2">
+            <Label>Paiement (optionnel)</Label>
+            <Select
+              value={paymentId != null ? String(paymentId) : "none"}
+              onValueChange={(v) => setPaymentId(v === "none" ? null : Number(v))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="— Non payée —" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Non payée —</SelectItem>
+                {payments.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {paymentLabel(p)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Si le paiement au prestataire n&apos;existe pas encore, laisse vide et crée-le depuis l&apos;écran Paiements — tu pourras y rattacher cette charge.
+            </p>
+          </div>
+        </FormSection>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Propriété</Label>
-          <Select
-            value={propertyId != null ? String(propertyId) : undefined}
-            onValueChange={(v) => setPropertyId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {scopedProperties.map((p) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.name || `#${p.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Type de charge</Label>
-          <Select
-            value={chargeTypeId != null ? String(chargeTypeId) : undefined}
-            onValueChange={(v) => setChargeTypeId(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— Choisir —" />
-            </SelectTrigger>
-            <SelectContent>
-              {chargeTypes.map((t) => (
-                <SelectItem key={t.id} value={String(t.id)}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="amount">Montant</Label>
-          <Input id="amount" type="number" step="0.01" {...form.register("amount")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="chargeDate">Date de la charge</Label>
-          <Input id="chargeDate" type="date" {...form.register("chargeDate")} />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Paiement associé (optionnel)</Label>
-        <Select
-          value={paymentId != null ? String(paymentId) : "none"}
-          onValueChange={(v) => setPaymentId(v === "none" ? null : Number(v))}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="— Non payée —" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">— Non payée —</SelectItem>
-            {payments.map((p) => (
-              <SelectItem key={p.id} value={String(p.id)}>
-                {paymentLabel(p)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">
-          Si le paiement au prestataire n&apos;existe pas encore, laisse vide et crée-le depuis l&apos;écran Paiements — tu pourras y rattacher cette charge.
-        </p>
-      </div>
-
-      <DialogFooter>
+      <SheetFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
         <Button type="submit" disabled={saving}>
           {saving ? "Enregistrement..." : "Enregistrer"}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </form>
   );
 }

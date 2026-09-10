@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DialogFooter } from "@/components/ui/dialog";
+import { SheetFooter } from "@/components/ui/sheet";
+import { FormStepper } from "@/components/crud/form-stepper";
 import {
   Select,
   SelectContent,
@@ -58,9 +59,24 @@ interface CollaboratorFormProps {
   onCancel: () => void;
 }
 
+// Wizard en 2 étapes (voir NOTES-formulaires-premium.md) : Étape 1 identité + accès, Étape 2
+// rattachement société/rôle/propriétés. `fields` = champs react-hook-form validés avant de
+// passer à l'étape suivante (seuls les champs contraints par le schéma zod bloquent) ; la
+// société et le rôle restent facultatifs comme dans la version précédente (membership à null
+// si l'un des deux manque), on n'ajoute pas de nouvelle contrainte bloquante.
+const STEPS: { label: string; fields: (keyof CollaboratorFormValues)[] }[] = [
+  { label: "Informations personnelles", fields: ["name", "email", "username"] },
+  { label: "Rattachement", fields: [] },
+];
+
 export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: CollaboratorFormProps) {
   const base = initial ?? newCollaboratorDto();
   const isEditing = initial != null;
+
+  // Remonté à chaque ouverture via `key={crud.formSession}` côté page (voir use-entity-crud.ts) :
+  // l'étape repart donc toujours de zéro.
+  const [step, setStep] = useState(0);
+  const isLastStep = step === STEPS.length - 1;
 
   const [enterprises, setEnterprises] = useState<EnterpriseDto[]>([]);
   const [roles, setRoles] = useState<CollaboratorRoleDto[]>([]);
@@ -128,20 +144,31 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
   const isGestionnaire = selectedRole?.code === GESTIONNAIRE_CODE;
   const enterpriseIsEditable = !isEditing || existingMembershipId == null;
   const propertiesForEnterprise = properties.filter((p) => p.enterprise?.id === enterpriseId);
+  const values = form.watch();
 
   function togglePropertyId(id: number, checked: boolean) {
     setSelectedPropertyIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
   }
 
-  function handleSubmit(values: CollaboratorFormValues) {
+  async function goNext() {
+    const fields = STEPS[step].fields;
+    const valid = fields.length === 0 || (await form.trigger(fields));
+    if (valid) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  }
+
+  function goBack() {
+    setStep((s) => Math.max(s - 1, 0));
+  }
+
+  function handleSubmit(vals: CollaboratorFormValues) {
     const dto: CollaboratorDto = {
       ...base,
-      name: values.name,
-      email: values.email,
-      phone: values.phone ?? "",
-      username: values.username,
-      password: values.password ? values.password : base.password,
-      isActive: values.isActive,
+      name: vals.name,
+      email: vals.email,
+      phone: vals.phone ?? "",
+      username: vals.username,
+      password: vals.password ? vals.password : base.password,
+      isActive: vals.isActive,
       enabled: true,
       accountNonExpired: true,
       accountNonLocked: true,
@@ -163,152 +190,207 @@ export function CollaboratorForm({ initial, saving, role, onSubmit, onCancel }: 
     onSubmit(dto, membership);
   }
 
+  function handleFormSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isLastStep) return;
+    form.handleSubmit(handleSubmit)(e);
+  }
+
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-      <div className="space-y-2">
-        <Label htmlFor="name">Nom complet</Label>
-        <Input id="name" {...form.register("name")} />
-        {form.formState.errors.name && (
-          <p className="text-sm text-destructive-text">{form.formState.errors.name.message}</p>
-        )}
+    <form onSubmit={handleFormSubmit} className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="shrink-0 border-b px-6 py-4">
+        <FormStepper steps={STEPS} current={step} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" {...form.register("email")} />
-          {form.formState.errors.email && (
-            <p className="text-sm text-destructive-text">{form.formState.errors.email.message}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">Téléphone</Label>
-          <Input id="phone" {...form.register("phone")} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="username">Nom d&apos;utilisateur</Label>
-          <Input id="username" {...form.register("username")} />
-          {form.formState.errors.username && (
-            <p className="text-sm text-destructive-text">{form.formState.errors.username.message}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">
-            Mot de passe {isEditing && <span className="text-muted-foreground">(laisser vide pour ne pas changer)</span>}
-          </Label>
-          <Input id="password" type="password" {...form.register("password")} />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="isActive"
-          checked={form.watch("isActive")}
-          onCheckedChange={(checked) => form.setValue("isActive", checked === true)}
-        />
-        <Label htmlFor="isActive">Compte actif</Label>
-      </div>
-
-      <div className="space-y-4 border-t pt-4">
-        <p className="text-sm font-medium">Rattachement à une société</p>
-        {loadingMembership ? (
-          <p className="text-sm text-muted-foreground">Chargement...</p>
-        ) : (
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        {step === 0 && (
           <>
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom complet</Label>
+              <Input id="name" {...form.register("name")} />
+              {form.formState.errors.name && (
+                <p className="text-sm text-destructive-text">{form.formState.errors.name.message}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Société</Label>
-                {enterpriseIsEditable ? (
-                  <Select
-                    value={enterpriseId != null ? String(enterpriseId) : undefined}
-                    onValueChange={(v) => {
-                      setEnterpriseId(Number(v));
-                      setSelectedPropertyIds([]);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="— Choisir —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enterprises.map((e) => (
-                        <SelectItem key={e.id} value={String(e.id)}>
-                          {e.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="text-sm py-2">
-                    {enterprises.find((e) => e.id === enterpriseId)?.name ?? "—"}
-                  </p>
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" {...form.register("email")} />
+                {form.formState.errors.email && (
+                  <p className="text-sm text-destructive-text">{form.formState.errors.email.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Rôle</Label>
-                <Select
-                  value={roleId != null ? String(roleId) : undefined}
-                  onValueChange={(v) => setRoleId(Number(v))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="— Choisir —" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((r) => (
-                      <SelectItem key={r.id} value={String(r.id)}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="phone">Téléphone</Label>
+                <Input id="phone" {...form.register("phone")} />
               </div>
             </div>
 
-            {isGestionnaire && (
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Propriétés autorisées</Label>
-                <p className="text-xs text-muted-foreground">
-                  Un Gestionnaire ne voit et ne gère que les propriétés cochées ci-dessous. Aucune
-                  coche = aucun accès.
-                </p>
-                {enterpriseId == null ? (
-                  <p className="text-sm text-muted-foreground">Choisis d&apos;abord une société.</p>
-                ) : propertiesForEnterprise.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Aucune propriété dans cette société.
-                  </p>
-                ) : (
-                  <div className="max-h-48 overflow-y-auto rounded-md border p-2 space-y-1">
-                    {propertiesForEnterprise.map((p) => (
-                      <div key={p.id} className="flex items-center gap-2 py-1">
-                        <Checkbox
-                          id={`property-${p.id}`}
-                          checked={p.id != null && selectedPropertyIds.includes(p.id)}
-                          onCheckedChange={(checked) => p.id != null && togglePropertyId(p.id, checked === true)}
-                        />
-                        <Label htmlFor={`property-${p.id}`} className="font-normal cursor-pointer">
-                          {p.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+                <Label htmlFor="username">Nom d&apos;utilisateur</Label>
+                <Input id="username" {...form.register("username")} />
+                {form.formState.errors.username && (
+                  <p className="text-sm text-destructive-text">{form.formState.errors.username.message}</p>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">
+                  Mot de passe {isEditing && <span className="text-muted-foreground">(laisser vide pour ne pas changer)</span>}
+                </Label>
+                <Input id="password" type="password" {...form.register("password")} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="isActive"
+                checked={form.watch("isActive")}
+                onCheckedChange={(checked) => form.setValue("isActive", checked === true)}
+              />
+              <Label htmlFor="isActive">Compte actif</Label>
+            </div>
+          </>
+        )}
+
+        {step === 1 && (
+          <>
+            {loadingMembership ? (
+              <p className="text-sm text-muted-foreground">Chargement...</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Société</Label>
+                    {enterpriseIsEditable ? (
+                      <Select
+                        value={enterpriseId != null ? String(enterpriseId) : undefined}
+                        onValueChange={(v) => {
+                          setEnterpriseId(Number(v));
+                          setSelectedPropertyIds([]);
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="— Choisir —" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {enterprises.map((e) => (
+                            <SelectItem key={e.id} value={String(e.id)}>
+                              {e.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm py-2">
+                        {enterprises.find((e) => e.id === enterpriseId)?.name ?? "—"}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Rôle</Label>
+                    <Select
+                      value={roleId != null ? String(roleId) : undefined}
+                      onValueChange={(v) => setRoleId(Number(v))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="— Choisir —" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roles.map((r) => (
+                          <SelectItem key={r.id} value={String(r.id)}>
+                            {r.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {isGestionnaire && (
+                  <div className="space-y-2">
+                    <Label>Propriétés autorisées</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Un Gestionnaire ne voit et ne gère que les propriétés cochées ci-dessous. Aucune
+                      coche = aucun accès.
+                    </p>
+                    {enterpriseId == null ? (
+                      <p className="text-sm text-muted-foreground">Choisis d&apos;abord une société.</p>
+                    ) : propertiesForEnterprise.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Aucune propriété dans cette société.
+                      </p>
+                    ) : (
+                      <div className="max-h-48 overflow-y-auto rounded-md border p-2 space-y-1">
+                        {propertiesForEnterprise.map((p) => (
+                          <div key={p.id} className="flex items-center gap-2 py-1">
+                            <Checkbox
+                              id={`property-${p.id}`}
+                              checked={p.id != null && selectedPropertyIds.includes(p.id)}
+                              onCheckedChange={(checked) => p.id != null && togglePropertyId(p.id, checked === true)}
+                            />
+                            <Label htmlFor={`property-${p.id}`} className="font-normal cursor-pointer">
+                              {p.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2 rounded-md border bg-muted/40 p-4">
+                  <p className="text-sm font-medium">Récapitulatif</p>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                    <dt className="text-muted-foreground">Nom</dt>
+                    <dd className="truncate">{values.name || "—"}</dd>
+                    <dt className="text-muted-foreground">Email</dt>
+                    <dd className="truncate">{values.email || "—"}</dd>
+                    <dt className="text-muted-foreground">Identifiant</dt>
+                    <dd className="truncate">{values.username || "—"}</dd>
+                    <dt className="text-muted-foreground">Compte actif</dt>
+                    <dd className="truncate">{values.isActive ? "Oui" : "Non"}</dd>
+                    <dt className="text-muted-foreground">Société</dt>
+                    <dd className="truncate">
+                      {enterprises.find((e) => e.id === enterpriseId)?.name ?? "—"}
+                    </dd>
+                    <dt className="text-muted-foreground">Rôle</dt>
+                    <dd className="truncate">{selectedRole?.label ?? "—"}</dd>
+                    {isGestionnaire && (
+                      <>
+                        <dt className="text-muted-foreground">Propriétés</dt>
+                        <dd className="truncate">{selectedPropertyIds.length} sélectionnée(s)</dd>
+                      </>
+                    )}
+                  </dl>
+                </div>
+              </>
             )}
           </>
         )}
       </div>
 
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Annuler
-        </Button>
-        <Button type="submit" disabled={saving}>
-          {saving ? "Enregistrement..." : "Enregistrer"}
-        </Button>
-      </DialogFooter>
+      <SheetFooter>
+        {step === 0 ? (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Annuler
+          </Button>
+        ) : (
+          <Button type="button" variant="outline" onClick={goBack}>
+            Précédent
+          </Button>
+        )}
+        {isLastStep ? (
+          <Button type="submit" disabled={saving}>
+            {saving ? "Enregistrement..." : "Enregistrer"}
+          </Button>
+        ) : (
+          <Button type="button" onClick={goNext}>
+            Suivant
+          </Button>
+        )}
+      </SheetFooter>
     </form>
   );
 }

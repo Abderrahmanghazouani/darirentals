@@ -26,6 +26,11 @@ export function useEntityCrud<TDto extends { id: number | null }>(
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TDto | null>(null);
+  // Incrémenté à chaque ouverture (création OU édition) - sert de `key` au composant de
+  // formulaire côté page, pour garantir un remontage propre (état react-hook-form ET, pour les
+  // formulaires en wizard, l'étape courante repartent de zéro même quand deux ouvertures
+  // s'enchaînent sans laisser le Sheet se démonter). Voir NOTES-formulaires-premium.md.
+  const [formSession, setFormSession] = useState(0);
 
   const [deleteTarget, setDeleteTarget] = useState<TDto | null>(null);
   const [saving, setSaving] = useState(false);
@@ -64,11 +69,13 @@ export function useEntityCrud<TDto extends { id: number | null }>(
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
+    setFormSession((n) => n + 1);
     setFormOpen(true);
   }, []);
 
   const openEdit = useCallback((item: TDto) => {
     setEditingItem(item);
+    setFormSession((n) => n + 1);
     setFormOpen(true);
   }, []);
 
@@ -122,6 +129,7 @@ export function useEntityCrud<TDto extends { id: number | null }>(
     saving,
     refresh,
     formOpen,
+    formSession,
     editingItem,
     openCreate,
     openEdit,
