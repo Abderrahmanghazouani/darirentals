@@ -149,6 +149,13 @@ public class CollaboratorAdminServiceImpl implements CollaboratorAdminService {
         // Chantier 3 (NOTES-permissions.md) : nettoie les affectations de proprietes
         // du collaborateur supprime, sinon lignes orphelines dans collaborator_property_access.
         propertyAccessService.deleteByCollaboratorId(id);
+        // create() insere pour chaque collaborateur une ligne role_app_user_app (RoleUser) et
+        // N lignes model_permission_utilisateur (ModelPermissionUser) qui referencent user_app.
+        // Sans ce nettoyage, "DELETE FROM user_app" echoue sur la contrainte de cle etrangere
+        // (DataIntegrityViolationException -> 500) - un collaborateur cree via l'app etait donc
+        // impossible a supprimer. Symetrique de ce que fait create().
+        roleUserService.deleteByUserId(id);
+        modelPermissionUserService.deleteByUserId(id);
     }
 
 
