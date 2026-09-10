@@ -133,6 +133,12 @@ public class ClientAdminServiceImpl implements ClientAdminService {
     public void deleteAssociatedLists(Long id) {
         reservationService.deleteByClientId(id);
         reservationRequestService.deleteByClientId(id);
+        // Meme probleme que pour Collaborator (voir CollaboratorAdminServiceImpl) : create()
+        // insere une ligne role_app_user_app (RoleUser) et N lignes model_permission_utilisateur
+        // (ModelPermissionUser) qui referencent user_app. Sans ce nettoyage, la suppression
+        // d'un client cree via l'app echouerait sur la contrainte de cle etrangere (500).
+        roleUserService.deleteByUserId(id);
+        modelPermissionUserService.deleteByUserId(id);
     }
 
 

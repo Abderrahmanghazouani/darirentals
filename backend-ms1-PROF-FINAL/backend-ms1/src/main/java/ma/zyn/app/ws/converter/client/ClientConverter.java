@@ -85,13 +85,24 @@ public class ClientConverter {
                 item.setNationality(dto.getNationality());
             if(StringUtil.isNotEmpty(dto.getEmail()))
                 item.setEmail(dto.getEmail());
-            item.setEnabled(dto.getEnabled());
-            item.setCredentialsNonExpired(dto.getCredentialsNonExpired());
-            item.setAccountNonExpired(dto.getAccountNonExpired());
+            // Les flags de compte cote entity (User) sont des booleens primitifs : un
+            // dto.getXxx() null provoquait un NullPointerException a l'unboxing (POST client
+            // depuis le front, qui n'envoie pas ces champs). On garde la valeur par defaut de
+            // l'entity quand le DTO ne fournit rien - meme garde que dans toDto() et que pour
+            // les autres champs de toItem(). ClientAdminServiceImpl.create() force de toute
+            // facon enabled/accountNonExpired/... a true ensuite.
+            if(StringUtil.isNotEmpty(dto.getEnabled()))
+                item.setEnabled(dto.getEnabled());
+            if(StringUtil.isNotEmpty(dto.getCredentialsNonExpired()))
+                item.setCredentialsNonExpired(dto.getCredentialsNonExpired());
+            if(StringUtil.isNotEmpty(dto.getAccountNonExpired()))
+                item.setAccountNonExpired(dto.getAccountNonExpired());
             if(StringUtil.isNotEmpty(dto.getUsername()))
                 item.setUsername(dto.getUsername());
-            item.setPasswordChanged(dto.getPasswordChanged());
-            item.setAccountNonLocked(dto.getAccountNonLocked());
+            if(StringUtil.isNotEmpty(dto.getPasswordChanged()))
+                item.setPasswordChanged(dto.getPasswordChanged());
+            if(StringUtil.isNotEmpty(dto.getAccountNonLocked()))
+                item.setAccountNonLocked(dto.getAccountNonLocked());
             if(StringUtil.isNotEmpty(dto.getPassword()))
                 item.setPassword(dto.getPassword());
             if(dto.getEnterprise() != null && dto.getEnterprise().getId() != null){
