@@ -32,11 +32,18 @@ import { getSelectedEnterpriseId } from "@/lib/enterprise-context";
 import { useSelectedEnterpriseId } from "@/lib/use-selected-enterprise";
 import { filterByEnterprise } from "@/lib/filter-by-enterprise";
 import { entityRegistry, entityKeys } from "@/lib/entity-registry";
+import { useLanguage } from "@/lib/i18n/language-context";
+import type { Locale } from "@/lib/i18n/translations";
 
 const ROLE = "collaborator" as const;
 
-function longDateToday(): string {
-  return new Date().toLocaleDateString("fr-FR", {
+// La date reste au format long propre à la langue choisie (même logique que app/admin/page.tsx).
+function localeTag(locale: Locale) {
+  return locale === "en" ? "en-US" : "fr-FR";
+}
+
+function longDateToday(locale: Locale): string {
+  return new Date().toLocaleDateString(localeTag(locale), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -44,8 +51,8 @@ function longDateToday(): string {
   });
 }
 
-function currentMonthLabel(month: Date): string {
-  return month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+function currentMonthLabel(month: Date, locale: Locale): string {
+  return month.toLocaleDateString(localeTag(locale), { month: "long", year: "numeric" });
 }
 
 // Animation d'apparition discrète, partagée par toutes les sections du dashboard.
@@ -63,6 +70,7 @@ export default function CollaboratorHome() {
 
 function CollaboratorDashboard() {
   const { format } = useCurrency();
+  const { dict, locale } = useLanguage();
 
   // Société active : même source que toutes les autres pages collaborateur filtrées.
   const enterpriseId = useSelectedEnterpriseId();
@@ -150,18 +158,20 @@ function CollaboratorDashboard() {
       <div className={`flex flex-wrap items-start justify-between gap-4 ${ENTRANCE}`}>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {longDateToday()}
+            {longDateToday(locale)}
           </p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight">
-            Bonjour{firstName ? ` ${firstName}` : ""},{" "}
-            <span className="font-normal text-muted-foreground">ravi de vous revoir.</span>
+            {dict.dashboardHome.greeting}{firstName ? ` ${firstName}` : ""},{" "}
+            <span className="font-normal text-muted-foreground">
+              {dict.dashboardHome.greetingReturning}
+            </span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Voici ce qui se passe chez{" "}
+            {dict.dashboardHome.subtitleCompanyPrefix}{" "}
             <span className="font-medium text-foreground">
-              {enterpriseName ?? "votre société"}
+              {enterpriseName ?? dict.dashboardHome.subtitleCompanyFallback}
             </span>{" "}
-            aujourd&apos;hui.
+            {dict.dashboardHome.subtitleCompanySuffix}
           </p>
         </div>
 
@@ -169,12 +179,12 @@ function CollaboratorDashboard() {
           {/* Sélecteur de mois (visuel) */}
           <span className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm capitalize">
             <CalendarDays className="size-4 text-muted-foreground" />
-            {currentMonthLabel(new Date())}
+            {currentMonthLabel(new Date(), locale)}
             <ChevronDown className="size-3.5 text-muted-foreground" />
           </span>
           <Button asChild>
             <Link href="/collaborator/charges">
-              <ScanLine className="size-4" /> Scanner une facture
+              <ScanLine className="size-4" /> {dict.dashboardHome.scanInvoice}
             </Link>
           </Button>
         </div>
@@ -188,7 +198,7 @@ function CollaboratorDashboard() {
         {loading ? (
           <Card>
             <CardContent>
-              <p className="py-12 text-center text-sm text-muted-foreground">Chargement...</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">{dict.common.loading}</p>
             </CardContent>
           </Card>
         ) : (
@@ -201,7 +211,7 @@ function CollaboratorDashboard() {
         {loading ? (
           <Card>
             <CardContent>
-              <p className="py-12 text-center text-sm text-muted-foreground">Chargement...</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">{dict.common.loading}</p>
             </CardContent>
           </Card>
         ) : (
@@ -220,7 +230,7 @@ function CollaboratorDashboard() {
           {loading ? (
             <Card>
               <CardContent>
-                <p className="py-12 text-center text-sm text-muted-foreground">Chargement...</p>
+                <p className="py-12 text-center text-sm text-muted-foreground">{dict.common.loading}</p>
               </CardContent>
             </Card>
           ) : (
@@ -234,14 +244,14 @@ function CollaboratorDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">À faire aujourd&apos;hui</CardTitle>
-            <p className="text-sm text-muted-foreground">Les tâches qui nécessitent votre attention</p>
+            <CardTitle className="text-base">{dict.dashboardHome.todoTitle}</CardTitle>
+            <p className="text-sm text-muted-foreground">{dict.dashboardHome.todoSubtitle}</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {loading ? (
-              <p className="text-sm text-muted-foreground">Chargement...</p>
+              <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
             ) : todoTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Rien d&apos;urgent aujourd&apos;hui.</p>
+              <p className="text-sm text-muted-foreground">{dict.dashboardHome.todoEmpty}</p>
             ) : (
               todoTasks.slice(0, 5).map((t) => (
                 <Link
@@ -255,7 +265,7 @@ function CollaboratorDashboard() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{t.title}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {t.property?.name ?? t.taskType?.label ?? "Tâche"}
+                      {t.property?.name ?? t.taskType?.label ?? dict.dashboardHome.taskFallback}
                       {t.dueDate ? ` · ${t.dueDate}` : ""}
                     </p>
                   </div>
@@ -267,7 +277,7 @@ function CollaboratorDashboard() {
               href="/collaborator/tasks"
               className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-primary hover:underline"
             >
-              Voir toutes les tâches <ArrowUpRight className="size-3.5" />
+              {dict.dashboardHome.seeAllTasks} <ArrowUpRight className="size-3.5" />
             </Link>
           </CardContent>
         </Card>
@@ -279,32 +289,32 @@ function CollaboratorDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Réservations récentes</CardTitle>
-                <p className="text-sm text-muted-foreground">Les dernières réservations de vos logements</p>
+                <CardTitle className="text-base">{dict.dashboardHome.recentReservationsTitle}</CardTitle>
+                <p className="text-sm text-muted-foreground">{dict.dashboardHome.recentReservationsSubtitle}</p>
               </div>
               <Link
                 href="/collaborator/reservations"
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
               >
-                Voir toutes <ArrowUpRight className="size-3.5" />
+                {dict.dashboardHome.seeAll} <ArrowUpRight className="size-3.5" />
               </Link>
             </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-sm text-muted-foreground">Chargement...</p>
+              <p className="text-sm text-muted-foreground">{dict.common.loading}</p>
             ) : recentReservations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune réservation.</p>
+              <p className="text-sm text-muted-foreground">{dict.dashboardHome.noReservations}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="pb-2 font-medium">Logement</th>
-                      <th className="pb-2 font-medium">Client</th>
-                      <th className="pb-2 font-medium">Dates</th>
-                      <th className="pb-2 text-right font-medium">Montant</th>
-                      <th className="pb-2 text-right font-medium">Statut</th>
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colProperty}</th>
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colClient}</th>
+                      <th className="pb-2 font-medium">{dict.dashboardHome.colDates}</th>
+                      <th className="pb-2 text-right font-medium">{dict.dashboardHome.colAmount}</th>
+                      <th className="pb-2 text-right font-medium">{dict.dashboardHome.colStatus}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -333,8 +343,8 @@ function CollaboratorDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Calendrier</CardTitle>
-            <p className="text-sm text-muted-foreground">Occupation des logements</p>
+            <CardTitle className="text-base">{dict.dashboardHome.calendarTitle}</CardTitle>
+            <p className="text-sm text-muted-foreground">{dict.dashboardHome.calendarSubtitle}</p>
           </CardHeader>
           <CardContent className="text-xs">
             <ReservationCalendar
@@ -352,7 +362,7 @@ function CollaboratorDashboard() {
       <details className={`group ${ENTRANCE}`}>
         <summary className="inline-flex cursor-pointer items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ChevronRight className="size-4 transition-transform group-open:rotate-90" />
-          Tous les modules
+          {dict.allModules.title}
         </summary>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {entityKeys.map((key) => (

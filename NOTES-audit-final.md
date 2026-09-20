@@ -548,3 +548,59 @@ utilise le taux du jour de l'export. Les valeurs figées en base ne sont jamais 
   GBP 0.08), ce qui rend les conversions approximatives (111 MAD → 9,99 EUR). À traiter après la soutenance : augmenter
   la précision de la colonne (ex. `DECIMAL(18,6)`) et de la synchronisation automatique des taux. Aucun code modifié à ce stade.
 - **Assistant IA** : reste en MAD (décision confirmée), aucune modification.
+
+## ✅ Point 5 — Multi-langue : sidebar/topbar + dashboard collaborateur (périmètre réduit décidé)
+
+**Sidebar / topbar (`components/app-shell.tsx`)** - traduits FR/EN via une nouvelle section `nav` du dictionnaire :
+titres de sections (Vue d'ensemble / Opérations / Finances / Équipe), les 12 libellés de navigation, « Tous les modules »,
+sous-titre « Agence principale », fil d'Ariane (dont « Biens & logements », « Rentabilité »), « Accueil », « Rechercher »,
+info-bulles Déplier/Replier, `aria-label` Déconnexion / Notifications / Ouvrir le menu, titre (sr-only) du tiroir mobile,
+repli « Compte » / « Société ». Les `layout.tsx` admin et collaborateur ne portent plus de texte en dur : `NavItem.labelKey` et
+`NavSection.titleKey` sont des clés typées de `dict.nav` (une clé manquante dans une langue = erreur de compilation).
+
+**Dashboard collaborateur (`app/collaborator/page.tsx`)** - il n'utilisait aucune clé du dictionnaire (d'où le mélange :
+sidebar/topbar/Property Map/Timeline déjà en anglais, tout le reste en français). Réutilise maintenant les clés
+`dict.dashboardHome.*` de son jumeau admin ; date et mois en langue choisie ; trois clés ajoutées pour la phrase
+« Voici ce qui se passe chez {société} aujourd'hui ».
+
+**Composants partagés découverts pendant le test** (ils laissaient du français en mode EN, sur le dashboard collaborateur
+comme sur l'admin) - corrigés à la source :
+- `RevenueIntelligenceCard` : libellés de période (« 12 mois » → « 12 months ») et phrase de résumé du revenu, désormais construite
+  à partir de `summaryKind` + `percentChange` (le champ `summary` français est conservé tel quel pour les faits de l'assistant IA) ;
+- `MonthlyChart` : légende « Revenus / Charges / Bénéfice net », message « pas assez de données » ;
+- `computeMonthlyFinancials` / `computeRevenueSeries` : paramètre optionnel `locale` pour les libellés d'axe (Jan/Fév/Mai → Jan/Feb/May) ;
+- `ReservationCalendar` (aussi utilisé sur les pages Réservations admin/collaborateur) : mois (date-fns `enUS`), jours (Lun→Mon), « Chargement ».
+
+**Tests (navigateur, données réelles)** :
+| Vérification | Résultat |
+|---|---|
+| Admin, EN : sidebar, topbar, fil d'Ariane (`/admin/reservation-requests` → « Reservation requests ») | tout en anglais |
+| Bascule FR via le bouton de la topbar (sans rechargement) | libellés FR identiques à l'existant ; `aria-label` FR |
+| Collaborateur (`audit_sub`), EN : page entière | plus de français (scan de mots FR : seul « Mar » = mars/March, valide dans les deux langues) : « Hello, glad to have you back », « Revenue is up this month… », légende `Expenses / Net profit / Revenue`, `September 2026 · Mon…Sun`, « 12 months » |
+| Collaborateur, retour en FR | identique à l'original (« Revenus », « Le revenu est en hausse ce mois-ci… », « Calendrier », « Lun…Dim ») |
+| Admin, EN (non-régression composants partagés) | « Revenue is down 19.7% this month compared to last month. » (variante « down »), graduations/légende OK |
+`tsc --noEmit` et `npm run build` OK.
+
+---
+
+## 🧾 DETTE TECHNIQUE — à traiter après la soutenance
+
+**Multi-langue (hors périmètre décidé, toujours en français quelle que soit la langue choisie)** :
+- Pages CRUD génériques (`/[entity]`, `EntityTable` : « Chargement... », « Aucun élément pour le moment », « Actions », boutons Modifier/Supprimer, dialogues de suppression, formulaires) et toutes les pages métier hors dashboard : Propriétés, Réservations, Demandes de réservation, Tâches, Charges, Paiements, Rapports financiers, Rentabilité, Taux de change, Clients, Collaborateurs, `select-enterprise`.
+- Landing page (`app/page.tsx`) et écran de chargement.
+- Dashboard **admin** : détail du Health Score (`lib/dashboard/health-score.ts` : libellés des 4 composantes, niveaux « Bon/Critique », phrases de détail) - reste en français en mode EN.
+- Statuts métier affichés bruts (`EnAttente`, `Confirmee`…) : libellés de seed non polis / non traduits.
+- Contenu généré par l'assistant IA (Insights + Chat) : toujours en français (décision existante).
+- Libellés des liens « Tous les modules » (`entityRegistry[...].label`).
+
+**Devise** :
+- Précision des `ExchangeRate` (2 décimales) - voir plus haut.
+- Formulaires Charge/Payment/Reservation volontairement en MAD (référence comptable) : à documenter à l'écran si les utilisateurs s'attendent à saisir dans la devise d'affichage.
+
+**Fonctionnel / qualité** :
+- Rejeter une demande déjà `Confirmee` n'annule pas la Reservation créée à la confirmation (point 2).
+- `CollaboratorConverter.toItem` : setters de booléens non gardés (le comportement correct ne tient que parce que le frontend envoie les flags).
+- Scan de facture par IA : upload de fichier réel non testé pendant l'audit (test manuel à faire avant la soutenance).
+- `select-enterprise` : cartes cliquables sans sémantique de bouton (accessibilité clavier/lecteur d'écran).
+- Code mort : `components/dashboard/premium-header.tsx` et `collaborator-header.tsx` non utilisés.
+- Conditions de concurrence des converters singleton Zynerator (flags partagés) - voir NOTES-permissions.md.

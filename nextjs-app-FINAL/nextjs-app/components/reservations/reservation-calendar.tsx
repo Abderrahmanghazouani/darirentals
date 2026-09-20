@@ -14,10 +14,11 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { fr } from "date-fns/locale";
+import { enUS, fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { ReservationDto } from "@/lib/types/Reservation";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 interface ReservationCalendarProps {
   month: Date;
@@ -59,13 +60,15 @@ export function ReservationCalendar({
   onDayClick,
   loading,
 }: ReservationCalendarProps) {
+  const { dict, locale } = useLanguage();
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
     const end = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
   }, [month]);
 
-  const weekdayLabels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  const c = dict.calendar;
+  const weekdayLabels = [c.mon, c.tue, c.wed, c.thu, c.fri, c.sat, c.sun];
 
   return (
     <div className="space-y-3">
@@ -73,14 +76,14 @@ export function ReservationCalendar({
         <Button variant="outline" size="icon" onClick={() => onMonthChange(subMonths(month, 1))}>
           <ChevronLeft className="size-4" />
         </Button>
-        <h3 className="font-medium capitalize">{format(month, "MMMM yyyy", { locale: fr })}</h3>
+        <h3 className="font-medium capitalize">{format(month, "MMMM yyyy", { locale: locale === "en" ? enUS : fr })}</h3>
         <Button variant="outline" size="icon" onClick={() => onMonthChange(addMonths(month, 1))}>
           <ChevronRight className="size-4" />
         </Button>
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground text-sm py-8 text-center">Chargement...</p>
+        <p className="text-muted-foreground text-sm py-8 text-center">{dict.common.loading}</p>
       ) : (
         <div className="grid grid-cols-7 gap-px bg-border rounded-md overflow-hidden border">
           {weekdayLabels.map((w) => (
@@ -113,12 +116,12 @@ export function ReservationCalendar({
                       e.stopPropagation();
                       onReservationClick(r);
                     }}
-                    title={`${r.client?.fullName ?? "Client"} · ${r.checkInDate} → ${r.checkOutDate}`}
+                    title={`${r.client?.fullName ?? c.clientFallback} · ${r.checkInDate} → ${r.checkOutDate}`}
                     className={`w-full truncate text-left text-[11px] leading-tight rounded border px-1 py-0.5 ${colorFor(
                       r
                     )}`}
                   >
-                    {r.client?.fullName ?? r.reference ?? "Réservation"}
+                    {r.client?.fullName ?? r.reference ?? c.reservationFallback}
                   </button>
                 ))}
               </div>

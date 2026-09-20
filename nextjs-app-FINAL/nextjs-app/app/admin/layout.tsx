@@ -23,32 +23,32 @@ import { getEntityClients } from "@/lib/api";
 // de la nav précédente - signalé, à retirer si non souhaité.
 const sections: NavSection[] = [
   {
-    title: "Vue d'ensemble",
-    items: [{ label: "Tableau de bord", href: "/admin", icon: LayoutDashboard }],
+    titleKey: "sectionOverview",
+    items: [{ labelKey: "dashboard", href: "/admin", icon: LayoutDashboard }],
   },
   {
-    title: "Opérations",
+    titleKey: "sectionOperations",
     items: [
-      { label: "Propriétés", href: "/admin/property", icon: Building2 },
-      { label: "Réservations", href: "/admin/reservations", icon: CalendarDays, badge: "reservations" },
-      { label: "Demandes de réservation", href: "/admin/reservation-requests", icon: Inbox },
-      { label: "Tâches", href: "/admin/tasks", icon: ClipboardList },
+      { labelKey: "properties", href: "/admin/property", icon: Building2 },
+      { labelKey: "reservations", href: "/admin/reservations", icon: CalendarDays, badge: "reservations" },
+      { labelKey: "reservationRequests", href: "/admin/reservation-requests", icon: Inbox },
+      { labelKey: "tasks", href: "/admin/tasks", icon: ClipboardList },
     ],
   },
   {
-    title: "Finances",
+    titleKey: "sectionFinances",
     items: [
-      { label: "Charges", href: "/admin/charges", icon: Receipt },
-      { label: "Paiements", href: "/admin/payments", icon: Wallet },
-      { label: "Rapports financiers", href: "/admin/financial-reports", icon: FileBarChart },
-      { label: "Taux de change", href: "/admin/exchange-rates", icon: ArrowLeftRight },
+      { labelKey: "charges", href: "/admin/charges", icon: Receipt },
+      { labelKey: "payments", href: "/admin/payments", icon: Wallet },
+      { labelKey: "financialReports", href: "/admin/financial-reports", icon: FileBarChart },
+      { labelKey: "exchangeRates", href: "/admin/exchange-rates", icon: ArrowLeftRight },
     ],
   },
   {
-    title: "Équipe",
+    titleKey: "sectionTeam",
     items: [
-      { label: "Collaborateurs", href: "/admin/collaborator", icon: UserCog },
-      { label: "Clients", href: "/admin/client", icon: Users },
+      { labelKey: "collaborators", href: "/admin/collaborator", icon: UserCog },
+      { labelKey: "clients", href: "/admin/client", icon: Users },
     ],
   },
 ];

@@ -25,9 +25,14 @@ import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { CurrencySelector } from "@/components/currency/currency-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useLanguage } from "@/lib/i18n/language-context";
+import type { Dict } from "@/lib/i18n/translations";
+
+type NavKey = keyof Dict["nav"];
 
 export interface NavItem {
-  label: string;
+  /** Clé dans dict.nav (le libellé suit la langue choisie). */
+  labelKey: NavKey;
   href: string;
   icon: LucideIcon;
   /** "reservations" -> badge = nb de réservations à venir (calcul réel). */
@@ -35,10 +40,10 @@ export interface NavItem {
 }
 
 export interface NavSection {
-  title: string;
+  titleKey: NavKey;
   items: NavItem[];
   /** Liens affichés en gris, non cliquables (pages inexistantes). */
-  disabled?: { label: string; icon: LucideIcon }[];
+  disabled?: { labelKey: NavKey; icon: LucideIcon }[];
 }
 
 interface AppShellProps {
@@ -73,34 +78,34 @@ function initialsFor(user: CurrentUser | null): string {
   return user.username.slice(0, 2).toUpperCase();
 }
 
-function displayNameFor(user: CurrentUser | null): string {
-  if (!user) return "Compte";
+function displayNameFor(user: CurrentUser | null, fallback: string): string {
+  if (!user) return fallback;
   if (user.firstName || user.lastName) {
     return [user.firstName, user.lastName].filter(Boolean).join(" ");
   }
   return user.username;
 }
 
-function breadcrumbLabel(pathname: string): string {
+function breadcrumbLabel(pathname: string, t: Dict["nav"]): string {
   const seg = pathname.split("/").filter(Boolean);
   const last = seg[seg.length - 1] ?? "";
   const map: Record<string, string> = {
-    admin: "Vue d'ensemble",
-    collaborator: "Vue d'ensemble",
-    property: "Biens & logements",
-    reservations: "Réservations",
-    "reservation-requests": "Demandes de réservation",
-    client: "Clients",
-    charges: "Charges",
-    payments: "Paiements",
-    tasks: "Tâches",
-    collaborator2: "Collaborateurs",
-    "exchange-rates": "Taux de change",
-    "financial-reports": "Rapports financiers",
-    rentabilite: "Rentabilité",
-    modules: "Tous les modules",
+    admin: t.sectionOverview,
+    collaborator: t.sectionOverview,
+    property: t.breadcrumbProperty,
+    reservations: t.reservations,
+    "reservation-requests": t.reservationRequests,
+    client: t.clients,
+    charges: t.charges,
+    payments: t.payments,
+    tasks: t.tasks,
+    collaborator2: t.collaborators,
+    "exchange-rates": t.exchangeRates,
+    "financial-reports": t.financialReports,
+    rentabilite: t.breadcrumbProfitability,
+    modules: t.allModules,
   };
-  if (last === "admin" || last === "collaborator") return "Vue d'ensemble";
+  if (last === "admin" || last === "collaborator") return t.sectionOverview;
   return map[last] ?? last.charAt(0).toUpperCase() + last.slice(1);
 }
 
@@ -133,6 +138,7 @@ interface SidebarNavProps {
 }
 
 function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcomingCount }: SidebarNavProps) {
+  const t = useLanguage().dict.nav;
   function isActive(href: string): boolean {
     if (href === `/${role}`) return pathname === href;
     return pathname === href || pathname.startsWith(href + "/");
@@ -141,20 +147,21 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
   return (
     <nav className="mt-5 flex flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden">
       {sections.map((section) => (
-        <div key={section.title}>
+        <div key={section.titleKey}>
           {!collapsed && (
             <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/60">
-              {section.title}
+              {t[section.titleKey]}
             </p>
           )}
           <ul className="space-y-0.5">
             {section.items.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
+              const label = t[item.labelKey];
               const showBadge = item.badge === "reservations" && upcomingCount != null && upcomingCount > 0;
               return (
-                <li key={item.label}>
-                  <NavLabel collapsed={collapsed} label={item.label}>
+                <li key={item.labelKey}>
+                  <NavLabel collapsed={collapsed} label={label}>
                     <Link
                       href={item.href}
                       className={cn(
@@ -174,7 +181,7 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
                           <span className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-white" />
                         )}
                       </span>
-                      {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+                      {!collapsed && <span className="flex-1 truncate">{label}</span>}
                       {!collapsed && showBadge && (
                         <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-medium text-white">
                           {upcomingCount}
@@ -185,9 +192,9 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
                 </li>
               );
             })}
-            {section.disabled?.map(({ label, icon: Icon }) => (
-              <li key={label}>
-                <NavLabel collapsed={collapsed} label={label}>
+            {section.disabled?.map(({ labelKey, icon: Icon }) => (
+              <li key={labelKey}>
+                <NavLabel collapsed={collapsed} label={t[labelKey]}>
                   <span
                     className={cn(
                       "pointer-events-none flex items-center gap-2.5 rounded-lg py-2 text-sm text-white/40",
@@ -195,7 +202,7 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
                     )}
                   >
                     <Icon className="size-4.5 shrink-0" />
-                    {!collapsed && <span className="flex-1 truncate">{label}</span>}
+                    {!collapsed && <span className="flex-1 truncate">{t[labelKey]}</span>}
                   </span>
                 </NavLabel>
               </li>
@@ -206,7 +213,7 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
 
       {/* Accès technique discret aux entités de référence - pas un groupe, pas mis en avant. */}
       <div className="mt-auto pt-1">
-        <NavLabel collapsed={collapsed} label="Tous les modules">
+        <NavLabel collapsed={collapsed} label={t.allModules}>
           <Link
             href={modulesHref}
             className={cn(
@@ -221,7 +228,7 @@ function SidebarNav({ role, sections, modulesHref, collapsed, pathname, upcoming
               <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-white" />
             )}
             <LayoutGrid className="size-4 shrink-0" />
-            {!collapsed && <span className="flex-1 truncate">Tous les modules</span>}
+            {!collapsed && <span className="flex-1 truncate">{t.allModules}</span>}
           </Link>
         </NavLabel>
       </div>
@@ -236,16 +243,18 @@ interface SidebarFooterProps {
 }
 
 function SidebarFooter({ collapsed, user, onLogout }: SidebarFooterProps) {
+  const t = useLanguage().dict.nav;
+  const displayName = displayNameFor(user, t.account);
   return (
     <div className="mt-3 space-y-2 border-t border-white/15 pt-3">
-      <NavLabel collapsed={collapsed} label={`${displayNameFor(user)}${user?.email ? " · " + user.email : ""}`}>
+      <NavLabel collapsed={collapsed} label={`${displayName}${user?.email ? " · " + user.email : ""}`}>
         <div className={cn("flex items-center gap-2.5 px-1", collapsed && "justify-center px-0")}>
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-semibold text-white">
             {initialsFor(user)}
           </span>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">{displayNameFor(user)}</p>
+              <p className="truncate text-sm font-medium text-white">{displayName}</p>
               {user?.email && <p className="truncate text-xs text-white/60">{user.email}</p>}
             </div>
           )}
@@ -253,7 +262,7 @@ function SidebarFooter({ collapsed, user, onLogout }: SidebarFooterProps) {
             <button
               type="button"
               onClick={onLogout}
-              aria-label="Déconnexion"
+              aria-label={t.logout}
               className="flex size-8 shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-rose-200"
             >
               <LogOut className="size-4" />
@@ -266,7 +275,7 @@ function SidebarFooter({ collapsed, user, onLogout }: SidebarFooterProps) {
         <button
           type="button"
           onClick={onLogout}
-          aria-label="Déconnexion"
+          aria-label={t.logout}
           className="flex w-full items-center justify-center rounded-lg py-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-rose-200"
         >
           <LogOut className="size-4" />
@@ -281,6 +290,7 @@ function SidebarFooter({ collapsed, user, onLogout }: SidebarFooterProps) {
 }
 
 export function AppShell({ role, sections, modulesHref, children }: AppShellProps) {
+  const t = useLanguage().dict.nav;
   const pathname = usePathname() || "";
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -394,18 +404,18 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
               <button
                 type="button"
                 onClick={toggleCollapsed}
-                aria-label={collapsed ? "Déplier le menu" : "Replier le menu"}
+                aria-label={collapsed ? t.expandMenu : t.collapseMenu}
                 className="flex size-7 shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               >
                 {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">{collapsed ? "Déplier" : "Replier"}</TooltipContent>
+            <TooltipContent side="right">{collapsed ? t.expand : t.collapse}</TooltipContent>
           </Tooltip>
         </div>
 
         {/* Encart société active (visuel) */}
-        <NavLabel collapsed={collapsed} label={enterpriseName ?? "Société"}>
+        <NavLabel collapsed={collapsed} label={enterpriseName ?? t.company}>
           <div
             className={cn(
               "mt-4 flex items-center gap-2.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-2",
@@ -419,7 +429,7 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
               <>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-white">{enterpriseName ?? "—"}</p>
-                  <p className="truncate text-xs text-white/60">Agence principale</p>
+                  <p className="truncate text-xs text-white/60">{t.defaultAgency}</p>
                 </div>
                 <ChevronsUpDown className="size-3.5 shrink-0 text-white/60" />
               </>
@@ -443,7 +453,7 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
           dégradé de marque fixe que la version desktop. */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" style={SIDEBAR_GRADIENT_STYLE} className="flex flex-col border-none px-3 py-4">
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <SheetTitle className="sr-only">{t.navigation}</SheetTitle>
           <Link href={`/${role}`} className="flex items-center gap-2.5 px-2">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-primary">
               <Building2 className="size-4.5" />
@@ -457,7 +467,7 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-white">{enterpriseName ?? "—"}</p>
-              <p className="truncate text-xs text-white/60">Agence principale</p>
+              <p className="truncate text-xs text-white/60">{t.defaultAgency}</p>
             </div>
           </div>
 
@@ -482,22 +492,22 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              aria-label="Ouvrir le menu"
+              aria-label={t.openMenu}
               className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent lg:hidden"
             >
               <Menu className="size-5" />
             </button>
             <div className="flex items-center gap-1.5 text-sm">
-              <span className="hidden text-muted-foreground sm:inline">Accueil</span>
+              <span className="hidden text-muted-foreground sm:inline">{t.home}</span>
               <ChevronRight className="hidden size-3.5 text-muted-foreground sm:inline" />
-              <span className="font-medium">{breadcrumbLabel(pathname)}</span>
+              <span className="font-medium">{breadcrumbLabel(pathname, t)}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="hidden items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-muted-foreground sm:flex">
               <Search className="size-3.5" />
-              <span>Rechercher</span>
+              <span>{t.search}</span>
               <kbd className="rounded border border-border bg-muted px-1 text-[10px]">⌘K</kbd>
             </div>
             {/* Masqué sous sm (640px), même seuil que la barre de recherche ci-dessus - à 375px
@@ -507,7 +517,7 @@ export function AppShell({ role, sections, modulesHref, children }: AppShellProp
             <LanguageToggle />
             <button
               type="button"
-              aria-label="Notifications"
+              aria-label={t.notifications}
               className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent"
             >
               <Bell className="size-4.5" />

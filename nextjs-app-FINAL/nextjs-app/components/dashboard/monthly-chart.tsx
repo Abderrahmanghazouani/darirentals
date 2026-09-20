@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useLanguage } from "@/lib/i18n/language-context";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -32,6 +33,7 @@ interface MonthlyChartProps {
 type ChartRow = MonthlyFinancials & { raw: MonthlyFinancials };
 
 export function MonthlyChart({ data, formatValue, convertValue }: MonthlyChartProps) {
+  const { dict } = useLanguage();
   const format = formatValue ?? ((value: number) => `${value.toLocaleString("fr-FR")} MAD`);
 
   // Valeurs tracées = converties ; on garde les valeurs MAD d'origine dans `raw` pour le tooltip.
@@ -49,7 +51,7 @@ export function MonthlyChart({ data, formatValue, convertValue }: MonthlyChartPr
   if (data.length === 0) {
     return (
       <p className="text-sm text-muted-foreground text-center py-12">
-        Pas encore assez de données pour afficher un graphique.
+        {dict.revenueIntelligence.noData}
       </p>
     );
   }
@@ -72,12 +74,12 @@ export function MonthlyChart({ data, formatValue, convertValue }: MonthlyChartPr
             }}
           />
           <Legend />
-          <Bar dataKey="revenue" name="Revenus" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="charges" name="Charges" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="revenue" name={dict.revenueIntelligence.legendRevenue} fill="var(--color-success)" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="charges" name={dict.revenueIntelligence.legendCharges} fill="var(--color-destructive)" radius={[4, 4, 0, 0]} />
           <Line
             type="monotone"
             dataKey="profit"
-            name="Bénéfice net"
+            name={dict.revenueIntelligence.legendProfit}
             stroke="#171717"
             strokeWidth={2}
             dot={{ r: 3 }}

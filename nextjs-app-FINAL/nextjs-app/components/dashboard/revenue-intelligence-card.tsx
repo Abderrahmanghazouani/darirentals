@@ -17,7 +17,6 @@ import {
   computeRevenueMonthComparison,
   computeRevenueSeries,
   REVENUE_PERIOD_KEYS,
-  REVENUE_PERIODS,
   RevenuePeriod,
   RevenueTrend,
 } from "@/lib/dashboard/revenue-intelligence";
@@ -47,7 +46,7 @@ interface RevenueIntelligenceCardProps {
 }
 
 export function RevenueIntelligenceCard({ reservations, charges, formatValue }: RevenueIntelligenceCardProps) {
-  const { dict } = useLanguage();
+  const { dict, locale } = useLanguage();
   const { convert } = useCurrency();
   const [period, setPeriod] = useState<RevenuePeriod>("12m");
 
@@ -57,11 +56,36 @@ export function RevenueIntelligenceCard({ reservations, charges, formatValue }: 
   );
 
   const seriesData = useMemo(
-    () => computeRevenueSeries(reservations, charges, period),
-    [reservations, charges, period]
+    () => computeRevenueSeries(reservations, charges, period, locale),
+    [reservations, charges, period, locale]
   );
 
   const TrendIcon = TREND_ICON[comparison.trend];
+
+  const PERIOD_LABEL: Record<RevenuePeriod, string> = {
+    "7d": dict.revenueIntelligence.period7d,
+    "30d": dict.revenueIntelligence.period30d,
+    "3m": dict.revenueIntelligence.period3m,
+    "12m": dict.revenueIntelligence.period12m,
+  };
+
+  // Phrase de résumé dans la langue choisie (comparison.summary reste en français pour l'IA).
+  const summaryText = (() => {
+    const t = dict.revenueIntelligence;
+    const pct = comparison.percentChange ?? 0;
+    switch (comparison.summaryKind) {
+      case "stableNone":
+        return t.summaryStableNone;
+      case "new":
+        return t.summaryNew;
+      case "stable":
+        return t.summaryStable.replace("{pct}", `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`);
+      case "up":
+        return t.summaryUp.replace("{pct}", `${pct.toFixed(1)}%`);
+      case "down":
+        return t.summaryDown.replace("{pct}", `${Math.abs(pct).toFixed(1)}%`);
+    }
+  })();
 
   return (
     <Card>
@@ -75,7 +99,7 @@ export function RevenueIntelligenceCard({ reservations, charges, formatValue }: 
             <SelectContent>
               {REVENUE_PERIOD_KEYS.map((key) => (
                 <SelectItem key={key} value={key}>
-                  {REVENUE_PERIODS[key].label}
+                  {PERIOD_LABEL[key]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -98,7 +122,7 @@ export function RevenueIntelligenceCard({ reservations, charges, formatValue }: 
               {dict.revenueIntelligence.currentMonthRevenue}
             </span>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">{comparison.summary}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{summaryText}</p>
         </div>
 
         {/* min-w-0 : Card est un flex-col (voir components/ui/card.tsx) et un enfant flex ne
