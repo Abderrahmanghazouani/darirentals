@@ -469,3 +469,18 @@ Données de test supprimées après vérification (réservations et demandes cr�
 
 **Limite connue, non traitée** : passer ensuite une demande de `Confirmee` à `Rejetee` ne supprime/n'annule pas la
 Reservation créée.
+
+## ✅ Point 3 — Alerte « tâche en retard » dans le tableau /admin/tasks
+
+**Constat corrigé** : l'audit indiquait que le tableau ne signalait pas les lignes en retard. C'était inexact :
+depuis le chantier `taches` (`fd3e2a1`), `/admin/tasks` et `/collaborator/tasks` affichent déjà une icône
+`AlertTriangle` rouge dans « Titre » et la date d'échéance en rouge/gras (vérifié dans le DOM sur les 3 tâches
+en retard réelles de la base : icône + date rouge présentes). L'alerte était en revanche **discrète** : icône sans
+texte alternatif, et information portée uniquement par la couleur.
+
+**Amélioration** (admin + collaborateur) : l'icône a maintenant `role="img"` + `aria-label="Tâche en retard"`, et la
+colonne « Échéance » ajoute un libellé texte **« · En retard »** à côté de la date (l'alerte ne dépend plus de la
+seule couleur). La logique `isOverdue` (échéance passée et statut non terminé) n'est pas modifiée.
+
+**Test** : page `/admin/tasks` sur la base réelle, 3 lignes en retard → `2026-09-15 · En retard` + icône
+`aria-label="Tâche en retard"` sur chacune. `npm run build` OK.
