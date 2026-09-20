@@ -535,3 +535,16 @@ utilise le taux du jour de l'export. Les valeurs figées en base ne sont jamais 
 - Axe Y du graphique Revenue Intelligence toujours en échelle MAD (audit point 7) : non listé dans le périmètre décidé.
 - Les Insights / Chat IA parlent toujours en MAD (décision existante, voir audit point 9).
 - Le Health Score du dashboard collaborateur : le composant n'y est pas utilisé (seul `app/admin/page.tsx` l'appelle).
+
+### Suite du point 4 — axe Y du graphique + précision des taux
+
+- **Axe Y du graphique Revenue Intelligence (audit point 7) : corrigé.** `MonthlyChart` reçoit une prop `convertValue`
+  (fournie par `RevenueIntelligenceCard` via `useCurrency().convert`) : barres, courbe **et donc graduations** sont tracées
+  dans l'échelle de la devise choisie. Le tooltip continue d'afficher `formatValue` sur la valeur MAD d'origine (gardée dans
+  `raw`), donc pas de double conversion. Test sur le dashboard admin réel : MAD → graduations `0 / 850 / 1 700 / 2 550 / 3 400`,
+  tooltip `2 650,00 DH` ; EUR → graduations `0 / 75 / 150 / 225 / 300`, tooltip `238,50 EUR` ; retour en MAD identique au départ.
+  (Le même composant sert le dashboard collaborateur.)
+- **Amélioration future — précision des `ExchangeRate`** : la colonne `rate` est stockée avec 2 décimales (EUR 0.09, USD 0.10,
+  GBP 0.08), ce qui rend les conversions approximatives (111 MAD → 9,99 EUR). À traiter après la soutenance : augmenter
+  la précision de la colonne (ex. `DECIMAL(18,6)`) et de la synchronisation automatique des taux. Aucun code modifié à ce stade.
+- **Assistant IA** : reste en MAD (décision confirmée), aucune modification.

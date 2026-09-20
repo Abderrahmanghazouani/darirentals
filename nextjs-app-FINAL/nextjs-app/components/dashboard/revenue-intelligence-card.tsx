@@ -22,6 +22,7 @@ import {
   RevenueTrend,
 } from "@/lib/dashboard/revenue-intelligence";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { useCurrency } from "@/lib/currency/currency-context";
 
 // Tokens de thème (palette DariRentals - voir app/globals.css) : succès = teal, négatif =
 // rouge doux (= --destructive), neutre = gris muted existant.
@@ -47,6 +48,7 @@ interface RevenueIntelligenceCardProps {
 
 export function RevenueIntelligenceCard({ reservations, charges, formatValue }: RevenueIntelligenceCardProps) {
   const { dict } = useLanguage();
+  const { convert } = useCurrency();
   const [period, setPeriod] = useState<RevenuePeriod>("12m");
 
   const comparison = useMemo(
@@ -104,7 +106,7 @@ export function RevenueIntelligenceCard({ reservations, charges, formatValue }: 
             ResponsiveContainer de recharts (beaucoup de libellés sur 12 mois) forçait toute la
             page à déborder horizontalement sur mobile. */}
         <div className="min-w-0">
-          <MonthlyChart data={seriesData} formatValue={formatValue} />
+          <MonthlyChart data={seriesData} formatValue={formatValue} convertValue={convert} />
         </div>
       </CardContent>
     </Card>
