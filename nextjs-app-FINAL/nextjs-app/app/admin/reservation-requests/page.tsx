@@ -39,6 +39,7 @@ export default function ReservationRequestsPage() {
 
   const [filterStatus, setFilterStatus] = useState<string>("EnAttente");
   const [actingId, setActingId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [detailed, setDetailed] = useState<ReservationRequestDto[]>([]);
 
   useEffect(() => {
@@ -61,12 +62,17 @@ export default function ReservationRequestsPage() {
   async function changeStatus(item: ReservationRequestDto, code: "Confirmee" | "Rejetee") {
     if (item.id == null) return;
     setActingId(item.id);
+    setActionError(null);
     try {
       await client.update({
         ...item,
         reservationRequestStatus: { id: STATUS_IDS[code] } as ReservationRequestDto["reservationRequestStatus"],
       });
       await crud.refresh();
+    } catch (e) {
+      // Confirmer crée une Réservation côté serveur : chevauchement ou demande sans dates
+      // exploitables -> le serveur refuse avec un message lisible, à afficher tel quel.
+      setActionError(e instanceof Error ? e.message : "Erreur lors de la mise à jour de la demande");
     } finally {
       setActingId(null);
     }
@@ -93,6 +99,11 @@ export default function ReservationRequestsPage() {
         </CardHeader>
         <CardContent>
           {crud.error && <p className="text-destructive-text text-sm mb-4">{crud.error}</p>}
+          {actionError && (
+            <p role="alert" className="text-destructive-text text-sm mb-4">
+              {actionError}
+            </p>
+          )}
           {crud.loading ? (
             <p className="text-muted-foreground text-sm py-8 text-center">Chargement...</p>
           ) : filteredItems.length === 0 ? (

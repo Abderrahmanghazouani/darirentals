@@ -425,3 +425,47 @@ Restriction Gestionnaire par propriété inchangée (`audit_gest` : 1 propriét�
 **Effet de bord assumé** : un SubAdmin ne peut plus modifier un collaborateur rattaché à une société
 dont il ne fait pas partie (même si l'une de ses sociétés lui est commune) - cohérent avec
 `deleteById()`, plus strict qu'avant.
+
+## ✅ Point 2 — « Confirmer » une demande de réservation crée désormais une vraie Reservation
+
+**Cause réelle** : le front (`changeStatus` dans `admin/reservation-requests/page.tsx`) appelait le CRUD
+générique `PUT /api/admin/reservationRequest/` avec juste un nouveau statut, et
+`ReservationRequestAdminServiceImpl.update()` ne faisait que `dao.save(t)`. Aucun endpoint « confirmer »
+n'existait, donc aucune `Reservation` n'était créée. Deuxième problème découvert : une demande ne stockait
+pas ses dates de façon structurée (uniquement dans le texte de `clientNote`, « Dates souhaitées : du X au Y. »),
+donc impossibles à exploiter directement.
+
+**Correctif (backend)** :
+- `ReservationRequest` : deux nouveaux champs `requestedCheckIn` / `requestedCheckOut` (`LocalDate`, colonnes
+  ajoutées par `ddl-auto=update`), remplis par `POST /api/open/reservation-request/` (400 si format de date invalide).
+- `ReservationRequestAdminServiceImpl.update()` : invariant **« une demande Confirmee est toujours rattachée à une
+  Reservation »**. Si la demande est confirmée et n'a pas encore de `reservation`, une `Reservation` est créée
+  (client, propriété demandée, dates, prix/nuit et montant = prix × nuits, statut `Confirmee`, plateforme `Direct`,
+  référence `RES-…`) via `ReservationAdminService.create()` - donc **avec la vérification de chevauchement existante** -
+  puis liée à la demande. Le lien posé immédiatement garantit l'absence de doublon aux sauvegardes suivantes.
+  Les demandes antérieures (dates seulement dans la note) sont gérées : les dates sont relues par regex.
+- Erreurs : chevauchement → **409**, demande sans dates ou sans propriété exploitables → **422**, avec un
+  `{message}` lisible. Le statut n'est pas modifié quand la création échoue (transaction annulée).
+- Note technique : on ne compare pas « ancien statut / nouveau statut » - avec open-in-view, contrôleur et service
+  partagent la même entité gérée, dont le statut est déjà remplacé par `converter.copy()`. (Piste testée puis
+  écartée après un premier essai qui ne créait rien.)
+
+**Correctif (frontend)** : `admin/reservation-requests/page.tsx` affiche désormais le message d'erreur du serveur
+(auparavant l'erreur était avalée silencieusement).
+
+**Tests (backend recompilé, vraies données)** :
+
+| Cas | Résultat |
+|---|---|
+| Confirmer une demande publique (Riad Kasbah 2027-01-10→14) | 200 ; Reservation créée : client, propriété, dates, statut `Confirmee`, plateforme `Direct` |
+| Confirmer une 2ᵉ demande qui chevauche | **409** « Cette propriété est déjà réservée… », demande reste `EnAttente`, aucune réservation créée |
+| Re-sauvegarder la demande déjà confirmée | 200, **pas de doublon** |
+| Demande ancienne (dates seulement dans la note, Riad Zahra 2026-11-10→14) | Reservation créée depuis les dates de la note, montant 4 × 111 = **444** |
+| Demande sans aucune date | **422** « pas de dates de séjour exploitables » |
+| **Parcours UI complet** : demande via `/reserver` (Villa Sahara 2027-02-10→14) → admin → Confirmer | disparaît de « En attente » ; **la réservation apparaît dans le calendrier de `/admin/reservations` (Février 2027, 10 → 13)** |
+| UI : Confirmer la demande qui chevauche | message d'erreur affiché, demande toujours listée |
+
+Données de test supprimées après vérification (réservations et demandes créées). `npm run build` : OK.
+
+**Limite connue, non traitée** : passer ensuite une demande de `Confirmee` à `Rejetee` ne supprime/n'annule pas la
+Reservation créée.

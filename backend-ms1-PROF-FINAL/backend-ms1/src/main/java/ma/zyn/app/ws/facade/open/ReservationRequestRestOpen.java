@@ -108,6 +108,18 @@ public class ReservationRequestRestOpen {
         reservationRequest.setRequestedProperty(property);
         reservationRequest.setReservationRequestStatus(pending);
         reservationRequest.setClientNote(note.toString());
+        // Dates structurees (en plus du texte de la note) : necessaires pour creer la Reservation
+        // quand l'admin confirme la demande (voir ReservationRequestAdminServiceImpl.update).
+        try {
+            if (input.checkIn != null && !input.checkIn.isBlank()) {
+                reservationRequest.setRequestedCheckIn(java.time.LocalDate.parse(input.checkIn));
+            }
+            if (input.checkOut != null && !input.checkOut.isBlank()) {
+                reservationRequest.setRequestedCheckOut(java.time.LocalDate.parse(input.checkOut));
+            }
+        } catch (java.time.format.DateTimeParseException e) {
+            return new ResponseEntity<>("Format de date invalide (attendu : AAAA-MM-JJ)", HttpStatus.BAD_REQUEST);
+        }
 
         ReservationRequest saved = reservationRequestService.create(reservationRequest);
         if (saved == null) {

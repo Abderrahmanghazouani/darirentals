@@ -28,6 +28,11 @@ public class ReservationRequest  extends BaseEntity     {
 
     private String staffNote;
 
+    /** Dates souhaitees par le client (portail public). Avant l'audit final elles n'existaient
+     * que dans le texte de clientNote, donc impossibles a exploiter pour creer une Reservation. */
+    private java.time.LocalDate requestedCheckIn;
+    private java.time.LocalDate requestedCheckOut;
+
     private Client client ;
     private Property requestedProperty ;
     private Property alternativeProperty ;
@@ -72,6 +77,18 @@ public class ReservationRequest  extends BaseEntity     {
     }
     public void setStaffNote(String staffNote){
         this.staffNote = staffNote;
+    }
+    public java.time.LocalDate getRequestedCheckIn(){
+        return this.requestedCheckIn;
+    }
+    public void setRequestedCheckIn(java.time.LocalDate requestedCheckIn){
+        this.requestedCheckIn = requestedCheckIn;
+    }
+    public java.time.LocalDate getRequestedCheckOut(){
+        return this.requestedCheckOut;
+    }
+    public void setRequestedCheckOut(java.time.LocalDate requestedCheckOut){
+        this.requestedCheckOut = requestedCheckOut;
     }
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client")
