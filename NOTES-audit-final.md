@@ -391,3 +391,37 @@ reste (ces pages ne sont de toute façon pas traduites par ailleurs).
 - Ampleur du chantier i18n à prévoir : vu le volume (sidebar + tous les CRUD + dashboard
   collaborateur), un vrai chantier de traduction complet est probablement nécessaire plutôt que
   quelques correctifs ponctuels - à discuter en termes de priorité avant la soutenance.
+
+---
+
+# CORRECTIONS (après décision d'ordre de traitement)
+
+## ✅ P1-1 — corrigé et testé (permission `canManageUsers` sur création/modification de Collaborator)
+
+**Correctif** :
+- [`EffectivePermissionService.assertCanManageUsersOnAnyEnterprise()`](backend-ms1-PROF-FINAL/backend-ms1/src/main/java/ma/zyn/app/service/security/EffectivePermissionService.java)
+  (nouveau) : l'appelant doit avoir `canManageUsers` sur au moins une des sociétés auxquelles il
+  est rattaché, quel que soit le contenu du payload.
+- [`CollaboratorCollaboratorServiceImpl.assertCanManageUsersForMemberships()`](backend-ms1-PROF-FINAL/backend-ms1/src/main/java/ma/zyn/app/service/impl/collaborator/auth/CollaboratorCollaboratorServiceImpl.java)
+  appelle désormais cette garde **avant** la boucle sur les memberships du payload (qui reste en
+  place pour vérifier chaque société visée). `create()` et `update()` en bénéficient.
+- `update()` vérifie en plus `canManageUsers` contre les memberships **réelles en base** du
+  collaborateur modifié (comme `deleteById()` le faisait déjà), plus seulement celles du payload.
+
+**Tests (backend recompilé, port dédié, vraies données)** :
+
+| Cas | Avant | Après |
+|---|---|---|
+| Gestionnaire `POST` collaborateur, payload sans `enterpriseMemberships` | **201** (faille) | **403** |
+| Gestionnaire `POST` avec membership société 3 | 403 | 403 |
+| Gestionnaire `PUT` collaborateur 29 | 403 | 403 |
+| SubAdmin `POST` sans memberships (légitime) | 201 | **201** |
+| SubAdmin `POST` avec membership société 3 (légitime) | 201 | **201** |
+| SubAdmin `PUT` collaborateur 28 (société 3 seule) | 200 | **200** |
+| SubAdmin `PUT` collaborateur 30 (sociétés 1 + 3, la 1 hors de sa portée) | (non testé) | **403** |
+
+Restriction Gestionnaire par propriété inchangée (`audit_gest` : 1 propriété visible, 404 sur les autres).
+
+**Effet de bord assumé** : un SubAdmin ne peut plus modifier un collaborateur rattaché à une société
+dont il ne fait pas partie (même si l'une de ses sociétés lui est commune) - cohérent avec
+`deleteById()`, plus strict qu'avant.
