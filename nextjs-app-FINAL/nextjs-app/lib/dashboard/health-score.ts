@@ -66,7 +66,10 @@ export function computeHealthScore(
   properties: PropertyDto[],
   reservations: ReservationDto[],
   charges: ChargeDto[],
-  tasks: TaskDto[]
+  tasks: TaskDto[],
+  /** Formate un montant exprimé en MAD (ex: useCurrency().format, conversion vers la devise choisie).
+   * Par défaut : MAD brut, utilisé notamment par les faits envoyés à l'assistant IA (toujours en MAD). */
+  formatAmount: (amountInMad: number) => string = (n) => `${n.toLocaleString("fr-FR")} MAD`
 ): HealthScore {
   // A. Performance financière (35%)
   const [current] = computeMonthlyFinancials(reservations, charges, 1);
@@ -77,7 +80,7 @@ export function computeHealthScore(
   const financialScore = revenue > 0 ? clamp(Math.round((margin / TARGET_PROFIT_MARGIN) * 100)) : 0;
   const financialDetail =
     revenue > 0
-      ? `Marge du mois en cours : ${(margin * 100).toFixed(1)}% (objectif ${(TARGET_PROFIT_MARGIN * 100).toFixed(0)}%) — revenus ${revenue.toLocaleString("fr-FR")} MAD, charges ${chargesTotal.toLocaleString("fr-FR")} MAD`
+      ? `Marge du mois en cours : ${(margin * 100).toFixed(1)}% (objectif ${(TARGET_PROFIT_MARGIN * 100).toFixed(0)}%) — revenus ${formatAmount(revenue)}, charges ${formatAmount(chargesTotal)}`
       : "Aucun revenu enregistré ce mois-ci (réservations non annulées)";
 
   // B. Santé du portefeuille (25%)

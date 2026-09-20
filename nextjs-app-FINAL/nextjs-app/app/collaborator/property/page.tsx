@@ -28,6 +28,7 @@ import { EntityTable, EntityColumn } from "@/components/crud/entity-table";
 import { EntityFormDialog } from "@/components/crud/entity-form-dialog";
 import { useEntityCrud } from "@/lib/use-entity-crud";
 import { useRequireRole } from "@/lib/use-require-role";
+import { useCurrency } from "@/lib/currency/currency-context";
 import { getEntityClients } from "@/lib/api";
 import { PropertyDto } from "@/lib/types/Property";
 import { CityDto } from "@/lib/types/City";
@@ -58,6 +59,8 @@ function PositionLink(props: { lat: number; lng: number }) {
 
 export default function PropertyPage() {
   const ready = useRequireRole(ROLE);
+  // Écran de consultation : montants convertis dans la devise choisie (stockage toujours en MAD).
+  const { format: formatMoney } = useCurrency();
     const enterpriseId = useSelectedEnterpriseId();
 
   const client = useMemo(() => getEntityClients(ROLE).property, []);
@@ -105,7 +108,7 @@ const filteredItems = useMemo(() => {
     },
     {
       header: "Prix/nuit",
-      render: (p) => (p.pricePerNight != null ? p.pricePerNight + " MAD" : "—"),
+      render: (p) => (p.pricePerNight != null ? formatMoney(p.pricePerNight) : "—"),
     },
     {
       header: "Position",

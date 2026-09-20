@@ -484,3 +484,54 @@ seule couleur). La logique `isOverdue` (échéance passée et statut non termin�
 
 **Test** : page `/admin/tasks` sur la base réelle, 3 lignes en retard → `2026-09-15 · En retard` + icône
 `aria-label="Tâche en retard"` sur chacune. `npm run build` OK.
+
+## ✅ Point 4 — Conversion de devise sur les écrans de consultation
+
+**Principe (inchangé)** : tout est stocké en MAD ; la conversion est un affichage. Les formulaires de saisie
+(Charge, Payment, Reservation, y compris la liste des charges à rattacher dans le formulaire de paiement)
+**restent volontairement en MAD** (devise de référence comptable), comme décidé.
+
+**Écrans convertis** (via `useCurrency().format`, taux issus de la table `ExchangeRate`) :
+
+| Écran | Modification |
+|---|---|
+| Rentabilité par propriété (`/admin/property/[id]/rentabilite`) | 3 cartes + 2 tableaux de détail ; `formatMoney` local supprimé ; les hints « MAD · n réservations » ne portent plus la devise en dur |
+| Rapports financiers (`/admin/financial-reports`) | colonnes Revenus / Charges / Bénéfice net de l'historique + mention « montants figés en MAD, affichés en X au taux actuel » quand la devise ≠ MAD |
+| Export PDF/CSV | **converti côté serveur** (voir ci-dessous) |
+| Propriétés (admin + collaborateur) | colonne Prix/nuit |
+| Charges (admin + collaborateur) | colonne Montant + cartes « total par propriété » |
+| Paiements (admin + collaborateur) | colonne Montant |
+| Health Score | détail « revenus X, charges Y » : `computeHealthScore()` reçoit un formateur optionnel (défaut MAD) ; le dashboard admin lui passe `format` |
+
+**Export PDF/CSV - conception** : la génération est côté backend, qui ne connaissait pas la préférence (elle est dans
+le `localStorage`). Le front envoie maintenant `?currency=<code>` sur `GET /api/admin/financial-reports/{id}/pdf|csv`.
+`FinancialReportExportService.resolveCurrency()` cherche le taux MAD→devise dans `ExchangeRate` (même règle que
+`convertFromBase` du front) : sans paramètre, MAD, ou devise sans taux → **repli sur MAD** (jamais de montant faux).
+Le document indique la devise et le taux (`Devise : EUR (1 MAD = 0.09 EUR)`), les en-têtes CSV deviennent
+`Revenus (EUR)`, etc., et le pied de page du PDF précise que la valeur figée reste en MAD et que la conversion
+utilise le taux du jour de l'export. Les valeurs figées en base ne sont jamais modifiées.
+
+**Tests (données réelles, backend recompilé 8037 + front branché dessus)** :
+
+| Vérification | Résultat |
+|---|---|
+| Rentabilité Riad Zahra (5 300 / 700 / 4 600 MAD) en MAD | `5 300,00 DH`, `700,00 DH`, `4 600,00 DH` |
+| Même page après changement via le **sélecteur de devise** → EUR (0,09) | `477,00`, `63,00`, `414,00 EUR` ; lignes de détail 297 / 180 / 45 / 18 EUR ✅ |
+| Historique des rapports en EUR | 350 MAD → `31,50 EUR`, 300 → `27,00 EUR`, note de conversion affichée |
+| Clic sur export PDF et CSV | requêtes `…/10/csv?currency=EUR` et `…/10/pdf?currency=EUR`, 200 |
+| CSV `?currency=` vide / MAD / EUR / usd / XXX (inconnue) | 350,00 MAD / 350,00 MAD / **31,50 EUR** / **35,00 USD** / 350,00 MAD (repli) ✅ |
+| PDF EUR (texte extrait) | `31.50 EUR`, ligne « Devise : EUR (1 MAD = 0.09 EUR) », pied de page de conversion |
+| Propriétés (Riad Zahra 111 MAD) | `9,99 EUR` |
+| Charges (200 / 444 / 500 / 10 / 5) | `18,00 / 39,96 / 45,00 / 0,90 / 0,45 EUR` + cartes de total |
+| Paiements (10 / 75) | `0,90 / 6,75 EUR` |
+| Health Score (revenus du mois 2 650 MAD) | `revenus 238,50 EUR, charges 0,00 EUR` |
+| Vues collaborateur (compte `audit_sub`) : Charges, Propriétés, Paiements | montants en EUR ✅ |
+
+`tsc --noEmit` et `npm run build` OK. Rapports de test créés puis supprimés.
+
+**Limites / reste à traiter (non inclus dans ce point)** :
+- Taux stockés avec 2 décimales en base (EUR 0.09, USD 0.10, GBP 0.08) : conversions peu précises (ex. 111 MAD → 9,99 EUR).
+  C'est la donnée de `ExchangeRate` (colonne `rate`, scale 2), pas la conversion ; à revoir si des taux plus fins sont attendus.
+- Axe Y du graphique Revenue Intelligence toujours en échelle MAD (audit point 7) : non listé dans le périmètre décidé.
+- Les Insights / Chat IA parlent toujours en MAD (décision existante, voir audit point 9).
+- Le Health Score du dashboard collaborateur : le composant n'y est pas utilisé (seul `app/admin/page.tsx` l'appelle).
