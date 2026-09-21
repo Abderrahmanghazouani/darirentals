@@ -17,27 +17,27 @@ import { getEntityClients } from "@/lib/api";
 // modules n'ont pas d'équivalent sous /collaborator/** (vérifié, aucune page correspondante).
 const sections: NavSection[] = [
   {
-    title: "Vue d'ensemble",
-    items: [{ label: "Tableau de bord", href: "/collaborator", icon: LayoutDashboard }],
+    titleKey: "sectionOverview",
+    items: [{ labelKey: "dashboard", href: "/collaborator", icon: LayoutDashboard }],
   },
   {
-    title: "Opérations",
+    titleKey: "sectionOperations",
     items: [
-      { label: "Propriétés", href: "/collaborator/property", icon: Building2 },
+      { labelKey: "properties", href: "/collaborator/property", icon: Building2 },
       {
-        label: "Réservations",
+        labelKey: "reservations",
         href: "/collaborator/reservations",
         icon: CalendarDays,
         badge: "reservations",
       },
-      { label: "Tâches", href: "/collaborator/tasks", icon: ClipboardList },
+      { labelKey: "tasks", href: "/collaborator/tasks", icon: ClipboardList },
     ],
   },
   {
-    title: "Finances",
+    titleKey: "sectionFinances",
     items: [
-      { label: "Charges", href: "/collaborator/charges", icon: Receipt },
-      { label: "Paiements", href: "/collaborator/payments", icon: Wallet },
+      { labelKey: "charges", href: "/collaborator/charges", icon: Receipt },
+      { labelKey: "payments", href: "/collaborator/payments", icon: Wallet },
     ],
   },
 ];

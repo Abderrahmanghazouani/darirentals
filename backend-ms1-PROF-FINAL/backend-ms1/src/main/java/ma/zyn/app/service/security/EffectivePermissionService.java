@@ -107,6 +107,19 @@ public class EffectivePermissionService {
         assertPermission(canManageUsers(enterpriseId), "gérer les utilisateurs de cette société");
     }
 
+    /**
+     * Audit final (NOTES-audit-final.md, P1-1) : exige que l'appelant ait canManageUsers sur AU
+     * MOINS UNE societe a laquelle il est rattache, independamment du contenu de la requete.
+     * Sert de garde obligatoire quand la verification "par societe visee" n'a rien a verifier
+     * (ex. creation d'un Collaborator dont le payload ne contient aucune EnterpriseMembership :
+     * la verification par membership du payload devenait alors un no-op complet).
+     */
+    public void assertCanManageUsersOnAnyEnterprise() {
+        boolean allowed = enterpriseAccessService.getAccessibleEnterpriseIds().stream()
+                .anyMatch(this::canManageUsers);
+        assertPermission(allowed, "gérer les utilisateurs");
+    }
+
     public void assertCanManageFinancials(Long enterpriseId) {
         assertPermission(canManageFinancials(enterpriseId), "gérer les finances de cette société");
     }

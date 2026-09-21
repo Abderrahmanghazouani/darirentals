@@ -103,6 +103,18 @@ public class ReservationRequestRestAdmin {
         return res;
     }
 
+    /** Confirmer une demande cree une Reservation : chevauchement -> 409, demande sans dates/
+     * propriete exploitables -> 422, avec un message lisible par le front (voir audit final). */
+    @ExceptionHandler(ma.zyn.app.zynerator.exception.ReservationOverlapException.class)
+    public ResponseEntity<java.util.Map<String, String>> handleOverlap(ma.zyn.app.zynerator.exception.ReservationOverlapException e) {
+        return new ResponseEntity<>(java.util.Map.of("message", e.getMessage()), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(ma.zyn.app.zynerator.exception.BusinessRuleException.class)
+    public ResponseEntity<java.util.Map<String, String>> handleBusinessRule(ma.zyn.app.zynerator.exception.BusinessRuleException e) {
+        return new ResponseEntity<>(java.util.Map.of("message", e.getMessage()), HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
     @Operation(summary = "Delete list of reservationRequest")
     @PostMapping("multiple")
     public ResponseEntity<List<ReservationRequestDto>> delete(@RequestBody List<ReservationRequestDto> dtos) throws Exception {

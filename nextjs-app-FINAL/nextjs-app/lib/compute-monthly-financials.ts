@@ -2,10 +2,12 @@ import { ReservationDto } from "@/lib/types/Reservation";
 import { ChargeDto } from "@/lib/types/Charge";
 import { MonthlyFinancials } from "@/components/dashboard/monthly-chart";
 
-const MONTH_LABELS = [
-  "Jan", "Fév", "Mar", "Avr", "Mai", "Jun",
-  "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc",
-];
+import type { Locale } from "@/lib/i18n/translations";
+
+const MONTH_LABELS: Record<Locale, string[]> = {
+  fr: ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+};
 
 // Code seedé dans AppApplication.createReservationStatus() - voir aussi totalRevenue dans
 // app/admin/page.tsx, qui doit exclure les mêmes réservations annulées.
@@ -21,15 +23,18 @@ function dayKey(dateStr: string): string {
   return dateStr.slice(0, 10); // "YYYY-MM-DD"
 }
 
-function monthLabel(key: string): string {
+function monthLabel(key: string, locale: Locale): string {
   const [year, month] = key.split("-");
   const index = Number(month) - 1;
-  return `${MONTH_LABELS[index] ?? month} ${year}`;
+  return `${MONTH_LABELS[locale][index] ?? month} ${year}`;
 }
 
-function dayLabel(key: string): string {
+function dayLabel(key: string, locale: Locale): string {
   const [year, month, day] = key.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+  return new Date(year, month - 1, day).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR", {
+    day: "2-digit",
+    month: "short",
+  });
 }
 
 /**
@@ -44,7 +49,9 @@ export function computeMonthlyFinancials(
   reservations: ReservationDto[],
   charges: ChargeDto[],
   count = 6,
-  granularity: FinancialsGranularity = "month"
+  granularity: FinancialsGranularity = "month",
+  /** Langue des libellés d'axe (mois/jours). Défaut "fr" : tous les autres appelants n'utilisent que les montants. */
+  locale: Locale = "fr"
 ): MonthlyFinancials[] {
   const now = new Date();
   const keys: string[] = [];
@@ -83,7 +90,7 @@ export function computeMonthlyFinancials(
     const revenue = revenueByKey[key] ?? 0;
     const chargesTotal = chargesByKey[key] ?? 0;
     return {
-      month: labelOf(key),
+      month: labelOf(key, locale),
       revenue,
       charges: chargesTotal,
       profit: revenue - chargesTotal,

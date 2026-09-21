@@ -1,0 +1,606 @@
+# Audit final avant soutenance — DariRentals
+
+Branche `fix/audit-final-avant-soutenance`. **Audit uniquement — aucune correction appliquée**,
+conformément à la méthode demandée. Toutes les affirmations ci-dessous sont vérifiées (test
+réel via navigateur et/ou API avec JWT, ou lecture directe du code source) — aucune supposition
+non vérifiée n'est présentée comme un fait.
+
+**Environnement de test** : backend `localhost:8036` (build incluant tous les chantiers
+mergés jusqu'à `fix/client-collaborator-500`), frontend `localhost:3000`, MySQL partagée.
+
+**Fixtures de test créées pendant l'audit, laissées en place** (à nettoyer ou réutiliser) :
+- Collaborateurs `audit_gest` / `audit_sub` / `audit_multi` (mot de passe `test1234`, ids
+  28/29/30) — respectivement Gestionnaire restreint à 1 propriété, SubAdmin, et collaborateur
+  multi-société (abdo + Dar Atlas Hospitality). Utiles pour retester les correctifs du
+  Finding P1-1 sans tout re-créer.
+- Client `Audit Public Portal` (créé via `/reserver`) + sa demande de réservation confirmée
+  (id 9, statut "Confirmee").
+- Éléments de test ponctuels déjà nettoyés pendant l'audit (collaborateur créé par le
+  contournement de permission, tâche et charge de test) - voir Finding P1-1 pour la preuve
+  qui a nécessité leur création.
+
+---
+
+## PARTIE 1 — Parcours fonctionnel
+
+### Résumé
+La quasi-totalité des parcours testés fonctionne correctement, y compris des points sensibles
+(chevauchement de réservation, isolation par société, restriction Gestionnaire par propriété,
+export PDF/CSV, assistant IA). **Un problème de sécurité réel et exploitable a été trouvé**
+(Finding P1-1) - c'est le plus important de tout l'audit, toutes parties confondues.
+
+### Finding P1-1 — 🔴 CRITIQUE : un Gestionnaire (ou n'importe quel collaborateur) peut créer des comptes Collaborator sans la permission `canManageUsers`
+
+**Reproduction exacte** (`audit_gest`, rôle Gestionnaire, `canManageUsers=false`) :
+```
+POST /api/collaborator/collaborator/
+Authorization: Bearer <token Gestionnaire>
+{"name":"x","email":"xtest@x.com","username":"xx1","password":"test1234",
+ "isActive":true,"enabled":true,"accountNonExpired":true,"accountNonLocked":true,
+ "credentialsNonExpired":true,"passwordChanged":true}
+```
+→ **HTTP 201**, compte créé (id 31, nettoyé après coup). Aucun champ `enterpriseMemberships`
+dans le payload.
+
+**Cause (code)** — [`CollaboratorCollaboratorServiceImpl.java`](backend-ms1-PROF-FINAL/backend-ms1/src/main/java/ma/zyn/app/service/impl/collaborator/auth/CollaboratorCollaboratorServiceImpl.java) :
+```java
+public Collaborator create(Collaborator t) {
+    assertCanManageUsersForMemberships(t);   // <-- voir ci-dessous
+    ...
+}
+private void assertCanManageUsersForMemberships(Collaborator t) {
+    if (t.getEnterpriseMemberships() != null) {   // <-- le trou
+        t.getEnterpriseMemberships().forEach(membership -> {
+            effectivePermissionService.assertCanManageUsers(...);
+        });
+    }
+}
+```
+La vérification ne s'exécute QUE si le payload contient une liste `enterpriseMemberships` non
+nulle. L'omettre du tout (comme n'importe quel client HTTP peut le faire) fait de
+`assertCanManageUsersForMemberships` un no-op complet — **aucune permission n'est vérifiée**.
+
+**Portée réelle testée** :
+- Bypass confirmé sur **`create()`** (payload sans `enterpriseMemberships` → 201, aucune
+  permission requise).
+- **`update()` correctement protégé** : testé avec le même type de payload (sans
+  `enterpriseMemberships`) pour modifier un AUTRE collaborateur (id 29) → **403** correct. Le
+  contrôleur charge apparemment les memberships existantes avant l'appel service, donc le
+  bypass ne s'applique pas en pratique à `update()` (vérifié empiriquement, pas juste supposé).
+- Le compte créé via le bypass n'a **aucune** `EnterpriseMembership` (puisque le payload qui
+  a permis le bypass n'en contenait pas) - il ne peut donc rien voir/faire une fois connecté
+  (isolation Chantier 1 : aucune société accessible). **Impact réel = création de comptes non
+  autorisée (pollution/abus de ressource), pas une élévation de privilège directe** - vérifié
+  que la voie d'escalade évidente (POST direct sur `/api/collaborator/enterpriseMembership/`
+  pour se donner un rôle) reste correctement bloquée (403 confirmé, ce endpoint vérifie la
+  permission de façon inconditionnelle).
+- Le même bug (`assertCanManageUsersForMemberships`) est appelé à l'identique par `update()`
+  et `create()` — la ligne 68 (`update`) et 328 (`create`) partagent la même méthode privée.
+  Le contournement empirique n'a marché QUE sur `create()` dans mes tests ; à revérifier après
+  correctif que `update()` ne devient pas vulnérable dans un scénario différent (payload
+  construit différemment).
+
+**Recommandation** (à discuter, pas appliquée) : rendre la vérification obligatoire et non
+conditionnelle - par exemple exiger qu'un `create()` de Collaborator échoue si l'appelant n'a
+`canManageUsers` sur AUCUNE société (indépendamment du contenu de `enterpriseMemberships`), ou
+vérifier la permission sur la société de l'appelant lui-même plutôt que sur celles du payload.
+
+---
+
+### 1. Authentification — ✅ tout confirmé
+- Connexion admin (admin/123) → `/admin` : OK.
+- Connexion collaborateur 1 société (`audit_sub`) → `/collaborator` direct (pas de détour par
+  select-enterprise) : OK.
+- Connexion collaborateur 2+ sociétés (`audit_multi`) → `/select-enterprise` (liste les 2
+  sociétés + rôle) → choix → `/collaborator` : OK.
+- Déconnexion admin et collaborateur : OK (bouton "Déconnexion" en icône seule dans le pied de
+  sidebar - repéré via son `aria-label`, pas de texte visible à côté de l'icône).
+- Mauvais mot de passe → "Échec de la connexion", reste sur `/login` : OK.
+
+### 2. Propriétés — ✅ déjà testé de façon exhaustive (chantier `formulaires-premium`)
+Wizard 3 étapes, carte interactive, création/édition/suppression réelles, recentrage de la
+carte en édition : déjà vérifiés bout en bout avec captures d'écran lors de ce chantier (voir
+`NOTES-formulaires-premium.md`). Non re-testé en détail ici pour ne pas dupliquer un travail
+déjà fait et documenté à la même rigueur. Filtres ville/type/statut non re-testés explicitement
+dans cet audit (fonctionnalité simple, risque faible).
+
+### 3. Réservations
+- **Chevauchement bloqué** : réservation créée sur Riad Zahra 2026-09-03 → 2026-09-05, alors
+  qu'une réservation "Client Cycle Test" occupe déjà 2026-09-02 → 2026-09-06 sur la même
+  propriété → message **"Cette propriété est déjà réservée sur cette période."**, création
+  refusée. ✅
+- Création/modification/vue calendrier : déjà testées au chantier `formulaires-premium`
+  (création réelle RES-…, modification du montant, calendrier visible). ✅ (non répété).
+- "Annulation" au sens propre non testée isolément (changer le statut vers un statut
+  "Annulée" existant) - probablement un simple changement de statut via le formulaire déjà
+  testé, risque jugé faible, non vérifié explicitement.
+
+### 4. Charges et paiements
+- Création manuelle : déjà testée au chantier `formulaires-premium` (création/édition réelles).
+  ✅ (non répété).
+- **Scan de facture IA : non testé dans cet audit** (nécessite un upload de fichier réel, plus
+  complexe à automatiser). Le comportement "message d'erreur de quota Gemini propre" a déjà été
+  observé fonctionner correctement ailleurs dans l'app pendant cette session (l'assistant IA du
+  dashboard affiche proprement les erreurs 429/502 Gemini, voir NOTES-mode-sombre.md et le test
+  Finding ci-dessous) - le scan de facture utilise le même pattern de gestion d'erreur côté
+  frontend, mais **recommandé de le tester manuellement une fois avant la soutenance** (upload
+  d'une vraie image de facture), ce point précis n'ayant pas de preuve directe dans cet audit.
+
+### 5. Tâches
+- Création + assignation : déjà testées au chantier `formulaires-premium`. ✅
+- **Tâche en retard** : filtre "En retard (N)" fonctionne correctement (isole bien les tâches
+  dont l'échéance est dépassée). **Alerte visuelle présente sur le Dashboard** (icône
+  `AlertTriangle` rouge à côté de chaque tâche en retard dans le widget "À faire aujourd'hui")
+  mais **absente du tableau de la page `/admin/tasks` elle-même** - la colonne "Échéance" ne
+  change pas de couleur/style pour une ligne en retard, seul le filtre existe. Écart mineur
+  entre les deux écrans, pas un bug bloquant.
+
+### 6. Clients et collaborateurs
+- **Bug 500 création client : reconfirmé corrigé.** `POST /api/admin/client/` avec les flags de
+  compte à `null` (payload exact du front) → 201 (déjà vérifié au chantier
+  `fix/client-collaborator-500`, reconfirmé ici en marge des tests de permissions : création de
+  `audit_gest`/`audit_sub`/`audit_multi` toutes réussies sans encombre).
+- **Bug 500 suppression collaborateur : reconfirmé corrigé.** Suppression testée sur le
+  collaborateur créé par le Finding P1-1 (id 31) → 200, lignes bien supprimées.
+- Wizard 2 étapes, société/rôle, sélection de propriétés si Gestionnaire : déjà testés au
+  chantier `formulaires-premium`. ✅ (non répété ici).
+
+### 7. Permissions réelles
+- **Gestionnaire restreint à 1 propriété** (`audit_gest`, accès à Riad Kasbah id 2 uniquement
+  sur les 3 propriétés de sa société) :
+  - `GET /api/collaborator/property/` → **ne renvoie que la propriété assignée**. ✅
+  - `GET .../property/id/5` (même société, non assignée) → **404**. ✅
+  - `DELETE .../property/id/2` (assignée, mais `canDeleteProperty=false`) → **403** "Votre rôle
+    ne vous autorise pas à supprimer une propriété de cette société." ✅
+  - `POST .../charge/` (`canManageFinancials=false`) → **403** "...gérer les finances...". ✅
+  - `POST .../serviceProvider/` (`canManageServiceProviders=false`) → **403**
+    "...gérer les prestataires...". ✅
+  - `POST .../collaborator/` (`canManageUsers=false`) → **voir Finding P1-1** (bypass confirmé
+    avec un payload minimal ; 403 correct avec un payload complet incluant des
+    `enterpriseMemberships`).
+- **SubAdmin** (`audit_sub`, même société) :
+  - Voit les 3 propriétés de sa société (aucune restriction). ✅
+  - `POST .../charge/` → **201** (a `canManageFinancials=true`). ✅
+  - Isolation inter-société : `GET .../property/id/1` (propriété d'une AUTRE société) → **404**.
+    ✅
+- Ces résultats correspondent exactement à ce que documente déjà `NOTES-permissions.md`
+  (Chantiers 1/2/3, testés le 25-27/08) - reconfirmés fonctionnels sur le code actuel, à
+  l'exception du Finding P1-1 qui est une régression ou un trou non couvert par les tests
+  précédents (leurs scripts de test incluaient systématiquement un payload avec
+  `enterpriseMemberships`, ce qui explique qu'il n'ait jamais été détecté avant).
+
+### 8. Portail public
+- `/reserver` en déconnecté : galerie des 5 propriétés avec prix, position, bouton "Demander" :
+  OK.
+- Demande de réservation complète (dates, nom, téléphone, message) → soumission → "Demande
+  envoyée / Merci ! Votre demande a bien été envoyée." : OK, un `Client` invité est créé
+  automatiquement (`guest_f500b3dc` dans ce test).
+- Traitement côté admin (`/admin/reservation-requests`) : la demande apparaît avec
+  Confirmer/Refuser. Clic "Confirmer" → statut passe à "Confirmee", disparaît de "En attente".
+  **Point à clarifier** : Confirmer une demande **ne crée aucune `Reservation` réelle**
+  correspondante (vérifié : aucune réservation avec les dates demandées n'existe après
+  confirmation) - l'admin doit apparemment créer manuellement la réservation dans
+  `/admin/reservations` à partir des infos de la demande confirmée. Comportement voulu ou
+  fonctionnalité incomplète ? à trancher.
+- Statut affiché brut ("EnAttente"/"Confirmee", sans espace ni accent) - c'est la valeur
+  stockée en base pour `ReservationRequestStatus.label`, pas un bug d'affichage frontend
+  (vérifié via l'API : `"label":"Confirmee","code":"Confirmee"`, identiques) - qualité du
+  contenu de seed, pas du code.
+
+### 9. Rapports financiers et taux de change
+- Génération d'un rapport (société "abdo", Mensuel, portée Entreprise) → "Rapport généré et
+  figé avec succès.", nouvelle ligne dans l'historique. ✅
+- **Export PDF** : `GET /api/admin/financial-reports/{id}/pdf` → 200, `application/pdf`, PDF
+  valide (1 page). ✅
+- **Export CSV** : idem → 200, `text/csv`, contenu valide (voir aussi Finding P2 pour le détail
+  devise). ✅
+- **Taux de change** : "Actualiser maintenant" → dates passées de 2026-09-10 à 2026-09-19 pour
+  EUR/USD/GBP (clé ExchangeRate-API configurée et fonctionnelle). ✅. Voir Finding P1-2 pour un
+  défaut d'affichage du message de confirmation.
+- "Nouveau taux" (saisie manuelle) : le panneau s'ouvre correctement avec les champs attendus
+  (non soumis, pour ne pas polluer les taux réels).
+
+### Finding P1-2 — 🟡 mineur : message de confirmation "Actualiser maintenant" mal formé
+Après actualisation des taux, le message affiché est littéralement :
+> `Taux mis a jour : [EUR, USD, GBP]`
+
+- "a" sans accent ("à jour").
+- `[EUR, USD, GBP]` a la forme d'un tableau JS sérialisé brut plutôt qu'une liste de devises
+  formatée en texte ("EUR, USD, GBP" sans crochets, ou "EUR, USD et GBP").
+Confirmé dans le DOM : `<p class="text-sm text-success">Taux mis a jour : [EUR, USD, GBP]</p>`.
+
+### 10. AI Property Assistant — ✅ tout confirmé
+- **Morning Insights** : texte généré avec de vraies données ("Bonjour, votre score de santé
+  global est de 65 (Bon) et vos revenus du mois s'élèvent à 2650 MAD... 4 tâches en retard...")
+  - cohérent avec le reste du dashboard au moment du test.
+- **Chat** : question réelle ("Combien j'ai gagné ce mois-ci ?") → réponse exacte ("Vous avez
+  gagné 2 650 MAD ce mois-ci"), cohérente avec le KPI affiché.
+- **Question hors périmètre** ("Quelle est la capitale de la France ?") → refus propre :
+  "En tant qu'assistant dédié à la gestion de votre portefeuille... je ne peux donc pas répondre
+  aux questions de culture générale...".
+- Conforme au principe déjà établi : contenu généré par l'IA volontairement en français, quelle
+  que soit la langue de l'interface (non re-testé en anglais dans cet audit, cohérent avec le
+  principe déjà validé par abdo).
+
+---
+
+## PARTIE 2 — Changement de devise
+
+**Architecture** (vérifiée par lecture du code) : `CurrencyProvider` enveloppe tout
+`/admin/**` et `/collaborator/**` au niveau des `layout.tsx` (donc le sélecteur de devise de la
+topbar est présent sur TOUTES les pages admin/collaborateur) et `/reserver`. Mais `useCurrency()`
+n'est **consommé** (montants réellement convertis) que dans une poignée d'endroits précis :
+`app/admin/page.tsx`, `app/collaborator/page.tsx`, `app/reserver/page.tsx`, et les composants
+qu'ils alimentent via une prop `formatValue`. **Partout ailleurs, les montants sont affichés en
+MAD brut avec un suffixe littéral `"MAD"`, quelle que soit la devise sélectionnée dans la
+topbar** - vérifié précisément, liste exhaustive ci-dessous.
+
+### ✅ Endroits où la conversion s'applique correctement
+- **Dashboard admin** : KPI "Revenus" du mois (`format(...)`), tableau "Réservations
+  récentes" (`format(r.amount)`), graphique Revenue Intelligence (tooltip au survol des barres
+  via `formatValue`), Property Performance Card (colonnes Revenu/Charges/Bénéfice net via
+  `formatValue`).
+- **Dashboard collaborateur** : idem (KPI Revenus, tableau réservations récentes, Revenue
+  Intelligence). Note : ce dashboard n'inclut pas Property Performance Card (composant absent,
+  pas un bug de devise).
+- **`/reserver`** : prix des propriétés dans la galerie (`format(p.pricePerNight)`). Le
+  formulaire de demande lui-même n'affiche aucun montant (pas de prix/nuit ni de total dans le
+  dialog "Demander").
+
+### ❌ Endroits où la conversion NE s'applique PAS (montant visible, resté en MAD brut)
+1. **Rentabilité par propriété** (`/admin/property/[id]/rentabilite`) - **les 3 cartes
+   Revenus/Charges/Bénéfice net demandées explicitement dans l'audit**, plus le détail des
+   réservations et charges prises en compte. Le fichier a sa propre fonction locale
+   `formatMoney()` (juste un `toLocaleString`), aucun import de `useCurrency`.
+2. **Rapports financiers** (`/admin/financial-reports`) - montants de l'historique des rapports
+   (`formatAmount()` locale, `${value.toFixed(2)} MAD`) **et le contenu du CSV/PDF exporté**
+   (vérifié : le CSV généré contient littéralement "Revenus (MAD)", "Charges (MAD)", "Bénéfice
+   net (MAD)" - toujours en MAD, quelle que soit la devise choisie à l'écran au moment de
+   l'export). C'est structurellement obligé : la génération du PDF/CSV est faite **côté
+   backend**, qui n'a aucune connaissance de la préférence de devise (un `localStorage` côté
+   navigateur, jamais transmis à l'API).
+3. **Property (liste)**, admin et collaborateur - colonne "Prix/nuit" (`p.pricePerNight + "
+   MAD"`), brut.
+4. **Charges (liste)**, admin et collaborateur - colonne "Montant" et les cartes "Charges par
+   propriété" (total par propriété), brut.
+5. **Paiements (liste)**, admin et collaborateur - colonne "Montant", brut.
+6. **Health Score** (widget du dashboard, admin ET collaborateur) - le détail de la
+   "Performance financière" affiche littéralement `revenus X MAD, charges Y MAD` en dur
+   (`lib/dashboard/health-score.ts`), jamais passé par `useCurrency`.
+7. **Graphique Revenue Intelligence** - nuance trouvée en creusant : le **Tooltip** (survol
+   d'une barre) est bien converti, mais **les graduations de l'axe Y** du graphique
+   (`MonthlyChart`) restent des nombres bruts non convertis (ex. "0, 850, 1700...") - une
+   incohérence visuelle mineure si l'axe et le tooltip sont regardés ensemble en devise
+   étrangère (l'axe reste à l'échelle MAD, le tooltip affiche une autre devise).
+8. **Formulaires Charge / Payment / Reservation** - tous les montants saisis ou déjà affichés
+   (montant d'une charge, montant versé d'un paiement, liste des charges à rattacher avec leur
+   montant, prix/nuit et montant total d'une réservation) sont en MAD brut, jamais convertis.
+   **Point à clarifier explicitement (ambigu)** : est-ce voulu (MAD = devise de référence de
+   la société, on ne saisit/lit jamais un formulaire dans une autre devise, seuls les écrans de
+   consultation "vue d'ensemble" convertissent pour l'affichage) ou est-ce un oubli ? L'analyse
+   du code suggère fortement que c'est le comportement **voulu à l'origine** (MAD = devise de
+   stockage et de saisie, la conversion est un confort d'affichage en lecture seule) - mais ce
+   n'est écrit nulle part explicitement, à confirmer.
+9. **AI Property Assistant** (Morning Insights + Chat) - `lib/dashboard/ai-facts.ts` envoie
+   toujours les montants en MAD à l'IA, **volontairement** (commentaire explicite dans le code :
+   "la conversion à l'affichage est un détail purement frontend qui n'a pas sa place dans les
+   faits envoyés à l'IA"). Décision déjà actée, pas un bug — mais **effet de bord visible** :
+   si un admin choisit d'afficher le dashboard en EUR, les Insights/le Chat continueront de
+   parler en MAD ("Vous avez gagné 2 650 MAD..."), à côté d'un dashboard affiché en euros. Pas
+   une erreur de code, mais une incohérence UX potentiellement déroutante à signaler.
+
+---
+
+## PARTIE 3 — Changement de langue
+
+**Architecture** (vérifiée par lecture du code) : le dictionnaire `lib/i18n/translations.ts`
+ne couvre que ces sections : `common`, `reserver`, `login`, `dashboardHeader`, `dashboardStats`,
+**`dashboardHome`**, `propertyMap`, `dayTimeline`, `healthScore`, `revenueIntelligence`,
+`propertyPerformance`, `actionCenter`, `tools`, `upcomingArrivals`, `allModules`, `assistant`.
+**Tout le reste de l'application est en français codé en dur**, quelle que soit la langue
+choisie - vérifié précisément fichier par fichier (comptage des appels `dict.` dans chaque
+fichier, 0 = aucune traduction possible sur cette page).
+
+### Finding P3-1 — 🟠 le plus visible : le dashboard collaborateur n'est PAS traduit, contrairement à son jumeau admin
+**`app/collaborator/page.tsx` : 0 appel à `dict.*`, n'importe même pas `useLanguage`.**
+`app/admin/page.tsx` (la même page, côté admin) : 25 appels à `dict.*`, dict `dashboardHome`
+utilisé pour exactement ce contenu. Les deux pages sont structurellement identiques et
+partagent les MÊMES clés de dictionnaire déjà écrites - seule la page collaborateur ne les
+utilise jamais. Concrètement, en anglais, un collaborateur voit :
+- "Bonjour, ravi de vous revoir" (jamais "Hello, welcome back") - le greeting du haut de page.
+- Toute la carte "Réservations récentes" : titre, sous-titre, "Voir toutes", "Chargement...",
+  **et l'état vide "Aucune réservation."** (alors que la version admin utilise
+  `dict.dashboardHome.noReservations`, déjà traduit).
+- La carte "À faire aujourd'hui" (même chose, texte en dur).
+- **Alors que**, sur cette même page, les 3 widgets `PropertyMapCard`/`DayTimelineCard`/
+  `RevenueIntelligenceCard` (qui s'auto-traduisent, `useLanguage()` interne) basculent
+  correctement en anglais. **Résultat en EN : une page mi-anglaise mi-française**, avec des
+  widgets traduits juste à côté de texte français en dur - le résultat le plus visuellement
+  incohérent de tout l'audit.
+
+### Finding P3-2 — 🟠 sidebar et topbar chrome (`components/app-shell.tsx`) : 0% traduits
+Présents sur **toutes** les pages admin ET collaborateur, donc l'impact est global :
+- Tous les libellés de navigation : "Biens & logements", "Réservations", "Demandes de
+  réservation", "Tâches", "Charges", "Paiements", "Collaborateurs", "Taux de change",
+  "Rapports financiers", "Rentabilité", "Tous les modules".
+- Titres de section : "OPÉRATIONS", "FINANCES", "ÉQUIPE" (visibles dans le texte de page
+  capturé, en dur dans le JSX).
+- Le fil d'ariane ("Vue d'ensemble" en breadcrumb), le placeholder de recherche
+  ("Rechercher"), le nom de société ("Société" par défaut), l'infobulle "Déplier"/"Replier" du
+  bouton de collapse.
+- Le bouton de langue lui-même (FR/EN) fonctionne (change bien `dict`/`locale`), mais ne
+  traduit donc quasiment rien de ce qui l'entoure dans la sidebar.
+
+### Finding P3-3 — 🟠 tous les écrans CRUD (listes ET formulaires) : 0% traduits
+Vérifié précisément (0 appel `dict.` dans chacun) :
+`admin/property` (liste + formulaire), `admin/client` (liste + formulaire),
+`admin/collaborator` (liste + formulaire), `admin/reservations` (liste) +
+`reservation-form.tsx`, `admin/charges` (liste) + `charge-form.tsx`, `admin/payments` (liste) +
+`payment-form.tsx`, `admin/tasks` (liste) + `task-form.tsx`, `admin/financial-reports`,
+`admin/exchange-rates`, `select-enterprise`. Idem côté `/collaborator/*` (mêmes composants
+partagés ou équivalents non traduits).
+
+**Formulaires Sheet/wizard du chantier `formulaires-premium` : confirmé, jamais inclus dans le
+système i18n** (chantier fait sans lien avec le système de langue, comme suspecté dans la
+demande) - tous les libellés d'étape ("Informations générales", "Localisation", "Détails",
+"Informations personnelles", "Rattachement", "Récapitulatif") et tous les boutons
+("Suivant", "Précédent", "Enregistrer", "Annuler") sont des chaînes françaises en dur dans
+`property-form.tsx`, `collaborator-form.tsx`, `form-stepper.tsx`, `form-section.tsx`,
+`entity-form-dialog.tsx`.
+
+Messages d'erreur génériques du hook CRUD partagé (`lib/use-entity-crud.ts`) : "Erreur de
+chargement" / "Erreur d'enregistrement" / "Erreur de suppression" - en dur, cohérent avec le
+reste (ces pages ne sont de toute façon pas traduites par ailleurs).
+
+### Finding P3-4 — 🟡 landing page (`/`) et écran de chargement premium : jamais traduits
+- `app/page.tsx` (landing complète) : 0 appel `dict`/`useLanguage`, et **aucun sélecteur de
+  langue visible sur cette page** - un visiteur ne peut pas la basculer en anglais depuis là.
+  628 Nuance : si l'utilisateur a déjà choisi EN ailleurs (ex. depuis `/login`) puis revient sur
+  `/`, la landing repasse en français silencieusement (elle ignore la préférence stockée), sans
+  moyen de la rebasculer sans retourner sur `/login`.
+- L'écran de chargement (`if (loggedIn)` dans `app/page.tsx`, chantier
+  `loading-login-premium`) - texte "Ouverture de votre espace…" en dur. Contrairement à la
+  landing, l'utilisateur qui voit cet écran est **forcément déjà connecté** (donc a
+  nécessairement déjà eu accès au toggle de langue ailleurs) - c'est le cas le plus net d'un
+  texte qui aurait dû suivre la préférence déjà choisie.
+
+### Ce qui reste correctement français dans les deux langues (vérifié intentionnel, pas un bug)
+- Contenu généré par l'assistant IA (Morning Insights, réponses du Chat) : volontairement en
+  français quelle que soit la langue de l'interface, principe déjà validé par abdo dans un
+  chantier précédent. Non re-signalé comme un défaut.
+
+---
+
+## Récapitulatif des findings (pour décision)
+
+| # | Sévérité | Résumé |
+|---|---|---|
+| P1-1 | 🔴 Critique | Un collaborateur sans `canManageUsers` peut créer des comptes Collaborator (payload sans `enterpriseMemberships`) |
+| P1-2 | 🟡 Mineur | Message "Taux mis a jour : [EUR, USD, GBP]" mal formé (accent + array brut) |
+| P2 | 🟠 Majeur (produit) | Conversion de devise absente sur ~9 zones listées (Rentabilité, Rapports financiers + export, listes Property/Charges/Payments, Health Score, axe Y du graphique, formulaires, IA) |
+| P3-1 | 🟠 Majeur | Dashboard collaborateur non traduit du tout (0 vs 25 appels dict côté admin) - page mi-FR mi-EN une fois basculée |
+| P3-2 | 🟠 Majeur | Sidebar/topbar (app-shell.tsx) 0% traduits - impact sur toutes les pages |
+| P3-3 | 🟠 Majeur | Tous les écrans CRUD (listes + formulaires, y compris les Sheet/wizard de `formulaires-premium`) 0% traduits |
+| P3-4 | 🟡 Mineur | Landing page + écran de chargement premium non traduits (pas de toggle sur la landing ; l'écran de chargement concerne pourtant un utilisateur déjà connecté) |
+
+**Points à clarifier avec abdo avant de prioriser les correctifs** :
+- Le comportement voulu pour les montants saisis dans les formulaires (Charge/Payment/
+  Reservation) : rester en MAD (devise de référence) ou suivre la devise sélectionnée ?
+- "Confirmer" une demande de réservation publique doit-il créer automatiquement une
+  `Reservation`, ou est-ce voulu que ce soit une étape manuelle séparée ?
+- Ampleur du chantier i18n à prévoir : vu le volume (sidebar + tous les CRUD + dashboard
+  collaborateur), un vrai chantier de traduction complet est probablement nécessaire plutôt que
+  quelques correctifs ponctuels - à discuter en termes de priorité avant la soutenance.
+
+---
+
+# CORRECTIONS (après décision d'ordre de traitement)
+
+## ✅ P1-1 — corrigé et testé (permission `canManageUsers` sur création/modification de Collaborator)
+
+**Correctif** :
+- [`EffectivePermissionService.assertCanManageUsersOnAnyEnterprise()`](backend-ms1-PROF-FINAL/backend-ms1/src/main/java/ma/zyn/app/service/security/EffectivePermissionService.java)
+  (nouveau) : l'appelant doit avoir `canManageUsers` sur au moins une des sociétés auxquelles il
+  est rattaché, quel que soit le contenu du payload.
+- [`CollaboratorCollaboratorServiceImpl.assertCanManageUsersForMemberships()`](backend-ms1-PROF-FINAL/backend-ms1/src/main/java/ma/zyn/app/service/impl/collaborator/auth/CollaboratorCollaboratorServiceImpl.java)
+  appelle désormais cette garde **avant** la boucle sur les memberships du payload (qui reste en
+  place pour vérifier chaque société visée). `create()` et `update()` en bénéficient.
+- `update()` vérifie en plus `canManageUsers` contre les memberships **réelles en base** du
+  collaborateur modifié (comme `deleteById()` le faisait déjà), plus seulement celles du payload.
+
+**Tests (backend recompilé, port dédié, vraies données)** :
+
+| Cas | Avant | Après |
+|---|---|---|
+| Gestionnaire `POST` collaborateur, payload sans `enterpriseMemberships` | **201** (faille) | **403** |
+| Gestionnaire `POST` avec membership société 3 | 403 | 403 |
+| Gestionnaire `PUT` collaborateur 29 | 403 | 403 |
+| SubAdmin `POST` sans memberships (légitime) | 201 | **201** |
+| SubAdmin `POST` avec membership société 3 (légitime) | 201 | **201** |
+| SubAdmin `PUT` collaborateur 28 (société 3 seule) | 200 | **200** |
+| SubAdmin `PUT` collaborateur 30 (sociétés 1 + 3, la 1 hors de sa portée) | (non testé) | **403** |
+
+Restriction Gestionnaire par propriété inchangée (`audit_gest` : 1 propriété visible, 404 sur les autres).
+
+**Effet de bord assumé** : un SubAdmin ne peut plus modifier un collaborateur rattaché à une société
+dont il ne fait pas partie (même si l'une de ses sociétés lui est commune) - cohérent avec
+`deleteById()`, plus strict qu'avant.
+
+## ✅ Point 2 — « Confirmer » une demande de réservation crée désormais une vraie Reservation
+
+**Cause réelle** : le front (`changeStatus` dans `admin/reservation-requests/page.tsx`) appelait le CRUD
+générique `PUT /api/admin/reservationRequest/` avec juste un nouveau statut, et
+`ReservationRequestAdminServiceImpl.update()` ne faisait que `dao.save(t)`. Aucun endpoint « confirmer »
+n'existait, donc aucune `Reservation` n'était créée. Deuxième problème découvert : une demande ne stockait
+pas ses dates de façon structurée (uniquement dans le texte de `clientNote`, « Dates souhaitées : du X au Y. »),
+donc impossibles à exploiter directement.
+
+**Correctif (backend)** :
+- `ReservationRequest` : deux nouveaux champs `requestedCheckIn` / `requestedCheckOut` (`LocalDate`, colonnes
+  ajoutées par `ddl-auto=update`), remplis par `POST /api/open/reservation-request/` (400 si format de date invalide).
+- `ReservationRequestAdminServiceImpl.update()` : invariant **« une demande Confirmee est toujours rattachée à une
+  Reservation »**. Si la demande est confirmée et n'a pas encore de `reservation`, une `Reservation` est créée
+  (client, propriété demandée, dates, prix/nuit et montant = prix × nuits, statut `Confirmee`, plateforme `Direct`,
+  référence `RES-…`) via `ReservationAdminService.create()` - donc **avec la vérification de chevauchement existante** -
+  puis liée à la demande. Le lien posé immédiatement garantit l'absence de doublon aux sauvegardes suivantes.
+  Les demandes antérieures (dates seulement dans la note) sont gérées : les dates sont relues par regex.
+- Erreurs : chevauchement → **409**, demande sans dates ou sans propriété exploitables → **422**, avec un
+  `{message}` lisible. Le statut n'est pas modifié quand la création échoue (transaction annulée).
+- Note technique : on ne compare pas « ancien statut / nouveau statut » - avec open-in-view, contrôleur et service
+  partagent la même entité gérée, dont le statut est déjà remplacé par `converter.copy()`. (Piste testée puis
+  écartée après un premier essai qui ne créait rien.)
+
+**Correctif (frontend)** : `admin/reservation-requests/page.tsx` affiche désormais le message d'erreur du serveur
+(auparavant l'erreur était avalée silencieusement).
+
+**Tests (backend recompilé, vraies données)** :
+
+| Cas | Résultat |
+|---|---|
+| Confirmer une demande publique (Riad Kasbah 2027-01-10→14) | 200 ; Reservation créée : client, propriété, dates, statut `Confirmee`, plateforme `Direct` |
+| Confirmer une 2ᵉ demande qui chevauche | **409** « Cette propriété est déjà réservée… », demande reste `EnAttente`, aucune réservation créée |
+| Re-sauvegarder la demande déjà confirmée | 200, **pas de doublon** |
+| Demande ancienne (dates seulement dans la note, Riad Zahra 2026-11-10→14) | Reservation créée depuis les dates de la note, montant 4 × 111 = **444** |
+| Demande sans aucune date | **422** « pas de dates de séjour exploitables » |
+| **Parcours UI complet** : demande via `/reserver` (Villa Sahara 2027-02-10→14) → admin → Confirmer | disparaît de « En attente » ; **la réservation apparaît dans le calendrier de `/admin/reservations` (Février 2027, 10 → 13)** |
+| UI : Confirmer la demande qui chevauche | message d'erreur affiché, demande toujours listée |
+
+Données de test supprimées après vérification (réservations et demandes créées). `npm run build` : OK.
+
+**Limite connue, non traitée** : passer ensuite une demande de `Confirmee` à `Rejetee` ne supprime/n'annule pas la
+Reservation créée.
+
+## ✅ Point 3 — Alerte « tâche en retard » dans le tableau /admin/tasks
+
+**Constat corrigé** : l'audit indiquait que le tableau ne signalait pas les lignes en retard. C'était inexact :
+depuis le chantier `taches` (`fd3e2a1`), `/admin/tasks` et `/collaborator/tasks` affichent déjà une icône
+`AlertTriangle` rouge dans « Titre » et la date d'échéance en rouge/gras (vérifié dans le DOM sur les 3 tâches
+en retard réelles de la base : icône + date rouge présentes). L'alerte était en revanche **discrète** : icône sans
+texte alternatif, et information portée uniquement par la couleur.
+
+**Amélioration** (admin + collaborateur) : l'icône a maintenant `role="img"` + `aria-label="Tâche en retard"`, et la
+colonne « Échéance » ajoute un libellé texte **« · En retard »** à côté de la date (l'alerte ne dépend plus de la
+seule couleur). La logique `isOverdue` (échéance passée et statut non terminé) n'est pas modifiée.
+
+**Test** : page `/admin/tasks` sur la base réelle, 3 lignes en retard → `2026-09-15 · En retard` + icône
+`aria-label="Tâche en retard"` sur chacune. `npm run build` OK.
+
+## ✅ Point 4 — Conversion de devise sur les écrans de consultation
+
+**Principe (inchangé)** : tout est stocké en MAD ; la conversion est un affichage. Les formulaires de saisie
+(Charge, Payment, Reservation, y compris la liste des charges à rattacher dans le formulaire de paiement)
+**restent volontairement en MAD** (devise de référence comptable), comme décidé.
+
+**Écrans convertis** (via `useCurrency().format`, taux issus de la table `ExchangeRate`) :
+
+| Écran | Modification |
+|---|---|
+| Rentabilité par propriété (`/admin/property/[id]/rentabilite`) | 3 cartes + 2 tableaux de détail ; `formatMoney` local supprimé ; les hints « MAD · n réservations » ne portent plus la devise en dur |
+| Rapports financiers (`/admin/financial-reports`) | colonnes Revenus / Charges / Bénéfice net de l'historique + mention « montants figés en MAD, affichés en X au taux actuel » quand la devise ≠ MAD |
+| Export PDF/CSV | **converti côté serveur** (voir ci-dessous) |
+| Propriétés (admin + collaborateur) | colonne Prix/nuit |
+| Charges (admin + collaborateur) | colonne Montant + cartes « total par propriété » |
+| Paiements (admin + collaborateur) | colonne Montant |
+| Health Score | détail « revenus X, charges Y » : `computeHealthScore()` reçoit un formateur optionnel (défaut MAD) ; le dashboard admin lui passe `format` |
+
+**Export PDF/CSV - conception** : la génération est côté backend, qui ne connaissait pas la préférence (elle est dans
+le `localStorage`). Le front envoie maintenant `?currency=<code>` sur `GET /api/admin/financial-reports/{id}/pdf|csv`.
+`FinancialReportExportService.resolveCurrency()` cherche le taux MAD→devise dans `ExchangeRate` (même règle que
+`convertFromBase` du front) : sans paramètre, MAD, ou devise sans taux → **repli sur MAD** (jamais de montant faux).
+Le document indique la devise et le taux (`Devise : EUR (1 MAD = 0.09 EUR)`), les en-têtes CSV deviennent
+`Revenus (EUR)`, etc., et le pied de page du PDF précise que la valeur figée reste en MAD et que la conversion
+utilise le taux du jour de l'export. Les valeurs figées en base ne sont jamais modifiées.
+
+**Tests (données réelles, backend recompilé 8037 + front branché dessus)** :
+
+| Vérification | Résultat |
+|---|---|
+| Rentabilité Riad Zahra (5 300 / 700 / 4 600 MAD) en MAD | `5 300,00 DH`, `700,00 DH`, `4 600,00 DH` |
+| Même page après changement via le **sélecteur de devise** → EUR (0,09) | `477,00`, `63,00`, `414,00 EUR` ; lignes de détail 297 / 180 / 45 / 18 EUR ✅ |
+| Historique des rapports en EUR | 350 MAD → `31,50 EUR`, 300 → `27,00 EUR`, note de conversion affichée |
+| Clic sur export PDF et CSV | requêtes `…/10/csv?currency=EUR` et `…/10/pdf?currency=EUR`, 200 |
+| CSV `?currency=` vide / MAD / EUR / usd / XXX (inconnue) | 350,00 MAD / 350,00 MAD / **31,50 EUR** / **35,00 USD** / 350,00 MAD (repli) ✅ |
+| PDF EUR (texte extrait) | `31.50 EUR`, ligne « Devise : EUR (1 MAD = 0.09 EUR) », pied de page de conversion |
+| Propriétés (Riad Zahra 111 MAD) | `9,99 EUR` |
+| Charges (200 / 444 / 500 / 10 / 5) | `18,00 / 39,96 / 45,00 / 0,90 / 0,45 EUR` + cartes de total |
+| Paiements (10 / 75) | `0,90 / 6,75 EUR` |
+| Health Score (revenus du mois 2 650 MAD) | `revenus 238,50 EUR, charges 0,00 EUR` |
+| Vues collaborateur (compte `audit_sub`) : Charges, Propriétés, Paiements | montants en EUR ✅ |
+
+`tsc --noEmit` et `npm run build` OK. Rapports de test créés puis supprimés.
+
+**Limites / reste à traiter (non inclus dans ce point)** :
+- Taux stockés avec 2 décimales en base (EUR 0.09, USD 0.10, GBP 0.08) : conversions peu précises (ex. 111 MAD → 9,99 EUR).
+  C'est la donnée de `ExchangeRate` (colonne `rate`, scale 2), pas la conversion ; à revoir si des taux plus fins sont attendus.
+- Axe Y du graphique Revenue Intelligence toujours en échelle MAD (audit point 7) : non listé dans le périmètre décidé.
+- Les Insights / Chat IA parlent toujours en MAD (décision existante, voir audit point 9).
+- Le Health Score du dashboard collaborateur : le composant n'y est pas utilisé (seul `app/admin/page.tsx` l'appelle).
+
+### Suite du point 4 — axe Y du graphique + précision des taux
+
+- **Axe Y du graphique Revenue Intelligence (audit point 7) : corrigé.** `MonthlyChart` reçoit une prop `convertValue`
+  (fournie par `RevenueIntelligenceCard` via `useCurrency().convert`) : barres, courbe **et donc graduations** sont tracées
+  dans l'échelle de la devise choisie. Le tooltip continue d'afficher `formatValue` sur la valeur MAD d'origine (gardée dans
+  `raw`), donc pas de double conversion. Test sur le dashboard admin réel : MAD → graduations `0 / 850 / 1 700 / 2 550 / 3 400`,
+  tooltip `2 650,00 DH` ; EUR → graduations `0 / 75 / 150 / 225 / 300`, tooltip `238,50 EUR` ; retour en MAD identique au départ.
+  (Le même composant sert le dashboard collaborateur.)
+- **Amélioration future — précision des `ExchangeRate`** : la colonne `rate` est stockée avec 2 décimales (EUR 0.09, USD 0.10,
+  GBP 0.08), ce qui rend les conversions approximatives (111 MAD → 9,99 EUR). À traiter après la soutenance : augmenter
+  la précision de la colonne (ex. `DECIMAL(18,6)`) et de la synchronisation automatique des taux. Aucun code modifié à ce stade.
+- **Assistant IA** : reste en MAD (décision confirmée), aucune modification.
+
+## ✅ Point 5 — Multi-langue : sidebar/topbar + dashboard collaborateur (périmètre réduit décidé)
+
+**Sidebar / topbar (`components/app-shell.tsx`)** - traduits FR/EN via une nouvelle section `nav` du dictionnaire :
+titres de sections (Vue d'ensemble / Opérations / Finances / Équipe), les 12 libellés de navigation, « Tous les modules »,
+sous-titre « Agence principale », fil d'Ariane (dont « Biens & logements », « Rentabilité »), « Accueil », « Rechercher »,
+info-bulles Déplier/Replier, `aria-label` Déconnexion / Notifications / Ouvrir le menu, titre (sr-only) du tiroir mobile,
+repli « Compte » / « Société ». Les `layout.tsx` admin et collaborateur ne portent plus de texte en dur : `NavItem.labelKey` et
+`NavSection.titleKey` sont des clés typées de `dict.nav` (une clé manquante dans une langue = erreur de compilation).
+
+**Dashboard collaborateur (`app/collaborator/page.tsx`)** - il n'utilisait aucune clé du dictionnaire (d'où le mélange :
+sidebar/topbar/Property Map/Timeline déjà en anglais, tout le reste en français). Réutilise maintenant les clés
+`dict.dashboardHome.*` de son jumeau admin ; date et mois en langue choisie ; trois clés ajoutées pour la phrase
+« Voici ce qui se passe chez {société} aujourd'hui ».
+
+**Composants partagés découverts pendant le test** (ils laissaient du français en mode EN, sur le dashboard collaborateur
+comme sur l'admin) - corrigés à la source :
+- `RevenueIntelligenceCard` : libellés de période (« 12 mois » → « 12 months ») et phrase de résumé du revenu, désormais construite
+  à partir de `summaryKind` + `percentChange` (le champ `summary` français est conservé tel quel pour les faits de l'assistant IA) ;
+- `MonthlyChart` : légende « Revenus / Charges / Bénéfice net », message « pas assez de données » ;
+- `computeMonthlyFinancials` / `computeRevenueSeries` : paramètre optionnel `locale` pour les libellés d'axe (Jan/Fév/Mai → Jan/Feb/May) ;
+- `ReservationCalendar` (aussi utilisé sur les pages Réservations admin/collaborateur) : mois (date-fns `enUS`), jours (Lun→Mon), « Chargement ».
+
+**Tests (navigateur, données réelles)** :
+| Vérification | Résultat |
+|---|---|
+| Admin, EN : sidebar, topbar, fil d'Ariane (`/admin/reservation-requests` → « Reservation requests ») | tout en anglais |
+| Bascule FR via le bouton de la topbar (sans rechargement) | libellés FR identiques à l'existant ; `aria-label` FR |
+| Collaborateur (`audit_sub`), EN : page entière | plus de français (scan de mots FR : seul « Mar » = mars/March, valide dans les deux langues) : « Hello, glad to have you back », « Revenue is up this month… », légende `Expenses / Net profit / Revenue`, `September 2026 · Mon…Sun`, « 12 months » |
+| Collaborateur, retour en FR | identique à l'original (« Revenus », « Le revenu est en hausse ce mois-ci… », « Calendrier », « Lun…Dim ») |
+| Admin, EN (non-régression composants partagés) | « Revenue is down 19.7% this month compared to last month. » (variante « down »), graduations/légende OK |
+`tsc --noEmit` et `npm run build` OK.
+
+---
+
+## 🧾 DETTE TECHNIQUE — à traiter après la soutenance
+
+**Multi-langue (hors périmètre décidé, toujours en français quelle que soit la langue choisie)** :
+- Pages CRUD génériques (`/[entity]`, `EntityTable` : « Chargement... », « Aucun élément pour le moment », « Actions », boutons Modifier/Supprimer, dialogues de suppression, formulaires) et toutes les pages métier hors dashboard : Propriétés, Réservations, Demandes de réservation, Tâches, Charges, Paiements, Rapports financiers, Rentabilité, Taux de change, Clients, Collaborateurs, `select-enterprise`.
+- Landing page (`app/page.tsx`) et écran de chargement.
+- Dashboard **admin** : détail du Health Score (`lib/dashboard/health-score.ts` : libellés des 4 composantes, niveaux « Bon/Critique », phrases de détail) - reste en français en mode EN.
+- Statuts métier affichés bruts (`EnAttente`, `Confirmee`…) : libellés de seed non polis / non traduits.
+- Contenu généré par l'assistant IA (Insights + Chat) : toujours en français (décision existante).
+- Libellés des liens « Tous les modules » (`entityRegistry[...].label`).
+
+**Devise** :
+- Précision des `ExchangeRate` (2 décimales) - voir plus haut.
+- Formulaires Charge/Payment/Reservation volontairement en MAD (référence comptable) : à documenter à l'écran si les utilisateurs s'attendent à saisir dans la devise d'affichage.
+
+**Fonctionnel / qualité** :
+- Rejeter une demande déjà `Confirmee` n'annule pas la Reservation créée à la confirmation (point 2).
+- `CollaboratorConverter.toItem` : setters de booléens non gardés (le comportement correct ne tient que parce que le frontend envoie les flags).
+- Scan de facture par IA : upload de fichier réel non testé pendant l'audit (test manuel à faire avant la soutenance).
+- `select-enterprise` : cartes cliquables sans sémantique de bouton (accessibilité clavier/lecteur d'écran).
+- Code mort : `components/dashboard/premium-header.tsx` et `collaborator-header.tsx` non utilisés.
+- Conditions de concurrence des converters singleton Zynerator (flags partagés) - voir NOTES-permissions.md.

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
@@ -91,12 +92,12 @@ public class FinancialReportGenerationRestAdmin {
     @Operation(summary = "Exporte un rapport financier en PDF")
     @GetMapping("{id}/pdf")
     @Transactional(readOnly = true)
-    public ResponseEntity<?> exportPdf(@PathVariable Long id) {
+    public ResponseEntity<?> exportPdf(@PathVariable Long id, @RequestParam(required = false) String currency) {
         FinancialReport report = financialReportService.findById(id);
         if (report == null) {
             return new ResponseEntity<>(Map.of("message", "Rapport introuvable"), HttpStatus.NOT_FOUND);
         }
-        byte[] pdf = exportService.generatePdf(report);
+        byte[] pdf = exportService.generatePdf(report, exportService.resolveCurrency(currency));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", "rapport-financier-" + id + ".pdf");
@@ -106,12 +107,12 @@ public class FinancialReportGenerationRestAdmin {
     @Operation(summary = "Exporte un rapport financier en CSV")
     @GetMapping("{id}/csv")
     @Transactional(readOnly = true)
-    public ResponseEntity<?> exportCsv(@PathVariable Long id) {
+    public ResponseEntity<?> exportCsv(@PathVariable Long id, @RequestParam(required = false) String currency) {
         FinancialReport report = financialReportService.findById(id);
         if (report == null) {
             return new ResponseEntity<>(Map.of("message", "Rapport introuvable"), HttpStatus.NOT_FOUND);
         }
-        String csv = exportService.generateCsv(report);
+        String csv = exportService.generateCsv(report, exportService.resolveCurrency(currency));
         byte[] body = csv.getBytes(StandardCharsets.UTF_8);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("text/csv"));

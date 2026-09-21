@@ -27,6 +27,7 @@ import { getEntityClients } from "@/lib/api";
 import { API_BASE, authHeaders, UnauthorizedError, Role } from "@/lib/api-client";
 import { logout } from "@/lib/auth";
 import { useRequireRole } from "@/lib/use-require-role";
+import { useCurrency } from "@/lib/currency/currency-context";
 import { EnterpriseDto } from "@/lib/types/Enterprise";
 import { PropertyDto } from "@/lib/types/Property";
 import { FinancialReportDto } from "@/lib/types/FinancialReport";
@@ -46,10 +47,6 @@ function currentYear() {
   return new Date().getFullYear();
 }
 
-function formatAmount(value?: number | null) {
-  return value != null ? `${value.toFixed(2)} MAD` : "—";
-}
-
 function formatDate(value?: string | null) {
   if (!value) return "—";
   const d = new Date(value);
@@ -58,6 +55,9 @@ function formatDate(value?: string | null) {
 
 export default function FinancialReportsPage() {
   const ready = useRequireRole(ROLE);
+  // Montants figés stockés en MAD ; affichage et export convertis dans la devise choisie.
+  const { format: formatMoney, selectedCode } = useCurrency();
+  const formatAmount = (value?: number | null) => (value != null ? formatMoney(value) : "—");
   const router = useRouter();
   const clients = useMemo(() => getEntityClients(ROLE), []);
 
@@ -199,9 +199,10 @@ export default function FinancialReportsPage() {
     setExportError(null);
     setExportingId(report.id);
     try {
-      const res = await fetch(`${API_BASE}admin/financial-reports/${report.id}/${format}`, {
-        headers: authHeaders(),
-      });
+      const res = await fetch(
+        `${API_BASE}admin/financial-reports/${report.id}/${format}?currency=${encodeURIComponent(selectedCode)}`,
+        { headers: authHeaders() }
+      );
       if (res.status === 401 || res.status === 403) {
         handleAuthError(new UnauthorizedError(res.status));
         return;
@@ -388,6 +389,12 @@ export default function FinancialReportsPage() {
         </CardHeader>
         <CardContent>
           {exportError && <p className="text-sm text-destructive-text mb-3">{exportError}</p>}
+          {selectedCode !== "MAD" && (
+            <p className="text-xs text-muted-foreground mb-3">
+              Les montants figés sont enregistrés en MAD ; ils sont affichés (et exportés en PDF/CSV) en{" "}
+              {selectedCode} au taux de change actuel.
+            </p>
+          )}
           {loading ? (
             <p className="text-sm text-muted-foreground py-6 text-center">Chargement...</p>
           ) : reports.length === 0 ? (

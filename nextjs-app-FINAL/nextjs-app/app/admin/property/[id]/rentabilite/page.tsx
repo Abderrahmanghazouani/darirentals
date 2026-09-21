@@ -23,6 +23,7 @@ import { PropertyDto } from "@/lib/types/Property";
 import { ReservationDto } from "@/lib/types/Reservation";
 import { ChargeDto } from "@/lib/types/Charge";
 import { CANCELLED_STATUS_CODE } from "@/lib/compute-monthly-financials";
+import { useCurrency } from "@/lib/currency/currency-context";
 
 const ROLE = "admin" as const;
 
@@ -43,12 +44,10 @@ function periodStart(period: Period): string | null {
   return null; // "all" : pas de borne
 }
 
-function formatMoney(n: number): string {
-  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 export default function PropertyRentabilitePage() {
   const ready = useRequireRole(ROLE);
+  // Écran de consultation : montants convertis dans la devise choisie (stockage toujours en MAD).
+  const { format: formatMoney } = useCurrency();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const propertyId = Number(params.id);
@@ -152,7 +151,7 @@ export default function PropertyRentabilitePage() {
           icon={TrendingUp}
           iconTone="success"
           valueTone="success"
-          hint={`MAD · ${matchedReservations.length} réservation${matchedReservations.length > 1 ? "s" : ""}`}
+          hint={`${matchedReservations.length} réservation${matchedReservations.length > 1 ? "s" : ""}`}
         />
         <StatCard
           label="Charges"
@@ -160,7 +159,7 @@ export default function PropertyRentabilitePage() {
           icon={TrendingDown}
           iconTone="destructive"
           valueTone="destructive"
-          hint={`MAD · ${matchedCharges.length} charge${matchedCharges.length > 1 ? "s" : ""}`}
+          hint={`${matchedCharges.length} charge${matchedCharges.length > 1 ? "s" : ""}`}
         />
         <StatCard
           label="Bénéfice net"
@@ -168,7 +167,7 @@ export default function PropertyRentabilitePage() {
           icon={Scale}
           iconTone={netProfit >= 0 ? "success" : "destructive"}
           valueTone={netProfit >= 0 ? "success" : "destructive"}
-          hint="MAD"
+          hint="Revenus − charges"
         />
       </div>
 

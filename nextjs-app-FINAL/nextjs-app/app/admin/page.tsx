@@ -116,8 +116,8 @@ function AdminDashboard() {
   }, [tasks]);
 
   const healthScore = useMemo(() => {
-    return computeHealthScore(properties ?? [], reservations ?? [], charges ?? [], tasks ?? []);
-  }, [properties, reservations, charges, tasks]);
+    return computeHealthScore(properties ?? [], reservations ?? [], charges ?? [], tasks ?? [], format);
+  }, [properties, reservations, charges, tasks, format]);
 
   const assistantFacts = useMemo(() => {
     return buildAssistantFacts(

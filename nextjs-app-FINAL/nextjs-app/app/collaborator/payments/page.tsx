@@ -37,6 +37,7 @@ import { getEntityClients } from "@/lib/api";
 import { UnauthorizedError, Role } from "@/lib/api-client";
 import { logout } from "@/lib/auth";
 import { useRequireRole } from "@/lib/use-require-role";
+import { useCurrency } from "@/lib/currency/currency-context";
 import { PaymentDto } from "@/lib/types/Payment";
 import { ChargeDto } from "@/lib/types/Charge";
 import { ServiceProviderDto } from "@/lib/types/ServiceProvider";
@@ -49,6 +50,8 @@ const ROLE: Role = "collaborator";
 
 export default function PaymentsPage() {
   const ready = useRequireRole(ROLE);
+  // Écran de consultation : montants convertis dans la devise choisie (stockage toujours en MAD).
+  const { format: formatMoney } = useCurrency();
   const enterpriseId = useSelectedEnterpriseId();
   const router = useRouter();
   const clients = useMemo(() => getEntityClients(ROLE), []);
@@ -273,7 +276,7 @@ export default function PaymentsPage() {
                     <TableCell>
                       <StatusBadge status={p.paymentStatus} />
                     </TableCell>
-                    <TableCell>{p.amount != null ? `${p.amount} MAD` : "—"}</TableCell>
+                    <TableCell>{p.amount != null ? formatMoney(p.amount) : "—"}</TableCell>
                     <TableCell>{chargeCountByPayment.get(p.id as number) ?? 0}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{p.notes || "—"}</TableCell>
                     <TableCell className="text-right space-x-1">

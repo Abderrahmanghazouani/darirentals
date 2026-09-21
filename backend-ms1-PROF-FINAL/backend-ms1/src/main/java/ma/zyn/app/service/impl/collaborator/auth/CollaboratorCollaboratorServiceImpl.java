@@ -58,6 +58,11 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
             throw new EntityNotFoundException("errors.notFound", new String[]{Collaborator.class.getSimpleName(), t.getId().toString()});
         } else {
             assertCanManageUsersForMemberships(t);
+            // Audit P1-1 : verifie aussi contre les societes REELLES du collaborateur modifie
+            // (en base), pas seulement celles du payload - meme logique que deleteById().
+            enterpriseMembershipService.findByCollaboratorId(t.getId()).forEach(membership ->
+                effectivePermissionService.assertCanManageUsers(membership.getEnterprise() != null ? membership.getEnterprise().getId() : null)
+            );
             updateWithAssociatedLists(t);
             dao.save(t);
             return loadedItem;
@@ -65,8 +70,13 @@ public class CollaboratorCollaboratorServiceImpl implements CollaboratorCollabor
     }
 
     /** Chantier 2 : creer/modifier un Collaborator (et ses EnterpriseMembership) requiert
-     * canManageUsers pour CHAQUE societe visee. Voir NOTES-permissions.md. */
+     * canManageUsers pour CHAQUE societe visee. Voir NOTES-permissions.md.
+     * Audit final P1-1 : la boucle ci-dessous ne verifie que les memberships PRESENTES dans le
+     * payload - un payload sans "enterpriseMemberships" rendait toute la verification inutile
+     * (creation d'un compte sans aucune permission). D'ou la garde obligatoire ci-dessous,
+     * independante du contenu de la requete. */
     private void assertCanManageUsersForMemberships(Collaborator t) {
+        effectivePermissionService.assertCanManageUsersOnAnyEnterprise();
         if (t.getEnterpriseMemberships() != null) {
             t.getEnterpriseMemberships().forEach(membership -> {
                 Long enterpriseId = membership.getEnterprise() != null ? membership.getEnterprise().getId() : null;

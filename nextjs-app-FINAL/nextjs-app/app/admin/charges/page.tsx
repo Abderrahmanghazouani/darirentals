@@ -28,6 +28,7 @@ import { EntityTable, EntityColumn } from "@/components/crud/entity-table";
 import { EntityFormDialog } from "@/components/crud/entity-form-dialog";
 import { useEntityCrud } from "@/lib/use-entity-crud";
 import { useRequireRole } from "@/lib/use-require-role";
+import { useCurrency } from "@/lib/currency/currency-context";
 import { getEntityClients } from "@/lib/api";
 import { ChargeDto } from "@/lib/types/Charge";
 import { PropertyDto } from "@/lib/types/Property";
@@ -40,6 +41,8 @@ const ROLE = "admin" as const;
 
 export default function ChargesPage() {
   const ready = useRequireRole(ROLE);
+  // Écran de consultation : montants convertis dans la devise choisie (stockage toujours en MAD).
+  const { format: formatMoney } = useCurrency();
   const client = useMemo(() => getEntityClients(ROLE).charge, []);
   const crud = useEntityCrud<ChargeDto>(client);
 
@@ -84,7 +87,7 @@ export default function ChargesPage() {
       header: "Type",
       render: (c) => (c.chargeType ? <Badge variant="outline">{c.chargeType.label}</Badge> : "—"),
     },
-    { header: "Montant", render: (c) => (c.amount != null ? `${c.amount} MAD` : "—") },
+    { header: "Montant", render: (c) => (c.amount != null ? formatMoney(c.amount) : "—") },
     { header: "Prestataire", render: (c) => c.payment?.serviceProvider?.name ?? "—" },
     {
       header: "Paiement",
@@ -111,7 +114,7 @@ export default function ChargesPage() {
               <StatCard
                 key={entry.name}
                 label={entry.name}
-                value={`${entry.total.toFixed(2)} MAD`}
+                value={formatMoney(entry.total)}
                 icon={Receipt}
                 iconTone="warning"
                 hint={`${entry.count} charge${entry.count > 1 ? "s" : ""}`}
